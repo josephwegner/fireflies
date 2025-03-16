@@ -20,12 +20,12 @@ export default class MovementSystem extends System {
         const dy = target.y - position.y;
         const dist = Math.hypot(dx, dy);
 
-        if (dist > 1) {
+        if ((dist <= 50 && pathComp.path.length > 1) || dist < 1) {
+          pathComp.path.shift(); // Remove reached waypoint
+        } else {
           // Move toward target
           position.x += (dx / dist) * SPEED * dt;
           position.y += (dy / dist) * SPEED * dt;
-        } else {
-          pathComp.path.shift(); // Remove reached waypoint
         }
       } else {
         // Move based on velocity if no path is assigned

@@ -4,6 +4,7 @@ import PositionComponent from './ecs/components/PositionComponent';
 import VelocityComponent from './ecs/components/VelocityComponent';
 import PathComponent from './ecs/components/PathComponent';
 import MovementSystem from './ecs/systems/MovementSystem';
+import DestinationSystem from './ecs/systems/DestinationSystem';
 
 const TILE_SIZE = 32;
 
@@ -16,11 +17,16 @@ export default class GameScene extends Phaser.Scene {
   create() {
     this.world = new World();
 
+    // Request a test path from the worker
+    const gridWidth = Math.ceil(this.game.config.width / TILE_SIZE);
+    const gridHeight = Math.ceil(this.game.config.height / TILE_SIZE);
+
     this.world
       .registerComponent(PositionComponent)
       .registerComponent(VelocityComponent)
       .registerComponent(PathComponent)
-      .registerSystem(MovementSystem);
+      .registerSystem(MovementSystem)
+      .registerSystem(DestinationSystem);
 
     // Create a test firefly entity
     const fireflyOne = this.world.createEntity()
@@ -33,8 +39,15 @@ export default class GameScene extends Phaser.Scene {
       .addComponent(VelocityComponent, { vx: 1, vy: -1 })
       .addComponent(PathComponent, { path: [] });
 
+    const destinationOne = this.world.createEntity()
+      .addComponent(PositionComponent, { x: this.game.config.width * .9, y: Math.ceil(this.game.config.height / 2) })
+    const destinationTwo = this.world.createEntity()
+        .addComponent(PositionComponent, { x: this.game.config.width * .3, y: Math.ceil(this.game.config.height / 3) })
+
     this.entities.add(fireflyOne);
     this.entities.add(fireflyTwo);
+    this.entities.add(destinationOne);
+    this.entities.add(destinationTwo);
 
     // Set up pathfinding worker
     this.pathfindingWorker = new Worker(new URL('./pathfindingWorker.js', import.meta.url));
@@ -42,15 +55,10 @@ export default class GameScene extends Phaser.Scene {
       const { entityId, path } = event.data;
       this.applyPathToEntity(this.entities.entries().find(entity => entity[0].id === entityId)[0], path);
     };
-
-    // Request a test path from the worker
-    const gridWidth = Math.ceil(this.game.config.width / TILE_SIZE);
-    const gridHeight = Math.ceil(this.game.config.height / TILE_SIZE);
+    this.world.getSystem(DestinationSystem).setPathfindingWorker(this.pathfindingWorker);
     
     // Create a grid of walkable tiles (all 0s)
     const grid = Array(gridHeight).fill().map(() => Array(gridWidth).fill(0));
-    this.pathfindingWorker.postMessage({ grid, entityId: fireflyOne.id, start: { x: Math.floor(fireflyOne.getComponent(PositionComponent).x / TILE_SIZE), y: Math.floor(fireflyOne.getComponent(PositionComponent).y / TILE_SIZE) }, destination: { x: gridWidth - 1, y: Math.ceil(gridHeight / 2) } });
-    this.pathfindingWorker.postMessage({ grid, entityId: fireflyTwo.id, start: { x: Math.floor(fireflyTwo.getComponent(PositionComponent).x / TILE_SIZE), y: Math.floor(fireflyTwo.getComponent(PositionComponent).y / TILE_SIZE) }, destination: { x: gridWidth - 1, y: Math.ceil(gridHeight / 2) } });
 
     // Phaser graphics for rendering
     this.graphics = this.add.graphics();
@@ -58,7 +66,7 @@ export default class GameScene extends Phaser.Scene {
 
   applyPathToEntity(entity, path) {
     if (entity.hasComponent(PathComponent)) {
-    entity.getMutableComponent(PathComponent).path = path;
+        entity.getMutableComponent(PathComponent).path = path;
     }
   }
 
@@ -69,8 +77,14 @@ export default class GameScene extends Phaser.Scene {
     this.entities.forEach(entity => {
       if (entity.hasComponent(PositionComponent)) {
         const pos = entity.getComponent(PositionComponent);
-        this.graphics.fillStyle(0xffff00, 1);
-        this.graphics.fillCircle(pos.x, pos.y, 5);
+
+        if (entity.hasComponent(PathComponent)) {
+          this.graphics.fillStyle(0xffff00, 1);
+          this.graphics.fillCircle(pos.x, pos.y, 5);
+        } else {
+          this.graphics.fillStyle(0x0000ff, 1);
+          this.graphics.fillCircle(pos.x, pos.y, 5);
+        }
       }
     });
   }
