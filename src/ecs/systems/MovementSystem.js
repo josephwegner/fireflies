@@ -14,14 +14,19 @@ export default class MovementSystem extends System {
       const velocity = entity.getComponent(VelocityComponent);
       const pathComp = entity.getComponent(PathComponent);
 
-      if (pathComp.path.length > 0) {
-        const target = pathComp.path[0];
+      if (pathComp.currentPath !== null && pathComp.currentPath.length > 0) {
+        const target = pathComp.currentPath[0];
         const dx = target.x - position.x;
         const dy = target.y - position.y;
         const dist = Math.hypot(dx, dy);
 
-        if ((dist <= 50 && pathComp.path.length > 1) || dist < 1) {
-          pathComp.path.shift(); // Remove reached waypoint
+        if ((dist <= 50 && pathComp.currentPath.length > 1) || dist < 1) {
+          pathComp.currentPath.shift(); // Remove reached waypoint
+
+          if (pathComp.currentPath.length === 0) {
+            pathComp.currentPath = pathComp.nextPath;
+            pathComp.nextPath = []; // Clear nextPath after switching
+          }
         } else {
           // Move toward target
           position.x += (dx / dist) * SPEED * dt;

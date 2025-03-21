@@ -17,10 +17,6 @@ export default class GameScene extends Phaser.Scene {
   create() {
     this.world = new World();
 
-    // Request a test path from the worker
-    const gridWidth = Math.ceil(this.game.config.width / TILE_SIZE);
-    const gridHeight = Math.ceil(this.game.config.height / TILE_SIZE);
-
     this.world
       .registerComponent(PositionComponent)
       .registerComponent(VelocityComponent)
@@ -51,22 +47,37 @@ export default class GameScene extends Phaser.Scene {
 
     // Set up pathfinding worker
     this.pathfindingWorker = new Worker(new URL('./pathfindingWorker.js', import.meta.url));
+    this.pathfindingWorker.postMessage({ grid: {
+      height: this.game.config.height,
+      width: this.game.config.width
+    }});
+
     this.pathfindingWorker.onmessage = (event) => {
-      const { entityId, path } = event.data;
-      this.applyPathToEntity(this.entities.entries().find(entity => entity[0].id === entityId)[0], path);
+      const { entityId, path, pathType } = event.data;
+      const entity = this.entities.entries().find(entity => entity[0].id === entityId)[0];
+      this.applyPathToEntity(entity, path, pathType);
     };
-    this.world.getSystem(DestinationSystem).setPathfindingWorker(this.pathfindingWorker);
     
-    // Create a grid of walkable tiles (all 0s)
-    const grid = Array(gridHeight).fill().map(() => Array(gridWidth).fill(0));
+    this.world.getSystem(DestinationSystem).setPathfindingWorker(this.pathfindingWorker);
 
     // Phaser graphics for rendering
     this.graphics = this.add.graphics();
   }
 
-  applyPathToEntity(entity, path) {
+  applyPathToEntity(entity, path, pathType) {
     if (entity.hasComponent(PathComponent)) {
-        entity.getMutableComponent(PathComponent).path = path;
+        let pathComp = entity.getMutableComponent(PathComponent)
+        switch(pathType) {
+            case 'current':
+                pathComp.currentPath = path;
+                break;
+            case 'next':
+                pathComp.nextPath = path;
+                break;
+            default:
+                console.error('Invalid path type:', pathType);
+                break;
+        }
     }
   }
 

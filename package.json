@@ -4,8 +4,8 @@
     "description": "PoC for Firefly Lantern Keepers using Phaser 3, ECSY, Easy-Star.js, and Web Workers.",
     "main": "src/main.js",
     "scripts": {
-      "start": "webpack serve --open",
-      "build": "webpack"
+      "start": "webpack serve --open --mode development",
+      "build": "webpack --mode production"
     },
     "dependencies": {
       "phaser": "^3.55.2",
