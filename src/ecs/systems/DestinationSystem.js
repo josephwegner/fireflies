@@ -14,71 +14,139 @@ export default class DestinationSystem extends System {
         return // Can't calculate anything without a current path!
       }
 
+      // Find the final destination (rightmost static entity)
+      const finalDestination = this.findFinalDestination();
+
       if(!pathComp.currentPath.length) {
-        const leftMax = {
+        const currentPos = {
           x: position.x,
           y: position.y
         }
-        const destinations = this.gatherRightwardDestinations(leftMax)
+        
+        if (finalDestination) {
+          const destinations = this.gatherDestinations(currentPos, finalDestination);
 
-        if (destinations.length) {
-          this.requestPath(entity, {
-            x: position.x,
-            y: position.y
-          }, {
-            x: destinations[0].pos.x,
-            y: destinations[0].pos.y
-          }, 'current')
-        } else {
-          pathComp.currentPath = null; // Signal no more paths
+          if (destinations.length) {
+            this.requestPath(entity, currentPos, {
+              x: destinations[0].pos.x,
+              y: destinations[0].pos.y
+            }, 'current')
+          } else {
+            pathComp.currentPath = null; // Signal no more paths
+          }
         }
       } else if (pathComp.nextPath !== null && !pathComp.nextPath.length) {
         const lastPos = pathComp.currentPath[pathComp.currentPath.length - 1]
-        const leftMax = {
-          x: lastPos.x,
-          y: lastPos.y
-        }
-        const destinations = this.gatherRightwardDestinations(leftMax)
-
-        if (destinations.length) {
-          this.requestPath(entity, {
-            x: lastPos.x,
-            y: lastPos.y
-          }, {
-            x: destinations[0].pos.x,
-            y: destinations[0].pos.y
-          }, 'next')
-        } else {
-          pathComp.nextPath = null; // Signal no more paths
+        
+        if (finalDestination) {
+          const destinations = this.gatherDestinations(lastPos, finalDestination);
+          if (destinations.length) {
+            this.requestPath(entity, lastPos, {
+              x: destinations[0].pos.x,
+              y: destinations[0].pos.y
+            }, 'next')
+          } else {
+            pathComp.nextPath = null; // Signal no more paths
+          }
         }
       }
     });
   }
 
-  gatherRightwardDestinations(leftMax) {
-    const rightwardDestinations = [];
+  findFinalDestination() {
+    let rightmostEntity = null;
+    let maxX = -Infinity;
     
-    this.queries.potentialDestinations.results.forEach(destEntity => {
-      const destPos = destEntity.getComponent(PositionComponent);
+    this.queries.potentialDestinations.results.forEach(entity => {
+      const pos = entity.getComponent(PositionComponent);
+      if (pos.x > maxX) {
+        maxX = pos.x;
+        rightmostEntity = {
+          entity: entity,
+          pos: pos
+        };
+      }
+    });
+    
+    return rightmostEntity;
+  }
+
+  gatherDestinations(current, finalDest, minScoreThreshold = 1.0) {
+    // Compute the ideal direction vector from current to final destination)
+    const idealDX = finalDest.pos.x - current.x;
+    const idealDY = finalDest.pos.y - current.y;
+    const idealDist = Math.hypot(idealDX, idealDY);
+    
+    // If the final destination is too close, just return it
+    if (idealDist < 1) return [];
+    
+    const mainDir = { 
+      x: idealDX / idealDist, 
+      y: idealDY / idealDist 
+    };
+
+    const candidates = [];
+    
+    this.queries.potentialDestinations.results.forEach(entity => {
+      const destPos = entity.getComponent(PositionComponent);
       
-      // Check if destination is to the right of the entity
-      if (destPos.x > leftMax.x) {
-        console.log(leftMax.x, destPos.x);
-        // Skip if destination is too close
-        if (Math.hypot(destPos.x - leftMax.x, destPos.y - leftMax.y) < 1) return;
-        
-        rightwardDestinations.push({
-          entity: destEntity,
+      // Skip if destination is too close
+      const distToDest = Math.hypot(destPos.x - current.x, destPos.y - current.y);
+      if (distToDest < 1) return;
+      
+      // Vector from current to candidate
+      const vx = destPos.x - current.x;
+      const vy = destPos.y - current.y;
+      const progress = vx * mainDir.x + vy * mainDir.y;  // projection length along the ideal path
+
+      // Only consider destinations that are in the forward direction
+      if (progress <= 0) return;
+      
+      // Calculate the point on the direct path that's closest to this entity
+      const projPoint = { 
+        x: current.x + progress * mainDir.x, 
+        y: current.y + progress * mainDir.y 
+      };
+      
+      // Distance from the entity to the direct path
+      const distanceFromPath = Math.hypot(destPos.x - projPoint.x, destPos.y - projPoint.y);
+      
+      // Progress as a percentage of total distance to final destination
+      const progressPercent = progress / idealDist;
+      
+      // Score is higher when:
+      // 1. The entity is close to the direct path (small distanceFromPath)
+      // 2. The entity makes reasonable progress toward the final destination
+      const pathProximityFactor = 1 / (distanceFromPath + 0.5);
+      
+      // Balance between path proximity and progress
+      // Higher pathWeight values favor entities closer to the path
+      const PATH_WEIGHT = 3
+      const PROGRESS_WEIGHT = .1
+      let score = 
+        (progressPercent * PROGRESS_WEIGHT) +
+        (pathProximityFactor * PATH_WEIGHT);
+
+      if (destPos.x === finalDest.pos.x && destPos.y === finalDest.pos.y) {
+        // Don't choose the final destination as a destination unless everything else sucks
+        score = minScoreThreshold
+      }
+
+      if (score >= minScoreThreshold) {
+        candidates.push({
+          entity: entity,
           pos: destPos,
-          x: destPos.x // Store x value for sorting
+          score: score,
+          // Debug info
+          pathProximityFactor: pathProximityFactor,
+          progressPercent: progressPercent
         });
       }
     });
     
-    // Sort destinations by x value ascending
-    rightwardDestinations.sort((a, b) => a.x - b.x);
-    
-    return rightwardDestinations;
+    // Sort candidates by score in descending order
+    candidates.sort((a, b) => b.score - a.score);
+    return candidates;
   }
 
   requestPath(entity, start, destination, pathType) {
@@ -93,12 +161,12 @@ export default class DestinationSystem extends System {
       entityId: entity.id,
       pathType: pathType,
       start: { 
-        x: Math.floor(start.x), 
-        y: Math.floor(start.y)
+        x: Math.ceil(start.x), 
+        y: Math.ceil(start.y)
       },
       destination: {
-        x: Math.floor(destination.x),
-        y: Math.floor(destination.y)
+        x: Math.ceil(destination.x),
+        y: Math.ceil(destination.y)
       }
   })
   }

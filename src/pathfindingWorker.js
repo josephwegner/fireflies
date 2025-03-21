@@ -1,32 +1,35 @@
 import EasyStar from 'easystarjs';
 
-const TILE_SIZE = 32; // Define the new grid size
 
 const easystar = new EasyStar.js();
-easystar.setAcceptableTiles([0]); // Walkable tiles
+easystar.setAcceptableTiles([1]); // Walkable tiles
 
 self.onmessage = function(e) {
   if (e.data.grid) {
-    let grid = Array(Math.ceil(e.data.grid.height / TILE_SIZE)).fill().map(() => Array(Math.ceil(e.data.grid.width / TILE_SIZE)).fill(0));
-    easystar.setGrid(grid);
+    let map = Array(Math.ceil(e.data.grid.height)).fill().map(() => Array(Math.ceil(e.data.grid.width)).fill(0));
+
+    e.data.map.forEach((row, rowIndex) => {
+      row.forEach((tile, tileIndex) => {
+        map[rowIndex][tileIndex] = tile;
+      });
+    });
+
+    easystar.setGrid(map);
+    easystar.setAcceptableTiles([1]); // Walkable tiles
   } else {
     const { entityId, start, destination, pathType } = e.data;
 
     easystar.findPath(
-      Math.floor(start.x / TILE_SIZE),
-      Math.floor(start.y / TILE_SIZE), 
-      Math.floor(destination.x / TILE_SIZE), 
-      Math.floor(destination.y / TILE_SIZE), 
+      start.x,
+      start.y, 
+      destination.x, 
+      destination.y, 
       function(path) {
         if (path === null) {
-          self.postMessage([]); // No path found
+          console.error('No path found', { entityId, start, destination, pathType })
+          self.postMessage({ entityId, path: [], pathType }); // No path found
         } else {
-            let pixelPath = path.map(p => ({
-                x: p.x * TILE_SIZE + TILE_SIZE / 2,
-                y: p.y * TILE_SIZE + TILE_SIZE / 2
-            }));
-
-            self.postMessage({ entityId, path: pixelPath, pathType });
+          self.postMessage({ entityId, path, pathType });
         }
       }
     );

@@ -3,7 +3,7 @@ import PositionComponent from '../components/PositionComponent';
 import VelocityComponent from '../components/VelocityComponent';
 import PathComponent from '../components/PathComponent';
 
-const SPEED = 50; // Speed in pixels per second
+const SPEED = 1; // Speed in pixels per second
 
 export default class MovementSystem extends System {
   execute(delta, time) {
@@ -20,7 +20,7 @@ export default class MovementSystem extends System {
         const dy = target.y - position.y;
         const dist = Math.hypot(dx, dy);
 
-        if ((dist <= 50 && pathComp.currentPath.length > 1) || dist < 1) {
+        if ((dist <= .05 && pathComp.currentPath.length > 1) || dist < .01) {
           pathComp.currentPath.shift(); // Remove reached waypoint
 
           if (pathComp.currentPath.length === 0) {

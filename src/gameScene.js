@@ -26,31 +26,47 @@ export default class GameScene extends Phaser.Scene {
 
     // Create a test firefly entity
     const fireflyOne = this.world.createEntity()
-      .addComponent(PositionComponent, { x: 10, y: this.game.config.height * 0.25 })
-      .addComponent(VelocityComponent, { vx: 1, vy: -1 })
+      .addComponent(PositionComponent, { x: 0, y: 1 })
+      .addComponent(VelocityComponent, { vx: 0, vy: 0 })
       .addComponent(PathComponent, { path: [] });
 
     const fireflyTwo = this.world.createEntity()
-      .addComponent(PositionComponent, { x: 10, y: this.game.config.height * 0.75 })
-      .addComponent(VelocityComponent, { vx: 1, vy: -1 })
+      .addComponent(PositionComponent, { x: 0, y: 5 })
+      .addComponent(VelocityComponent, { vx: 0, vy: 0 })
       .addComponent(PathComponent, { path: [] });
 
     const destinationOne = this.world.createEntity()
-      .addComponent(PositionComponent, { x: this.game.config.width * .9, y: Math.ceil(this.game.config.height / 2) })
+      .addComponent(PositionComponent, { x: 9, y: 3 })
     const destinationTwo = this.world.createEntity()
-        .addComponent(PositionComponent, { x: this.game.config.width * .3, y: Math.ceil(this.game.config.height / 3) })
+      .addComponent(PositionComponent, { x: 3, y: 2 })
+    const destinationThree = this.world.createEntity()
+      .addComponent(PositionComponent, { x: 3, y: 5 })
+
+    this.map = [
+      [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+      [1, 1, 1, 1, 1, 1, 0, 0, 0, 0],
+      [0, 0, 0, 1, 0, 1, 0, 0, 0, 0],
+      [0, 1, 1, 1, 0, 1, 1, 1, 1, 1],
+      [0, 1, 0, 1, 1, 1, 0, 0, 0, 0],
+      [1, 1, 0, 1, 0, 0, 0, 0, 0, 0],
+      [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+    ]
 
     this.entities.add(fireflyOne);
     this.entities.add(fireflyTwo);
     this.entities.add(destinationOne);
     this.entities.add(destinationTwo);
+    this.entities.add(destinationThree);
 
     // Set up pathfinding worker
     this.pathfindingWorker = new Worker(new URL('./pathfindingWorker.js', import.meta.url));
-    this.pathfindingWorker.postMessage({ grid: {
-      height: this.game.config.height,
-      width: this.game.config.width
-    }});
+    this.pathfindingWorker.postMessage({
+      grid: {
+        height: Math.ceil(this.game.config.height / TILE_SIZE),
+        width: Math.ceil(this.game.config.width / TILE_SIZE)
+      },
+      map: this.map
+    });
 
     this.pathfindingWorker.onmessage = (event) => {
       const { entityId, path, pathType } = event.data;
@@ -85,16 +101,27 @@ export default class GameScene extends Phaser.Scene {
     this.world.execute(delta, time);
 
     this.graphics.clear();
+    
+    if(this.map) {
+      this.map.forEach((row, y) => {
+        row.forEach((tile, x) => {
+          this.graphics.fillStyle(tile === 1 ? 0x00ff00 : 0x000000, 1);
+          this.graphics.fillRect(x * TILE_SIZE, y * TILE_SIZE, TILE_SIZE, TILE_SIZE);
+        });
+      });
+    }
+    
+    // Draw entities
     this.entities.forEach(entity => {
       if (entity.hasComponent(PositionComponent)) {
         const pos = entity.getComponent(PositionComponent);
 
         if (entity.hasComponent(PathComponent)) {
-          this.graphics.fillStyle(0xffff00, 1);
-          this.graphics.fillCircle(pos.x, pos.y, 5);
+          this.graphics.fillStyle(0xff0000, 1);
+          this.graphics.fillCircle((pos.x * TILE_SIZE) + (TILE_SIZE / 2), (pos.y * TILE_SIZE) + (TILE_SIZE / 2), 5);
         } else {
           this.graphics.fillStyle(0x0000ff, 1);
-          this.graphics.fillCircle(pos.x, pos.y, 5);
+          this.graphics.fillCircle((pos.x * TILE_SIZE) + (TILE_SIZE / 2), (pos.y * TILE_SIZE) + (TILE_SIZE / 2), 5);
         }
       }
     });
