@@ -1,6 +1,7 @@
 import { System } from 'ecsy';
 import PositionComponent from '../components/PositionComponent';
 import RenderableComponent from '../components/RenderableComponent';
+import WallComponent from '../components/WallComponent';
 
 export default class RenderSystem extends System {
   constructor(attributes) {
@@ -13,8 +14,8 @@ export default class RenderSystem extends System {
   execute() {
     this.graphics.clear();
     
-    // Render map tiles
-    this.renderMap();
+    // Render walls
+    this.renderWalls();
     
     // Render entities
     this.renderEntities();
@@ -37,6 +38,31 @@ export default class RenderSystem extends System {
     });
   }
 
+  renderWalls() {
+    // Query for entities with WallComponent
+    this.queries.walls.results.forEach(entity => {
+      const wall = entity.getComponent(WallComponent);
+      
+      this.graphics.lineStyle(wall.thickness, wall.color, 1);
+      
+      wall.segments.forEach(segment => {
+        if (Array.isArray(segment)) {
+          // Draw a smooth path
+          if (segment.length < 2) return;
+          
+          this.graphics.beginPath();
+          this.graphics.moveTo(segment[0].x, segment[0].y);
+          
+          for (let i = 1; i < segment.length; i++) {
+            this.graphics.lineTo(segment[i].x, segment[i].y);
+          }
+          
+          this.graphics.strokePath();
+        }
+      });
+    });
+  }
+
   renderEntities() {
     // Query for entities with both Position and Renderable components
     this.queries.renderables.results.forEach(entity => {
@@ -54,5 +80,6 @@ export default class RenderSystem extends System {
 } 
 
 RenderSystem.queries = {
-    renderables: { components: [PositionComponent, RenderableComponent] }
+    renderables: { components: [PositionComponent, RenderableComponent] },
+    walls: { components: [WallComponent] }
 }

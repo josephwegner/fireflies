@@ -4,9 +4,11 @@ import PositionComponent from './ecs/components/PositionComponent';
 import VelocityComponent from './ecs/components/VelocityComponent';
 import PathComponent from './ecs/components/PathComponent';
 import RenderableComponent from './ecs/components/RenderableComponent';
+import WallComponent from './ecs/components/WallComponent';
 import MovementSystem from './ecs/systems/MovementSystem';
 import DestinationSystem from './ecs/systems/DestinationSystem';
 import RenderSystem from './ecs/systems/RenderSystem';
+import WallGenerationSystem from './ecs/systems/WallGenerationSystem';
 
 const TILE_SIZE = 32;
 
@@ -14,6 +16,7 @@ export default class GameScene extends Phaser.Scene {
   constructor() {
     super('GameScene');
     this.entities = new Set(); // Track entities manually
+    this.tileSize = TILE_SIZE; // Make tileSize accessible to systems
   }
 
   create() {
@@ -25,6 +28,8 @@ export default class GameScene extends Phaser.Scene {
       .registerComponent(VelocityComponent)
       .registerComponent(PathComponent)
       .registerComponent(RenderableComponent)
+      .registerComponent(WallComponent)
+      .registerSystem(WallGenerationSystem)
       .registerSystem(MovementSystem)
       .registerSystem(DestinationSystem)
       .registerSystem(RenderSystem);  // Pass the scene to the render system
