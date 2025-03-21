@@ -1,0 +1,16 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+# No Function Documentation Rule
+
+This rule discourages the use of formal JSDoc-style documentation for JavaScript functions.
+
+## Guidelines
+
+- Do not use `@param`, `@returns`, or other JSDoc tags before functions
+- Instead, use clear function and parameter names that are self-documenting
+- For complex logic, use inline comments within the function body
+- Keep functions small and focused on a single responsibility
+- If explanation is needed, use simple comments above the function in plain language 

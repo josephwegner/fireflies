@@ -3,8 +3,10 @@ import { World } from 'ecsy';
 import PositionComponent from './ecs/components/PositionComponent';
 import VelocityComponent from './ecs/components/VelocityComponent';
 import PathComponent from './ecs/components/PathComponent';
+import RenderableComponent from './ecs/components/RenderableComponent';
 import MovementSystem from './ecs/systems/MovementSystem';
 import DestinationSystem from './ecs/systems/DestinationSystem';
+import RenderSystem from './ecs/systems/RenderSystem';
 
 const TILE_SIZE = 32;
 
@@ -16,32 +18,39 @@ export default class GameScene extends Phaser.Scene {
 
   create() {
     this.world = new World();
+    this.world.scene = this
 
     this.world
       .registerComponent(PositionComponent)
       .registerComponent(VelocityComponent)
       .registerComponent(PathComponent)
+      .registerComponent(RenderableComponent)
       .registerSystem(MovementSystem)
-      .registerSystem(DestinationSystem);
+      .registerSystem(DestinationSystem)
+      .registerSystem(RenderSystem);  // Pass the scene to the render system
 
     // Create a test firefly entity
     const fireflyOne = this.world.createEntity()
       .addComponent(PositionComponent, { x: 0, y: 1 })
       .addComponent(VelocityComponent, { vx: 0, vy: 0 })
-      .addComponent(PathComponent, { path: [] });
+      .addComponent(PathComponent, { path: [] })
+      .addComponent(RenderableComponent, { type: 'firefly', color: 0xff0000, radius: 5 });
 
     const fireflyTwo = this.world.createEntity()
       .addComponent(PositionComponent, { x: 0, y: 5 })
       .addComponent(VelocityComponent, { vx: 0, vy: 0 })
-      .addComponent(PathComponent, { path: [] });
+      .addComponent(PathComponent, { path: [] })
+      .addComponent(RenderableComponent, { type: 'firefly', color: 0xff0000, radius: 5 });
 
     const destinationOne = this.world.createEntity()
       .addComponent(PositionComponent, { x: 9, y: 3 })
+      .addComponent(RenderableComponent, { type: 'wisp', color: 0x0000ff, radius: 5 });
     const destinationTwo = this.world.createEntity()
       .addComponent(PositionComponent, { x: 3, y: 2 })
+      .addComponent(RenderableComponent, { type: 'wisp', color: 0x0000ff, radius: 5 });
     const destinationThree = this.world.createEntity()
       .addComponent(PositionComponent, { x: 3, y: 5 })
-
+      .addComponent(RenderableComponent, { type: 'wisp', color: 0x0000ff, radius: 5 });
     this.map = [
       [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
       [1, 1, 1, 1, 1, 1, 0, 0, 0, 0],
@@ -75,9 +84,6 @@ export default class GameScene extends Phaser.Scene {
     };
     
     this.world.getSystem(DestinationSystem).setPathfindingWorker(this.pathfindingWorker);
-
-    // Phaser graphics for rendering
-    this.graphics = this.add.graphics();
   }
 
   applyPathToEntity(entity, path, pathType) {
@@ -99,31 +105,5 @@ export default class GameScene extends Phaser.Scene {
 
   update(time, delta) {
     this.world.execute(delta, time);
-
-    this.graphics.clear();
-    
-    if(this.map) {
-      this.map.forEach((row, y) => {
-        row.forEach((tile, x) => {
-          this.graphics.fillStyle(tile === 1 ? 0x00ff00 : 0x000000, 1);
-          this.graphics.fillRect(x * TILE_SIZE, y * TILE_SIZE, TILE_SIZE, TILE_SIZE);
-        });
-      });
-    }
-    
-    // Draw entities
-    this.entities.forEach(entity => {
-      if (entity.hasComponent(PositionComponent)) {
-        const pos = entity.getComponent(PositionComponent);
-
-        if (entity.hasComponent(PathComponent)) {
-          this.graphics.fillStyle(0xff0000, 1);
-          this.graphics.fillCircle((pos.x * TILE_SIZE) + (TILE_SIZE / 2), (pos.y * TILE_SIZE) + (TILE_SIZE / 2), 5);
-        } else {
-          this.graphics.fillStyle(0x0000ff, 1);
-          this.graphics.fillCircle((pos.x * TILE_SIZE) + (TILE_SIZE / 2), (pos.y * TILE_SIZE) + (TILE_SIZE / 2), 5);
-        }
-      }
-    });
   }
 }
