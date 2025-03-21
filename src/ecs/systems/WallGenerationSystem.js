@@ -128,15 +128,6 @@ export default class WallGenerationSystem extends System {
           y: baseY + this.getRandomVariation(3)
         });
         
-        // Add a few intermediate points for natural curves
-        const steps = 3; // Number of intermediate points
-        for (let i = 1; i < steps; i++) {
-          points.push({
-            x: startX + (edge.length * i / steps),
-            y: baseY + this.getRandomVariation(5)
-          });
-        }
-        
         // Add end point with slight variation
         points.push({
           x: endX,
@@ -153,15 +144,6 @@ export default class WallGenerationSystem extends System {
           x: baseX + this.getRandomVariation(3),
           y: startY
         });
-        
-        // Add a few intermediate points for natural curves
-        const steps = 3; // Number of intermediate points
-        for (let i = 1; i < steps; i++) {
-          points.push({
-            x: baseX + this.getRandomVariation(5),
-            y: startY + (edge.length * i / steps)
-          });
-        }
         
         // Add end point with slight variation
         points.push({
@@ -253,7 +235,7 @@ export default class WallGenerationSystem extends System {
     
     // Use Catmull-Rom spline for smooth curves
     const smoothedPoints = [];
-    const tension = 0.5; // Lower values create smoother curves
+    const tension = .5; // Lower values create smoother curves
     
     // Add first point
     smoothedPoints.push(points[0]);
