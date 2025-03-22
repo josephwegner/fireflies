@@ -7,7 +7,13 @@ const config = {
   height: 600,
   backgroundColor: '#222',
   parent: 'game-container',
-  scene: [GameScene]
+  scene: [GameScene],
+  physics: {
+    default: 'arcade',
+    arcade: {
+      gravity: { x: 0, y: 0 }
+    }
+  }
 };
 
-const game = new Phaser.Game(config);
+new Phaser.Game(config);

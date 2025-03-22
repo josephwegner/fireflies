@@ -159,7 +159,7 @@ export default class WallGenerationSystem extends System {
     const connectedSegments = this.connectWallSegments(wallSegments);
     
     // Apply smoothing to create fluid curves
-    return connectedSegments.map(segment => this.smoothWallSegment(segment));
+    return connectedSegments.map(segment => this.smoothWallSegment(segment) );
   }
   
   getRandomVariation(maxAmount) {

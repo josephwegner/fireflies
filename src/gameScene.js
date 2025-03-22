@@ -9,7 +9,8 @@ import MovementSystem from './ecs/systems/MovementSystem';
 import DestinationSystem from './ecs/systems/DestinationSystem';
 import RenderSystem from './ecs/systems/RenderSystem';
 import WallGenerationSystem from './ecs/systems/WallGenerationSystem';
-
+import PhysicsSystem from './ecs/systems/PhysicsSystem';
+import PhysicsBodyComponent from './ecs/components/PhysicsBodyComponent';
 const TILE_SIZE = 32;
 
 export default class GameScene extends Phaser.Scene {
@@ -29,10 +30,12 @@ export default class GameScene extends Phaser.Scene {
       .registerComponent(PathComponent)
       .registerComponent(RenderableComponent)
       .registerComponent(WallComponent)
+      .registerComponent(PhysicsBodyComponent)
       .registerSystem(WallGenerationSystem)
       .registerSystem(MovementSystem)
       .registerSystem(DestinationSystem)
-      .registerSystem(RenderSystem);  // Pass the scene to the render system
+      .registerSystem(RenderSystem)
+      .registerSystem(PhysicsSystem, { physics: this.physics, tileSize: this.tileSize});
 
     // Create a test firefly entity
     const fireflyOne = this.world.createEntity()
