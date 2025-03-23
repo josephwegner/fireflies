@@ -3,7 +3,8 @@ import PositionComponent from '../components/PositionComponent';
 import VelocityComponent from '../components/VelocityComponent';
 import WallComponent from '../components/WallComponent';
 import PhysicsBodyComponent from '../components/PhysicsBodyComponent';
-import PathComponent from '../components/PathComponent';
+import InteractionComponent from '../components/InteractionComponent';
+import TypeComponent from '../components/TypeComponent';
 
 export default class PhysicsSystem extends System {
   constructor(world, attributes) {
@@ -11,8 +12,6 @@ export default class PhysicsSystem extends System {
     this.physics = attributes.physics;
     this.tileSize = attributes.tileSize;
     this.wallBodies = [];
-    this.avoidanceDistance = 20; // Distance to start avoiding walls
-    this.avoidanceForce = 0.25;   // Significantly stronger avoidance force
   }
 
   init() {
@@ -44,50 +43,29 @@ export default class PhysicsSystem extends System {
   // Improved wall avoidance that preserves path following
   handleWallAvoidance(entityBody, wallBody) {
     const entity = entityBody.ecsyEntity;
-    if (!entity) return;
-    
-    const velocity = entity.getMutableComponent(VelocityComponent);
-    const entityPos = entity.getComponent(PositionComponent);
-    
-    // Get the entity's position
-    const entityX = (entityPos.x.toFixed(2) * this.tileSize) + this.tileSize / 2;
-    const entityY = (entityPos.y.toFixed(2) * this.tileSize) + this.tileSize / 2;
-    
-    // Calculate the vector from wall to entity
-    const dx = entityX - wallBody.x;
-    const dy = entityY - wallBody.y;
-    
-    // Get the wall's normal vector (perpendicular to wall)
-    const wallNormalX = Math.sin(wallBody.rotation); // Perpendicular to wall direction
-    const wallNormalY = -Math.cos(wallBody.rotation);
-    
-    // Calculate the projection of entity-wall vector onto wall normal
-    const projection = dx * wallNormalX + dy * wallNormalY;
-    
-    // The true distance to the wall is the absolute value of this projection
-    const trueDistance = Math.abs(projection);
+    const wallEntity = wallBody.ecsyEntity;
 
-    // Apply avoidance force if close enough
-    if (trueDistance < this.avoidanceDistance) {
-      // Direction away from wall (along the normal)
-      const dirX = Math.sign(projection) * wallNormalX;
-      const dirY = Math.sign(projection) * wallNormalY;
-      
-      // Force magnitude based on distance
-      const forceMagnitude = this.avoidanceForce * 
-        Math.pow(1 - trueDistance / this.avoidanceDistance, 2);
-      
-      // Apply force
-      entityBody.body.velocity.x += dirX * forceMagnitude;
-      entityBody.body.velocity.y += dirY * forceMagnitude;
-      
-      // Update velocity component
-      velocity.vx = entityBody.body.velocity.x;
-      velocity.vy = entityBody.body.velocity.y;
+    if (!entity || !wallEntity) { return }
+
+    this.processInteraction(entityBody, entity, wallBody, wallEntity);
+    this.processInteraction(wallBody, wallEntity, entityBody, entity);
+  }
+
+  processInteraction(entityBody, entity, interactedWithEntityBody, interactedWithEntity) {
+    if (!entity.hasComponent(InteractionComponent) ||
+        !interactedWithEntity.hasComponent(TypeComponent)) {
+      return;
+    }
+
+    const interactions = entity.getComponent(InteractionComponent).interactions;
+    const interactedWithType = interactedWithEntity.getComponent(TypeComponent).type;
+
+    if (interactions[interactedWithType]) {
+      interactions[interactedWithType].apply(entityBody, entity, interactedWithEntityBody, interactedWithEntity, this.world, this.tileSize);
     }
   }
 
-  buildWallEntities(wall) {
+  buildWallEntities(wallEntity, wall) {
     wall.segments.forEach(segment => {
       if (segment === undefined) { return }
 
@@ -108,6 +86,7 @@ export default class PhysicsSystem extends System {
         
         // Create a physics body for this subsegment
         const wallBody = this.physics.add.sprite(midX, midY, 'wall');
+        wallBody.ecsyEntity = wallEntity;
         wallBody.setAlpha(0); // Make invisible (we'll render separately)
         //wallBody.setAlpha(1); wallBody.setTintFill(0xFFFFFF);
         
@@ -150,7 +129,7 @@ export default class PhysicsSystem extends System {
     // Process walls that need physics bodies
     this.queries.walls.added.forEach(wallEntity => {
       const wall = wallEntity.getComponent(WallComponent);
-      this.buildWallEntities(wall)
+      this.buildWallEntities(wallEntity, wall)
     });
     
     // Clean up removed entities
@@ -208,7 +187,7 @@ export default class PhysicsSystem extends System {
     if (this.wallBodies.length === 0) {
       this.queries.walls.results.forEach(entity => {
         const wall = entity.getComponent(WallComponent)
-        this.buildWallEntities(wall)
+        this.buildWallEntities(entity, wall)
       })
     }
   }

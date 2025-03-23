@@ -11,6 +11,9 @@ import RenderSystem from './ecs/systems/RenderSystem';
 import WallGenerationSystem from './ecs/systems/WallGenerationSystem';
 import PhysicsSystem from './ecs/systems/PhysicsSystem';
 import PhysicsBodyComponent from './ecs/components/PhysicsBodyComponent';
+import TypeComponent from './ecs/components/TypeComponent';
+import InteractionComponent from './ecs/components/InteractionComponent';
+
 const TILE_SIZE = 32;
 
 export default class GameScene extends Phaser.Scene {
@@ -31,34 +34,29 @@ export default class GameScene extends Phaser.Scene {
       .registerComponent(RenderableComponent)
       .registerComponent(WallComponent)
       .registerComponent(PhysicsBodyComponent)
+      .registerComponent(TypeComponent)
+      .registerComponent(InteractionComponent)
       .registerSystem(WallGenerationSystem)
       .registerSystem(MovementSystem)
       .registerSystem(DestinationSystem)
       .registerSystem(RenderSystem)
       .registerSystem(PhysicsSystem, { physics: this.physics, tileSize: this.tileSize});
 
-    // Create a test firefly entity
-    const fireflyOne = this.world.createEntity()
-      .addComponent(PositionComponent, { x: 0, y: 1 })
-      .addComponent(VelocityComponent, { vx: 0, vy: 0 })
-      .addComponent(PathComponent, { path: [] })
-      .addComponent(RenderableComponent, { type: 'firefly', color: 0xff0000, radius: 5 });
-
-    const fireflyTwo = this.world.createEntity()
-      .addComponent(PositionComponent, { x: 0, y: 5 })
-      .addComponent(VelocityComponent, { vx: 0, vy: 0 })
-      .addComponent(PathComponent, { path: [] })
-      .addComponent(RenderableComponent, { type: 'firefly', color: 0xff0000, radius: 5 });
-
-    const destinationOne = this.world.createEntity()
-      .addComponent(PositionComponent, { x: 9, y: 3 })
-      .addComponent(RenderableComponent, { type: 'wisp', color: 0x0000ff, radius: 5 });
-    const destinationTwo = this.world.createEntity()
-      .addComponent(PositionComponent, { x: 3, y: 2 })
-      .addComponent(RenderableComponent, { type: 'wisp', color: 0x0000ff, radius: 5 });
-    const destinationThree = this.world.createEntity()
-      .addComponent(PositionComponent, { x: 3, y: 5 })
-      .addComponent(RenderableComponent, { type: 'wisp', color: 0x0000ff, radius: 5 });
+    // Create initial entities
+    this.createFirefly(0, 1);
+    this.createFirefly(1, 1);
+    this.createFirefly(2, 1);
+    this.createFirefly(3, 1);
+    this.createFirefly(4, 1);
+    this.createFirefly(0, 5);
+    this.createFirefly(1, 5);
+    this.createFirefly(1, 4);
+    this.createFirefly(1, 3);
+    
+    this.createDestination(9, 3);
+    this.createDestination(3, 2);
+    this.createDestination(3, 5);
+    
     this.map = [
       [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
       [1, 1, 1, 1, 1, 1, 0, 0, 0, 0],
@@ -68,12 +66,6 @@ export default class GameScene extends Phaser.Scene {
       [1, 1, 0, 1, 0, 0, 0, 0, 0, 0],
       [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
     ]
-
-    this.entities.add(fireflyOne);
-    this.entities.add(fireflyTwo);
-    this.entities.add(destinationOne);
-    this.entities.add(destinationTwo);
-    this.entities.add(destinationThree);
 
     // Set up pathfinding worker
     this.pathfindingWorker = new Worker(new URL('./pathfindingWorker.js', import.meta.url));
@@ -92,6 +84,27 @@ export default class GameScene extends Phaser.Scene {
     };
     
     this.world.getSystem(DestinationSystem).setPathfindingWorker(this.pathfindingWorker);
+  }
+
+  createFirefly(x, y, color = 0xff0000, radius = 5) {
+    const firefly = this.world.createEntity()
+      .addComponent(PositionComponent, { x, y})
+      .addComponent(VelocityComponent, { vx: 0, vy: 0 })
+      .addComponent(PathComponent, { path: [] })
+      .addComponent(RenderableComponent, { type: 'firefly', color, radius })
+      .addComponent(TypeComponent, { type: 'firefly' })
+    
+    this.entities.add(firefly);
+    return firefly;
+  }
+
+  createDestination(x, y, color = 0x0000ff, radius = 5) {
+    const destination = this.world.createEntity()
+      .addComponent(PositionComponent, { x, y })
+      .addComponent(RenderableComponent, { type: 'wisp', color, radius });
+    
+    this.entities.add(destination);
+    return destination;
   }
 
   applyPathToEntity(entity, path, pathType) {

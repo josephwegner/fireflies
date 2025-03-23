@@ -1,5 +1,8 @@
 import { System } from 'ecsy';
 import WallComponent from '../components/WallComponent';
+import TypeComponent from '../components/TypeComponent';
+import InteractionComponent from '../components/InteractionComponent';
+import RepulsionInteraction from '../interactions/RepulsionInteraction';
 
 export default class WallGenerationSystem extends System {
   init() {
@@ -14,10 +17,20 @@ export default class WallGenerationSystem extends System {
     if (!map) return;
     
     // Create an entity to hold all wall data
-    this.wallEntity = this.world.createEntity().addComponent(WallComponent, {
+    this.wallEntity = this.world.createEntity()
+    
+    this.wallEntity.addComponent(WallComponent, {
       segments: this.generateWallSegments(map),
       thickness: 2,
       color: 0x888888
+    });
+
+    this.wallEntity.addComponent(TypeComponent, {
+      type: 'wall'
+    });
+
+    this.wallEntity.addComponent(InteractionComponent, {
+      interactions: { firefly: new RepulsionInteraction() }
     });
   }
 
