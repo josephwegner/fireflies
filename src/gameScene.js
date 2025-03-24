@@ -13,7 +13,8 @@ import PhysicsSystem from './ecs/systems/PhysicsSystem';
 import PhysicsBodyComponent from './ecs/components/PhysicsBodyComponent';
 import TypeComponent from './ecs/components/TypeComponent';
 import InteractionComponent from './ecs/components/InteractionComponent';
-
+import { createFirefly, createDestination } from './ecs/entityFactory';
+import PhaserBridgeSystem from './ecs/systems/PhaserBridgeSystem';
 const TILE_SIZE = 32;
 
 export default class GameScene extends Phaser.Scene {
@@ -40,22 +41,26 @@ export default class GameScene extends Phaser.Scene {
       .registerSystem(MovementSystem)
       .registerSystem(DestinationSystem)
       .registerSystem(RenderSystem)
-      .registerSystem(PhysicsSystem, { physics: this.physics, tileSize: this.tileSize});
+      .registerSystem(PhysicsSystem, { physics: this.physics, tileSize: this.tileSize})
+      .registerSystem(PhaserBridgeSystem, { 
+        scene: this, 
+        tileSize: this.tileSize
+      });
 
     // Create initial entities
-    this.createFirefly(0, 1);
-    this.createFirefly(1, 1);
-    this.createFirefly(2, 1);
-    this.createFirefly(3, 1);
-    this.createFirefly(4, 1);
-    this.createFirefly(0, 5);
-    this.createFirefly(1, 5);
-    this.createFirefly(1, 4);
-    this.createFirefly(1, 3);
+    this.entities.add(createFirefly(this.world, 0, 1));
+    this.entities.add(createFirefly(this.world, 1, 1));
+    this.entities.add(createFirefly(this.world, 2, 1));
+    this.entities.add(createFirefly(this.world, 3, 1));
+    this.entities.add(createFirefly(this.world, 4, 1));
+    this.entities.add(createFirefly(this.world, 0, 5));
+    this.entities.add(createFirefly(this.world, 1, 5));
+    this.entities.add(createFirefly(this.world, 1, 4));
+    this.entities.add(createFirefly(this.world, 1, 3));
     
-    this.createDestination(9, 3);
-    this.createDestination(3, 2);
-    this.createDestination(3, 5);
+    this.entities.add(createDestination(this.world, 9, 3));
+    this.entities.add(createDestination(this.world, 3, 2));
+    this.entities.add(createDestination(this.world, 3, 5));
     
     this.map = [
       [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
@@ -84,28 +89,6 @@ export default class GameScene extends Phaser.Scene {
     };
     
     this.world.getSystem(DestinationSystem).setPathfindingWorker(this.pathfindingWorker);
-  }
-
-  createFirefly(x, y, color = 0xff0000, radius = 5) {
-    const JITTER = 0.3;
-    const firefly = this.world.createEntity()
-      .addComponent(PositionComponent, { x: x + Math.random() * JITTER, y: y + Math.random() * JITTER })
-      .addComponent(VelocityComponent, { vx: 0, vy: 0 })
-      .addComponent(PathComponent, { path: [] })
-      .addComponent(RenderableComponent, { type: 'firefly', color, radius })
-      .addComponent(TypeComponent, { type: 'firefly' })
-    
-    this.entities.add(firefly);
-    return firefly;
-  }
-
-  createDestination(x, y, color = 0x0000ff, radius = 5) {
-    const destination = this.world.createEntity()
-      .addComponent(PositionComponent, { x, y })
-      .addComponent(RenderableComponent, { type: 'wisp', color, radius });
-    
-    this.entities.add(destination);
-    return destination;
   }
 
   applyPathToEntity(entity, path, pathType) {

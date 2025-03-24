@@ -104,41 +104,20 @@ export default class PhysicsSystem extends System {
   }
 
   execute(delta, time) {
-    // Process entities that need physics bodies
-    this.queries.physicsEntities.added.forEach(entity => {
-      const position = entity.getComponent(PositionComponent);
-      
-      // Create a Phaser physics sprite at the entity's position
-      const physicsBody = this.physics.add.sprite(
-        (position.x * this.tileSize) + this.tileSize - 5,
-        (position.y * this.tileSize) + this.tileSize - 5,
-        'particle');
-      physicsBody.setDisplayOrigin(21, 21)
-      physicsBody.setCircle(10); // Set collision radius
-      physicsBody.setAlpha(0);
-      
-      // Store reference to the ECSY entity
-      physicsBody.ecsyEntity = entity;
-      
-      // Add to entity group
+    this.queries.physicsBodies.added.forEach(entity => {
+      const physicsBody = entity.getComponent(PhysicsBodyComponent).body;
       this.entityGroup.add(physicsBody);
-      
-      // Store the physics body in a component
-      entity.addComponent(PhysicsBodyComponent, { body: physicsBody });
     });
-    
+
+    this.queries.physicsBodies.removed.forEach(entity => {
+      const physicsBody = entity.getComponent(PhysicsBodyComponent).body;
+      this.entityGroup.remove(physicsBody);
+    })
+
     // Process walls that need physics bodies
     this.queries.walls.added.forEach(wallEntity => {
       const wall = wallEntity.getComponent(WallComponent);
       this.buildWallEntities(wallEntity, wall)
-    });
-    
-    // Clean up removed entities
-    this.queries.physicsEntities.removed.forEach(entity => {
-      const physicsComponent = entity.getComponent(PhysicsBodyComponent);
-      if (physicsComponent && physicsComponent.body) {
-        physicsComponent.body.destroy();
-      }
     });
     
     // Clean up removed walls
@@ -147,42 +126,6 @@ export default class PhysicsSystem extends System {
       // For now, we'll just rebuild all wall bodies when any wall is removed
       this.wallBodies.forEach(body => body.destroy());
       this.wallBodies = [];
-    });
-    
-    // Update entity positions based on their physics bodies
-    this.queries.physicsEntities.results.forEach(entity => {
-      const position = entity.getMutableComponent(PositionComponent);
-      const velocity = entity.getMutableComponent(VelocityComponent);
-      const physicsComponent = entity.getComponent(PhysicsBodyComponent);
-      
-      if (physicsComponent && physicsComponent.body) {
-        const body = physicsComponent.body;
-        
-        // Update physics body position from entity position
-        body.setPosition(
-          (position.x * this.tileSize) + this.tileSize - 5,
-          (position.y * this.tileSize) + this.tileSize - 5
-        );
-        
-        // Apply a maximum velocity to prevent extreme speeds
-        const maxSpeed = 2.0;
-        const currentSpeed = Math.hypot(body.body.velocity.x, body.body.velocity.y);
-        if (currentSpeed > maxSpeed) {
-          const scale = maxSpeed / currentSpeed;
-          body.body.velocity.x *= scale;
-          body.body.velocity.y *= scale;
-        }
-        
-        // Set a small drag to prevent perpetual bouncing
-        body.body.setDamping(true);
-        body.body.setDrag(0.05);
-        
-        // After physics update, sync back to entity components
-        position.x = (body.x - this.tileSize + 5) / this.tileSize;
-        position.y = (body.y - this.tileSize + 5) / this.tileSize;
-        velocity.vx = body.body.velocity.x;
-        velocity.vy = body.body.velocity.y;
-      }
     });
 
     if (this.wallBodies.length === 0) {
@@ -197,6 +140,13 @@ export default class PhysicsSystem extends System {
 PhysicsSystem.queries = {
   physicsEntities: {
     components: [PositionComponent, VelocityComponent],
+    listen: {
+      added: true,
+      removed: true
+    }
+  },
+  physicsBodies: {
+    components: [PhysicsBodyComponent],
     listen: {
       added: true,
       removed: true

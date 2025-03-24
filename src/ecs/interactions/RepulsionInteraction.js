@@ -8,7 +8,7 @@ export default class RepulsionInteraction extends BaseInteraction {
   constructor(params = {}) {
     super({
       distance: 10,
-      force: .5,
+      force: 20,
       ...params,
     });
   }
@@ -44,14 +44,8 @@ export default class RepulsionInteraction extends BaseInteraction {
         // Log the angle of repulsion
         const forceMagnitude = (this.force / 10000) * Math.pow(1 - (distance / this.distance * tileSize), 2);
 
-        // Log force angle in degrees
-        const forceAngle = Math.atan2(dirY, dirX) * (180 / Math.PI);
-
-        interactedWithEntityBody.body.velocity.x += dirX * forceMagnitude;
-        interactedWithEntityBody.body.velocity.y += dirY * forceMagnitude;
-
-        velocity.vx = interactedWithEntityBody.body.velocity.x;
-        velocity.vy = interactedWithEntityBody.body.velocity.y;
+        velocity.vx += dirX * forceMagnitude;
+        velocity.vy += dirY * forceMagnitude;
       }
     } else {
       // For non-wall entities, use direct vector
