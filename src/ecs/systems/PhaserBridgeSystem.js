@@ -3,6 +3,7 @@ import PositionComponent from '../components/PositionComponent';
 import RenderableComponent from '../components/RenderableComponent';
 import PhysicsBodyComponent from '../components/PhysicsBodyComponent';
 import VelocityComponent from '../components/VelocityComponent';
+import Entities from '../../entities';
 
 export default class PhaserBridgeSystem extends System {
   constructor(world, attributes) {
@@ -36,11 +37,8 @@ export default class PhaserBridgeSystem extends System {
     
     let phaserObject = null;
     // Create appropriate Phaser object based on renderable type
-    if (renderable.type === 'firefly') {
-      phaserObject = this.createFireflySprite(entity, position, renderable);
-    } else if (renderable.type === 'wisp') {
-      // no op for now, wisps are rendered directly in RenderSystem
-      return;
+    if (Entities[renderable.type]) {
+      phaserObject = Entities[renderable.type].createPhaserEntity(entity, this.scene, this.tileSize);
     }
 
     phaserObject.ecsyEntity = entity;
@@ -71,26 +69,6 @@ export default class PhaserBridgeSystem extends System {
       const physicsBody = entity.getComponent(PhysicsBodyComponent).body;
       physicsBody.destroy();
     }
-  }
-  
-  createFireflySprite(entity, position, renderable) {
-    // Create Phaser sprite for firefly
-    const sprite = this.scene.physics.add.sprite(
-      (position.x * this.tileSize) + this.tileSize/2,
-      (position.y * this.tileSize) + this.tileSize/2,
-      'particle'
-    );
-    
-    const actualRadius = renderable.radius * 1.5;
-    sprite.setDisplayOrigin(actualRadius * 2.375, actualRadius * 2.375);
-    sprite.setCircle(actualRadius);
-    sprite.setAlpha(0);
-
-    // Set a small drag to prevent perpetual bouncing
-    sprite.setDamping(true);
-    sprite.setDrag(0.05);
-
-    return sprite;
   }
 }
 

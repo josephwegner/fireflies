@@ -1,0 +1,41 @@
+import PositionComponent from '../ecs/components/PositionComponent';
+import RenderableComponent from '../ecs/components/RenderableComponent';
+import VelocityComponent from '../ecs/components/VelocityComponent';
+import PathComponent from '../ecs/components/PathComponent';
+import TypeComponent from '../ecs/components/TypeComponent';
+
+export default {
+  createECSYEntity(world, x, y) {
+    const JITTER = 0.3;
+    const firefly = world.createEntity()
+      .addComponent(PositionComponent, { x: x + Math.random() * JITTER, y: y + Math.random() * JITTER })
+      .addComponent(VelocityComponent, { vx: 0, vy: 0 })
+      .addComponent(PathComponent, { path: [] })
+      .addComponent(RenderableComponent, { type: 'firefly', color: 0xffffff, radius: 5 })
+      .addComponent(TypeComponent, { type: 'firefly' })
+    
+    return firefly;
+  },
+
+  createPhaserEntity(entity, world) {
+    const position = entity.getComponent(PositionComponent);
+    const renderable = entity.getComponent(RenderableComponent);
+
+    const sprite = world.physics.add.sprite(
+      (position.x * world.tileSize) + world.tileSize/2,
+      (position.y * world.tileSize) + world.tileSize/2,
+      'firefly'
+    );
+    
+    const actualRadius = renderable.radius * 1.5;
+    sprite.setDisplayOrigin(actualRadius * 2.375, actualRadius * 2.375);
+    sprite.setCircle(actualRadius);
+    sprite.setAlpha(0);
+
+    // Set a small drag to prevent perpetual bouncing
+    sprite.setDamping(true);
+    sprite.setDrag(0.05);
+
+    return sprite;
+  }
+}

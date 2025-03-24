@@ -4,6 +4,21 @@ import VelocityComponent from '../components/VelocityComponent';
 import PathComponent from '../components/PathComponent';
 
 export default class DestinationSystem extends System {
+  constructor(world) {
+    super(world)
+
+    world.scene.pathfindingWorker.onmessage = (event) => {
+      const { entityId, path, pathType } = event.data;
+      const entity = this.world.scene.entities.entries().find(entity => entity[0].id === entityId)[0];
+      this.applyPathToEntity(entity, path, pathType);
+    };
+    
+    this.worker = world.scene.pathfindingWorker
+  }
+
+  init() {
+  }
+
   execute(delta, time) {
     // Get all entities that need a new destination (have velocity but empty path)
     this.queries.needsDestination.results.forEach(entity => {
@@ -51,6 +66,25 @@ export default class DestinationSystem extends System {
         }
       }
     });
+  }
+
+
+
+  applyPathToEntity(entity, path, pathType) {
+    if (entity.hasComponent(PathComponent)) {
+        let pathComp = entity.getMutableComponent(PathComponent)
+        switch(pathType) {
+            case 'current':
+                pathComp.currentPath = path;
+                break;
+            case 'next':
+                pathComp.nextPath = path;
+                break;
+            default:
+                console.error('Invalid path type:', pathType);
+                break;
+        }
+    }
   }
 
   findFinalDestination() {

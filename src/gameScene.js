@@ -13,8 +13,9 @@ import PhysicsSystem from './ecs/systems/PhysicsSystem';
 import PhysicsBodyComponent from './ecs/components/PhysicsBodyComponent';
 import TypeComponent from './ecs/components/TypeComponent';
 import InteractionComponent from './ecs/components/InteractionComponent';
-import { createFirefly, createDestination } from './ecs/entityFactory';
 import PhaserBridgeSystem from './ecs/systems/PhaserBridgeSystem';
+import Entities from './entities/index.js';
+
 const TILE_SIZE = 32;
 
 export default class GameScene extends Phaser.Scene {
@@ -27,6 +28,7 @@ export default class GameScene extends Phaser.Scene {
   create() {
     this.world = new World();
     this.world.scene = this
+    this.pathfindingWorker = new Worker(new URL('./pathfindingWorker.js', import.meta.url));
 
     this.world
       .registerComponent(PositionComponent)
@@ -48,22 +50,22 @@ export default class GameScene extends Phaser.Scene {
       });
 
     // Create initial entities
-    this.entities.add(createFirefly(this.world, 1, 3));
-    this.entities.add(createFirefly(this.world, 1, 3));
-    this.entities.add(createFirefly(this.world, 1, 3));
-    this.entities.add(createFirefly(this.world, 1, 4));
-    this.entities.add(createFirefly(this.world, 1, 4));
-    this.entities.add(createFirefly(this.world, 1, 4));
-    this.entities.add(createFirefly(this.world, 1, 5));
-    this.entities.add(createFirefly(this.world, 1, 5));
-    this.entities.add(createFirefly(this.world, 1, 5));
+    this.entities.add(Entities.firefly.createECSYEntity(this.world, 1, 3));
+    this.entities.add(Entities.firefly.createECSYEntity(this.world, 1, 3));
+    this.entities.add(Entities.firefly.createECSYEntity(this.world, 1, 3));
+    this.entities.add(Entities.firefly.createECSYEntity(this.world, 1, 4));
+    this.entities.add(Entities.firefly.createECSYEntity(this.world, 1, 4));
+    this.entities.add(Entities.firefly.createECSYEntity(this.world, 1, 4));
+    this.entities.add(Entities.firefly.createECSYEntity(this.world, 1, 5));
+    this.entities.add(Entities.firefly.createECSYEntity(this.world, 1, 5));
+    this.entities.add(Entities.firefly.createECSYEntity(this.world, 1, 5));
     
-    this.entities.add(createDestination(this.world, 10, 3));
-    this.entities.add(createDestination(this.world, 2, 4));
-    this.entities.add(createDestination(this.world, 3, 5));
-    this.entities.add(createDestination(this.world, 11, 6));
-    this.entities.add(createDestination(this.world, 9, 5));
-    this.entities.add(createDestination(this.world, 16, 4));
+    this.entities.add(Entities.wisp.createECSYEntity(this.world, 10, 3));
+    this.entities.add(Entities.wisp.createECSYEntity(this.world, 2, 4));
+    this.entities.add(Entities.wisp.createECSYEntity(this.world, 3, 5));
+    this.entities.add(Entities.wisp.createECSYEntity(this.world, 11, 6));
+    this.entities.add(Entities.wisp.createECSYEntity(this.world, 9, 5));
+    this.entities.add(Entities.wisp.createECSYEntity(this.world, 16, 4));
 
     this.map = [
       [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
@@ -80,7 +82,6 @@ export default class GameScene extends Phaser.Scene {
     ];
 
     // Set up pathfinding worker
-    this.pathfindingWorker = new Worker(new URL('./pathfindingWorker.js', import.meta.url));
     this.pathfindingWorker.postMessage({
       grid: {
         height: Math.ceil(this.game.config.height / TILE_SIZE),
@@ -88,31 +89,6 @@ export default class GameScene extends Phaser.Scene {
       },
       map: this.map
     });
-
-    this.pathfindingWorker.onmessage = (event) => {
-      const { entityId, path, pathType } = event.data;
-      const entity = this.entities.entries().find(entity => entity[0].id === entityId)[0];
-      this.applyPathToEntity(entity, path, pathType);
-    };
-    
-    this.world.getSystem(DestinationSystem).setPathfindingWorker(this.pathfindingWorker);
-  }
-
-  applyPathToEntity(entity, path, pathType) {
-    if (entity.hasComponent(PathComponent)) {
-        let pathComp = entity.getMutableComponent(PathComponent)
-        switch(pathType) {
-            case 'current':
-                pathComp.currentPath = path;
-                break;
-            case 'next':
-                pathComp.nextPath = path;
-                break;
-            default:
-                console.error('Invalid path type:', pathType);
-                break;
-        }
-    }
   }
 
   update(time, delta) {

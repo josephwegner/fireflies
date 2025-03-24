@@ -29,7 +29,7 @@ const Vector = {
 };
 
 export default class MovementSystem extends System {
-  execute(delta, time) {
+  execute(delta) {
     const dt = delta / 1000; // Convert to seconds
 
     this.queries.moving.results.forEach(entity => {
