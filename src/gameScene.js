@@ -59,10 +59,10 @@ export default class GameScene extends Phaser.Scene {
     this.entities.add(createFirefly(this.world, 1, 5));
     
     this.entities.add(createDestination(this.world, 10, 3));
-    this.entities.add(createDestination(this.world, 3, 4));
+    this.entities.add(createDestination(this.world, 2, 4));
     this.entities.add(createDestination(this.world, 3, 5));
-    this.entities.add(createDestination(this.world, 14, 7));
-    this.entities.add(createDestination(this.world, 10, 5));
+    this.entities.add(createDestination(this.world, 11, 6));
+    this.entities.add(createDestination(this.world, 9, 5));
     this.entities.add(createDestination(this.world, 16, 4));
 
     this.map = [
@@ -120,6 +120,7 @@ export default class GameScene extends Phaser.Scene {
   }
 
   preload() {
-    this.load.svg('firefly', 'assets/images/svg/circle.svg', { width: 10, height: 10});
+    this.load.svg('firefly', 'assets/images/svg/firefly.svg', { width: 10, height: 10});
+    this.load.image('wisp', 'assets/images/png/wisp.png');
   }
 }

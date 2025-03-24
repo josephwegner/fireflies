@@ -2,6 +2,7 @@ import { System } from 'ecsy';
 import PositionComponent from '../components/PositionComponent';
 import RenderableComponent from '../components/RenderableComponent';
 import WallComponent from '../components/WallComponent';
+import TypeComponent from '../components/TypeComponent';
 
 export default class RenderSystem extends System {
   constructor(attributes) {
@@ -20,24 +21,6 @@ export default class RenderSystem extends System {
     // Render entities
     this.renderEntities();
   }
-
-  renderMap() {
-    const map = this.scene.map;
-    if (!map) return;
-    
-    map.forEach((row, y) => {
-      row.forEach((tile, x) => {
-        this.graphics.fillStyle(tile === 1 ? 0x00ff00 : 0x000000, 1);
-        this.graphics.fillRect(
-          x * this.tileSize, 
-          y * this.tileSize, 
-          this.tileSize, 
-          this.tileSize
-        );
-      });
-    });
-  }
-
   renderWalls() {
     // Query for entities with WallComponent
     this.queries.walls.results.forEach(entity => {
@@ -66,10 +49,17 @@ export default class RenderSystem extends System {
     this.queries.renderables.added.forEach(entity => {
       const position = entity.getComponent(PositionComponent);
       const renderable = entity.getComponent(RenderableComponent);
+      const type = entity.getComponent(TypeComponent).type;
+
       renderable.sprite = this.scene.add.sprite(
         (position.x * this.tileSize) + (this.tileSize / 2),
         (position.y * this.tileSize) + (this.tileSize / 2),
-        'firefly');
+        type);
+
+        if (type === 'wisp') {
+          renderable.sprite.setDisplaySize(24, 24);
+          renderable.sprite.rotationSpeed = 0.01;
+        }
     })
 
     this.queries.renderables.removed.forEach(entity => {
@@ -84,6 +74,13 @@ export default class RenderSystem extends System {
       renderable.sprite.setPosition(
         (position.x * this.tileSize) + (this.tileSize / 2),
         (position.y * this.tileSize) + (this.tileSize / 2));
+    })
+
+    this.queries.renderables.results.forEach(entity => {
+      const renderable = entity.getComponent(RenderableComponent);
+      if (renderable.sprite.rotationSpeed) {
+        renderable.sprite.rotation += renderable.sprite.rotationSpeed;
+      }
     })
   }
 } 

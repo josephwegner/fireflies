@@ -21,7 +21,8 @@ export function createFirefly(world, x, y, color = 0xff0000, radius = 5) {
 export function createDestination(world, x, y, color = 0x0000ff, radius = 5) {
   const destination = world.createEntity()
     .addComponent(PositionComponent, { x, y })
-    .addComponent(RenderableComponent, { type: 'wisp', color, radius });
+    .addComponent(RenderableComponent, { type: 'wisp', color, radius })
+    .addComponent(TypeComponent, { type: 'wisp' })
   
   return destination;
 }
