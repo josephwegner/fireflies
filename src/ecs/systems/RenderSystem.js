@@ -42,7 +42,6 @@ export default class RenderSystem extends System {
     // Query for entities with WallComponent
     this.queries.walls.results.forEach(entity => {
       const wall = entity.getComponent(WallComponent);
-      
       this.graphics.lineStyle(wall.thickness, wall.color, 1);
       
       wall.segments.forEach(segment => {
@@ -64,22 +63,39 @@ export default class RenderSystem extends System {
   }
 
   renderEntities() {
-    // Query for entities with both Position and Renderable components
-    this.queries.renderables.results.forEach(entity => {
+    this.queries.renderables.added.forEach(entity => {
       const position = entity.getComponent(PositionComponent);
       const renderable = entity.getComponent(RenderableComponent);
-      
-      this.graphics.fillStyle(renderable.color, 1);
-      this.graphics.fillCircle(
+      renderable.sprite = this.scene.add.sprite(
         (position.x * this.tileSize) + (this.tileSize / 2),
         (position.y * this.tileSize) + (this.tileSize / 2),
-        renderable.radius
-      );
-    });
+        'firefly');
+    })
+
+    this.queries.renderables.removed.forEach(entity => {
+      const renderable = entity.getComponent(RenderableComponent);
+      renderable.sprite.destroy();
+      this.scene.remove(renderable.sprite);
+    })
+
+    this.queries.renderables.changed.forEach(entity => {
+      const renderable = entity.getComponent(RenderableComponent);
+      const position = entity.getComponent(PositionComponent);
+      renderable.sprite.setPosition(
+        (position.x * this.tileSize) + (this.tileSize / 2),
+        (position.y * this.tileSize) + (this.tileSize / 2));
+    })
   }
 } 
 
 RenderSystem.queries = {
-    renderables: { components: [PositionComponent, RenderableComponent] },
-    walls: { components: [WallComponent] }
+    renderables: {
+      components: [PositionComponent, RenderableComponent],
+      listen: {
+        added: true,
+        removed: true,
+        changed: [ PositionComponent ]
+      }
+    },
+    walls: { components: [WallComponent] },
 }

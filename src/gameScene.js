@@ -48,29 +48,36 @@ export default class GameScene extends Phaser.Scene {
       });
 
     // Create initial entities
-    this.entities.add(createFirefly(this.world, 0, 1));
-    this.entities.add(createFirefly(this.world, 1, 1));
-    this.entities.add(createFirefly(this.world, 2, 1));
-    this.entities.add(createFirefly(this.world, 3, 1));
-    this.entities.add(createFirefly(this.world, 4, 1));
-    this.entities.add(createFirefly(this.world, 0, 5));
-    this.entities.add(createFirefly(this.world, 1, 5));
-    this.entities.add(createFirefly(this.world, 1, 4));
     this.entities.add(createFirefly(this.world, 1, 3));
+    this.entities.add(createFirefly(this.world, 1, 3));
+    this.entities.add(createFirefly(this.world, 1, 3));
+    this.entities.add(createFirefly(this.world, 1, 4));
+    this.entities.add(createFirefly(this.world, 1, 4));
+    this.entities.add(createFirefly(this.world, 1, 4));
+    this.entities.add(createFirefly(this.world, 1, 5));
+    this.entities.add(createFirefly(this.world, 1, 5));
+    this.entities.add(createFirefly(this.world, 1, 5));
     
-    this.entities.add(createDestination(this.world, 9, 3));
-    this.entities.add(createDestination(this.world, 3, 2));
+    this.entities.add(createDestination(this.world, 10, 3));
+    this.entities.add(createDestination(this.world, 3, 4));
     this.entities.add(createDestination(this.world, 3, 5));
-    
+    this.entities.add(createDestination(this.world, 14, 7));
+    this.entities.add(createDestination(this.world, 10, 5));
+    this.entities.add(createDestination(this.world, 16, 4));
+
     this.map = [
-      [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-      [1, 1, 1, 1, 1, 1, 0, 0, 0, 0],
-      [0, 0, 0, 1, 0, 1, 0, 0, 0, 0],
-      [0, 1, 1, 1, 0, 1, 1, 1, 1, 1],
-      [0, 1, 0, 1, 1, 1, 0, 0, 0, 0],
-      [1, 1, 0, 1, 0, 0, 0, 0, 0, 0],
-      [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
-    ]
+      [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+      [0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0],
+      [0, 0, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0],
+      [0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 1, 0, 1, 1, 0, 0, 0],
+      [0, 1, 1, 1, 1, 1, 0, 0, 1, 1, 1, 1, 1, 0, 0, 1, 1, 0, 0],
+      [0, 1, 1, 1, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 1, 1, 0],
+      [0, 1, 1, 1, 1, 1, 0, 0, 1, 1, 1, 1, 1, 0, 0, 1, 1, 0, 0],
+      [0, 1, 0, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 0, 0, 0],
+      [0, 0, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0],
+      [0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0],
+      [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+    ];
 
     // Set up pathfinding worker
     this.pathfindingWorker = new Worker(new URL('./pathfindingWorker.js', import.meta.url));
@@ -110,5 +117,9 @@ export default class GameScene extends Phaser.Scene {
 
   update(time, delta) {
     this.world.execute(delta, time);
+  }
+
+  preload() {
+    this.load.svg('firefly', 'assets/images/svg/circle.svg', { width: 10, height: 10});
   }
 }

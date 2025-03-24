@@ -4,6 +4,25 @@ import TypeComponent from '../components/TypeComponent';
 import InteractionComponent from '../components/InteractionComponent';
 import RepulsionInteraction from '../interactions/RepulsionInteraction';
 
+const CASE_LOOKUP = {
+  0: [],
+  1: [['left', 'top']],
+  2: [['top', 'right']],
+  3: [['left', 'right']],
+  4: [['left', 'bottom']],
+  5: [['top', 'bottom']],
+  6: [['top', 'bottom']],
+  7: [['right', 'bottom']],
+  8: [['right', 'bottom']],
+  9: [['top', 'bottom']],
+  10: [['top', 'bottom']],
+  11: [['left', 'bottom']],
+  12: [['left', 'right']],
+  13: [['top', 'right']],
+  14: [['left', 'top']],
+  15: []
+};
+
 export default class WallGenerationSystem extends System {
   init() {
     this.wallEntity = null;
@@ -11,7 +30,7 @@ export default class WallGenerationSystem extends System {
 
   execute() {
     // Only generate walls once
-    if (this.wallEntity) return;
+    if (this.wallEntity) { return; }
     
     const map = this.world.scene.map;
     if (!map) return;
@@ -35,239 +54,175 @@ export default class WallGenerationSystem extends System {
   }
 
   generateWallSegments(map) {
-    const tileSize = 32; // The visual size of each tile
-    const height = map.length;
-    const width = map[0].length;
-    
-    // First, identify all boundary edges between walkable and non-walkable tiles
-    const edges = [];
-    
-    // Check horizontal edges
-    for (let y = 0; y < height; y++) {
-      for (let x = 0; x < width - 1; x++) {
-        if ((map[y][x] === 1 && map[y][x + 1] === 0) || 
-            (map[y][x] === 0 && map[y][x + 1] === 1)) {
-          // This is a boundary edge
-          edges.push({
-            x: (x + 1) * tileSize,
-            y: y * tileSize,
-            type: 'vertical',
-            length: tileSize
-          });
-        }
-      }
-    }
-    
-    // Check vertical edges
-    for (let x = 0; x < width; x++) {
-      for (let y = 0; y < height - 1; y++) {
-        if ((map[y][x] === 1 && map[y + 1][x] === 0) || 
-            (map[y][x] === 0 && map[y + 1][x] === 1)) {
-          // This is a boundary edge
-          edges.push({
-            x: x * tileSize,
-            y: (y + 1) * tileSize,
-            type: 'horizontal',
-            length: tileSize
-          });
-        }
-      }
-    }
-    
-    // Add outer map boundaries if they're walkable tiles
-    // Top boundary
-    for (let x = 0; x < width; x++) {
-      if (map[0][x] === 1) {
-        edges.push({
-          x: x * tileSize,
-          y: 0,
-          type: 'horizontal',
-          length: tileSize
-        });
-      }
-    }
-    
-    // Bottom boundary
-    for (let x = 0; x < width; x++) {
-      if (map[height - 1][x] === 1) {
-        edges.push({
-          x: x * tileSize,
-          y: height * tileSize,
-          type: 'horizontal',
-          length: tileSize
-        });
-      }
-    }
-    
-    // Left boundary
-    for (let y = 0; y < height; y++) {
-      if (map[y][0] === 1) {
-        edges.push({
-          x: 0,
-          y: y * tileSize,
-          type: 'vertical',
-          length: tileSize
-        });
-      }
-    }
-    
-    // Right boundary
-    for (let y = 0; y < height; y++) {
-      if (map[y][width - 1] === 1) {
-        edges.push({
-          x: width * tileSize,
-          y: y * tileSize,
-          type: 'vertical',
-          length: tileSize
-        });
-      }
-    }
-    
-    // Now convert these edges into actual wall segments with points
-    const wallSegments = [];
-    
-    edges.forEach(edge => {
-      const points = [];
-      
-      if (edge.type === 'horizontal') {
-        // Add some variation to horizontal edges
-        const baseY = edge.y;
-        const startX = edge.x;
-        const endX = edge.x + edge.length;
-        
-        // Add start point with slight variation
-        points.push({
-          x: startX,
-          y: baseY + this.getRandomVariation(3)
-        });
-        
-        // Add end point with slight variation
-        points.push({
-          x: endX,
-          y: baseY + this.getRandomVariation(3)
-        });
-      } else { // vertical edge
-        // Add some variation to vertical edges
-        const baseX = edge.x;
-        const startY = edge.y;
-        const endY = edge.y + edge.length;
-        
-        // Add start point with slight variation
-        points.push({
-          x: baseX + this.getRandomVariation(3),
-          y: startY
-        });
-        
-        // Add end point with slight variation
-        points.push({
-          x: baseX + this.getRandomVariation(3),
-          y: endY
-        });
-      }
-      
-      wallSegments.push(points);
-    });
-    
-    // Connect wall segments that are close to each other
-    const connectedSegments = this.connectWallSegments(wallSegments);
+    const tileSize = 32;
+    const contours = this.marchingSquaresContours(map, tileSize);
     
     // Apply smoothing to create fluid curves
-    return connectedSegments.map(segment => this.smoothWallSegment(segment) );
+    return contours.map(contour => this.smoothWallSegment(contour));
   }
   
-  getRandomVariation(maxAmount) {
-    return (Math.random() - 0.5) * maxAmount * 2;
-  }
-  
-  connectWallSegments(segments) {
-    // Find segments that have endpoints close to each other and connect them
-    const connectedSegments = [];
-    const usedSegments = new Set();
-    
-    for (let i = 0; i < segments.length; i++) {
-      if (usedSegments.has(i)) continue;
-      
-      const currentPath = [...segments[i]];
-      usedSegments.add(i);
-      
-      let foundConnection = true;
-      while (foundConnection) {
-        foundConnection = false;
+  marchingSquaresContours(map, tileSize) {
+    const height = map.length;
+    const width = map[0].length;
+    const segments = [];
+
+    // Define midpoints for each cell edge
+    const midpoints = {
+      top: [0.5, 0],    // ABmid
+      right: [1, 0.5],  // BCmid
+      bottom: [0.5, 1], // CDmid
+      left: [0, 0.5]    // DAmid
+    };
+
+    // Process each cell in the grid
+    for (let y = 0; y < height - 1; y++) {
+      for (let x = 0; x < width - 1; x++) {
+
+        // Get the four corners of this cell
+        const p0 = map[y][x];
+        const p1 = map[y][x + 1];
+        const p2 = map[y + 1][x];
+        const p3 = map[y + 1][x + 1];
+
+        // Create a case index (0-15) based on which corners are inside/outside
+        let caseIndex = (p0 * 1) + (p1 * 2) + (p2 * 4) + (p3 * 8);
+        caseIndex = 15 - caseIndex;
+
+        // Get line segments for this case
+        const caseSegments = CASE_LOOKUP[caseIndex];
         
-        for (let j = 0; j < segments.length; j++) {
-          if (usedSegments.has(j)) continue;
+        // Convert to world coordinates and add to segments list
+        caseSegments.forEach(([edge1, edge2]) => {
+          const p1 = {
+            x: (x + midpoints[edge1][0]) * tileSize,
+            y: (y + midpoints[edge1][1]) * tileSize
+          };
+          const p2 = {
+            x: (x + midpoints[edge2][0]) * tileSize,
+            y: (y + midpoints[edge2][1]) * tileSize
+          };
+
+          segments.push([p1, p2]);
+        });
+      }
+    }
+    // Connect segments into continuous contours
+    return this.buildContoursFromSegments(segments);
+  }
+
+  buildContoursFromSegments(segments) {
+    // Create a map of point to connected points
+    const connections = new Map();
+    
+    // Helper to get a unique key for a point
+    const pointKey = p => `${p.x.toFixed(2)},${p.y.toFixed(2)}`;
+    
+    // Build connections map
+    segments.forEach(([p1, p2]) => {
+      const k1 = pointKey(p1);
+      const k2 = pointKey(p2);
+      
+      if (!connections.has(k1)) connections.set(k1, []);
+      if (!connections.has(k2)) connections.set(k2, []);
+      
+      connections.get(k1).push(p2);
+      connections.get(k2).push(p1);
+    });
+    
+    // Track visited segments to avoid duplicates
+    const visited = new Set();
+    const contours = [];
+    
+    // Helper to mark a segment as visited
+    const markVisited = (a, b) => {
+      visited.add(`${pointKey(a)}-${pointKey(b)}`);
+      visited.add(`${pointKey(b)}-${pointKey(a)}`);
+    };
+    
+    // Helper to check if a segment is visited
+    const isVisited = (a, b) => {
+      return visited.has(`${pointKey(a)}-${pointKey(b)}`) || 
+             visited.has(`${pointKey(b)}-${pointKey(a)}`);
+    };
+    
+    // Find starting points (any unvisited point)
+    for (const [key, connectedPoints] of connections.entries()) {
+      const startPoint = this.parsePointKey(key);
+      
+      // For each connected point that forms an unvisited segment
+      for (const nextPoint of connectedPoints) {
+        if (isVisited(startPoint, nextPoint)) continue;
+        
+        // Start a new contour
+        const contour = [startPoint];
+        let current = nextPoint;
+        let previous = startPoint;
+        
+        markVisited(previous, current);
+        contour.push(current);
+        
+        // Follow the path until we can't continue
+        let foundClosed = false;
+        while (true) {
+          // Find next unvisited connection
+          const neighbors = connections.get(pointKey(current)) || [];
+          let nextFound = false;
           
-          const segment = segments[j];
-          const lastPoint = currentPath[currentPath.length - 1];
-          const firstPoint = currentPath[0];
+          for (const neighbor of neighbors) {
+            if (!isVisited(current, neighbor)) {
+              previous = current;
+              current = neighbor;
+              markVisited(previous, current);
+              contour.push(current);
+              nextFound = true;
+              break;
+            }
+          }
           
-          // Check if this segment connects to the end of our path
-          if (this.pointsAreClose(lastPoint, segment[0])) {
-            currentPath.push(...segment.slice(1));
-            usedSegments.add(j);
-            foundConnection = true;
-            break;
-          } 
-          // Check if this segment connects to the start of our path
-          else if (this.pointsAreClose(firstPoint, segment[segment.length - 1])) {
-            currentPath.unshift(...segment.slice(0, -1));
-            usedSegments.add(j);
-            foundConnection = true;
-            break;
-          }
-          // Check if we need to reverse the segment to connect
-          else if (this.pointsAreClose(lastPoint, segment[segment.length - 1])) {
-            currentPath.push(...segment.slice(0, -1).reverse());
-            usedSegments.add(j);
-            foundConnection = true;
-            break;
-          }
-          else if (this.pointsAreClose(firstPoint, segment[0])) {
-            currentPath.unshift(...segment.slice(1).reverse());
-            usedSegments.add(j);
-            foundConnection = true;
+          if (!nextFound) break;
+          
+          // Check if we've closed the loop
+          if (pointKey(current) === pointKey(startPoint)) {
+            foundClosed = true;
             break;
           }
         }
+        
+        // Only add contours with at least 3 points
+        if (contour.length >= 3) {
+          contours.push(contour);
+        }
       }
-      
-      connectedSegments.push(currentPath);
     }
     
-    return connectedSegments;
+    return contours;
   }
   
-  pointsAreClose(p1, p2) {
-    const dx = p1.x - p2.x;
-    const dy = p1.y - p2.y;
-    return Math.sqrt(dx * dx + dy * dy) < 8; // Threshold for connecting points
+  parsePointKey(key) {
+    const [x, y] = key.split(',');
+    return { x: parseFloat(x), y: parseFloat(y) };
   }
   
   smoothWallSegment(points) {
     if (points.length < 3) return points;
     
-    // Use Catmull-Rom spline for smooth curves
     const smoothedPoints = [];
-    const tension = .5; // Lower values create smoother curves
+    const tension = 0.5;
     
-    // Add first point
     smoothedPoints.push(points[0]);
     
-    // Generate smooth curve points
     for (let i = 0; i < points.length - 1; i++) {
       const p0 = i > 0 ? points[i - 1] : points[i];
       const p1 = points[i];
       const p2 = points[i + 1];
       const p3 = i < points.length - 2 ? points[i + 2] : points[i + 1];
       
-      // Add several points along the curve for smoother appearance
-      const numPoints = 5; // Number of points to generate between each pair
+      const numPoints = 5;
       for (let t = 0; t < 1; t += 1/numPoints) {
         smoothedPoints.push(this.getCatmullRomPoint(t, p0, p1, p2, p3, tension));
       }
     }
     
-    // Add last point
     smoothedPoints.push(points[points.length - 1]);
     
     return smoothedPoints;
@@ -277,7 +232,6 @@ export default class WallGenerationSystem extends System {
     const t2 = t * t;
     const t3 = t2 * t;
     
-    // Catmull-Rom spline formula
     const x = 0.5 * (
       (2 * p1.x) +
       (-p0.x + p2.x) * t +

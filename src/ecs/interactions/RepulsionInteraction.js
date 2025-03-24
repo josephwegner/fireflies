@@ -8,7 +8,7 @@ export default class RepulsionInteraction extends BaseInteraction {
   constructor(params = {}) {
     super({
       distance: 10,
-      force: 20,
+      force: 25,
       ...params,
     });
   }
