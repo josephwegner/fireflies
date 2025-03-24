@@ -113,7 +113,8 @@ export default class PhysicsSystem extends System {
         (position.x * this.tileSize) + this.tileSize - 5,
         (position.y * this.tileSize) + this.tileSize - 5,
         'particle');
-      physicsBody.setCircle(5); // Set collision radius
+      physicsBody.setDisplayOrigin(21, 21)
+      physicsBody.setCircle(10); // Set collision radius
       physicsBody.setAlpha(0);
       
       // Store reference to the ECSY entity

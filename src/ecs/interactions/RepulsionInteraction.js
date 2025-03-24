@@ -7,8 +7,8 @@ import WallComponent from '../components/WallComponent';
 export default class RepulsionInteraction extends BaseInteraction {
   constructor(params = {}) {
     super({
-      distance: 7,
-      force: 10,
+      distance: 10,
+      force: .5,
       ...params,
     });
   }
