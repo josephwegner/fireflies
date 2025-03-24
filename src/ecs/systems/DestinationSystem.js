@@ -161,12 +161,12 @@ export default class DestinationSystem extends System {
       entityId: entity.id,
       pathType: pathType,
       start: { 
-        x: Math.ceil(start.x), 
-        y: Math.ceil(start.y)
+        x: Math.round(start.x), 
+        y: Math.round(start.y)
       },
       destination: {
-        x: Math.ceil(destination.x),
-        y: Math.ceil(destination.y)
+        x: Math.round(destination.x),
+        y: Math.round(destination.y)
       }
   })
   }

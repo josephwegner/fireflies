@@ -87,8 +87,9 @@ export default class GameScene extends Phaser.Scene {
   }
 
   createFirefly(x, y, color = 0xff0000, radius = 5) {
+    const JITTER = 0.3;
     const firefly = this.world.createEntity()
-      .addComponent(PositionComponent, { x, y})
+      .addComponent(PositionComponent, { x: x + Math.random() * JITTER, y: y + Math.random() * JITTER })
       .addComponent(VelocityComponent, { vx: 0, vy: 0 })
       .addComponent(PathComponent, { path: [] })
       .addComponent(RenderableComponent, { type: 'firefly', color, radius })
