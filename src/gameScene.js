@@ -14,6 +14,7 @@ import PhysicsBodyComponent from './ecs/components/PhysicsBodyComponent';
 import TypeComponent from './ecs/components/TypeComponent';
 import InteractionComponent from './ecs/components/InteractionComponent';
 import PhaserBridgeSystem from './ecs/systems/PhaserBridgeSystem';
+import DestinationComponent from './ecs/components/DestinationComponent.js';
 import Entities from './entities/index.js';
 
 const TILE_SIZE = 32;
@@ -33,6 +34,7 @@ export default class GameScene extends Phaser.Scene {
     this.world
       .registerComponent(PositionComponent)
       .registerComponent(VelocityComponent)
+      .registerComponent(DestinationComponent)
       .registerComponent(PathComponent)
       .registerComponent(RenderableComponent)
       .registerComponent(WallComponent)
@@ -65,7 +67,8 @@ export default class GameScene extends Phaser.Scene {
     this.entities.add(Entities.wisp.createECSYEntity(this.world, 3, 5));
     this.entities.add(Entities.wisp.createECSYEntity(this.world, 11, 6));
     this.entities.add(Entities.wisp.createECSYEntity(this.world, 9, 5));
-    this.entities.add(Entities.wisp.createECSYEntity(this.world, 16, 4));
+    
+    this.entities.add(Entities.goal.createECSYEntity(this.world, 16, 4));
 
     this.map = [
       [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
@@ -97,6 +100,7 @@ export default class GameScene extends Phaser.Scene {
 
   preload() {
     this.load.svg('firefly', 'assets/images/svg/firefly.svg', { width: 10, height: 10});
+    this.load.svg('goal', 'assets/images/svg/firefly.svg', { width: 20, height: 20});
     this.load.image('wisp', 'assets/images/png/wisp.png');
   }
 }

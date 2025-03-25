@@ -32,7 +32,6 @@ export default class PhaserBridgeSystem extends System {
   createPhaserObjects(entity) {
     if(entity.hasComponent(PhysicsBodyComponent)) return;
 
-    const position = entity.getComponent(PositionComponent);
     const renderable = entity.getComponent(RenderableComponent);
     
     let phaserObject = null;
@@ -60,8 +59,10 @@ export default class PhaserBridgeSystem extends System {
     );
     
     // Sync physics velocity back to ECS
-    velocity.vx = physicsBody.body.velocity.x;
-    velocity.vy = physicsBody.body.velocity.y;
+    if (velocity) {
+      velocity.vx = physicsBody.body.velocity.x;
+      velocity.vy = physicsBody.body.velocity.y;
+    }
   }
   
   removePhaserObjects(entity) {
@@ -74,7 +75,7 @@ export default class PhaserBridgeSystem extends System {
 
 PhaserBridgeSystem.queries = {
   renderableEntities: {
-    components: [PositionComponent, VelocityComponent, RenderableComponent],
+    components: [PositionComponent, RenderableComponent],
     listen: {
       added: true,
       removed: true

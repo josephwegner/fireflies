@@ -56,6 +56,10 @@ export default class RenderSystem extends System {
         (position.y * this.tileSize) + (this.tileSize / 2),
         type);
 
+        if (renderable.color) {
+          renderable.sprite.setTint(renderable.color)
+        }
+
         if (type === 'wisp') {
           renderable.sprite.setDisplaySize(24, 24);
           renderable.sprite.rotationSpeed = 0.01;

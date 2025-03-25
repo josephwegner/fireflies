@@ -2,6 +2,8 @@ import { System, Not} from 'ecsy';
 import PositionComponent from '../components/PositionComponent';
 import VelocityComponent from '../components/VelocityComponent';
 import PathComponent from '../components/PathComponent';
+import DestinationComponent from '../components/DestinationComponent';
+import TypeComponent from '../components/TypeComponent';
 
 export default class DestinationSystem extends System {
   constructor(world) {
@@ -16,21 +18,23 @@ export default class DestinationSystem extends System {
     this.worker = world.scene.pathfindingWorker
   }
 
-  init() {
-  }
-
   execute(delta, time) {
     // Get all entities that need a new destination (have velocity but empty path)
     this.queries.needsDestination.results.forEach(entity => {
       const position = entity.getComponent(PositionComponent);
       const pathComp = entity.getMutableComponent(PathComponent);
+      const entityType = entity.getComponent(TypeComponent).type;
 
       if (pathComp.currentPath === null) {
         return // Can't calculate anything without a current path!
       }
 
-      // Find the final destination (rightmost static entity)
-      const finalDestination = this.findFinalDestination();
+      // Find the goal destination for this entity type
+      const finalDestination = this.findGoalDestination(entityType);
+      
+      if (!finalDestination) {
+        return; // No goal found for this entity type
+      }
 
       if(!pathComp.currentPath.length) {
         const currentPos = {
@@ -38,52 +42,76 @@ export default class DestinationSystem extends System {
           y: position.y
         }
         
-        if (finalDestination) {
-          const destinations = this.gatherDestinations(currentPos, finalDestination);
+        const destinations = this.gatherDestinations(currentPos, finalDestination, entityType);
 
-          if (destinations.length) {
-            this.requestPath(entity, currentPos, {
-              x: destinations[0].pos.x,
-              y: destinations[0].pos.y
-            }, 'current')
-          } else {
-            pathComp.currentPath = null; // Signal no more paths
-          }
+        if (!destinations.length) {
+          destinations.push(finalDestination)
+        }
+
+        this.requestPath(entity, currentPos, {
+          x: destinations[0].pos.x,
+          y: destinations[0].pos.y
+        }, 'current')
+
+        if (destinations.length < 1) {
+          pathComp.nextPath = null;
         }
       } else if (pathComp.nextPath !== null && !pathComp.nextPath.length) {
         const lastPos = pathComp.currentPath[pathComp.currentPath.length - 1]
         
-        if (finalDestination) {
-          const destinations = this.gatherDestinations(lastPos, finalDestination);
-          if (destinations.length) {
-            this.requestPath(entity, lastPos, {
-              x: destinations[0].pos.x,
-              y: destinations[0].pos.y
-            }, 'next')
-          } else {
-            pathComp.nextPath = null; // Signal no more paths
-          }
+        const destinations = this.gatherDestinations(lastPos, finalDestination, entityType);
+
+        if (!destinations.length) {
+          destinations.push(finalDestination)
+        }
+
+        this.requestPath(entity, lastPos, {
+          x: destinations[0].pos.x,
+          y: destinations[0].pos.y
+        }, 'next')
+
+        if (destinations.length < 1) {
+          pathComp.nextPath = null;
         }
       }
     });
   }
 
+  // Find the goal destination for a specific entity type
+  findGoalDestination(entityType) {
+    let goalDestination = null;
+    
+    this.queries.destinations.results.forEach(destination => {
+      // Check if this destination is for the entity's type and is a goal
+      const destComp = destination.getComponent(DestinationComponent);
+      const destType = destination.getComponent(TypeComponent).type
+      const pos = destination.getComponent(PositionComponent);
 
+      if (destComp.for.includes(entityType) && destType === 'goal') {
+        goalDestination = {
+          entity: destination,
+          pos: pos
+        };
+      }
+    });
+    
+    return goalDestination;
+  }
 
   applyPathToEntity(entity, path, pathType) {
     if (entity.hasComponent(PathComponent)) {
-        let pathComp = entity.getMutableComponent(PathComponent)
-        switch(pathType) {
-            case 'current':
-                pathComp.currentPath = path;
-                break;
-            case 'next':
-                pathComp.nextPath = path;
-                break;
-            default:
-                console.error('Invalid path type:', pathType);
-                break;
-        }
+      let pathComp = entity.getMutableComponent(PathComponent)
+      switch(pathType) {
+        case 'current':
+          pathComp.currentPath = path;
+          break;
+        case 'next':
+          pathComp.nextPath = path;
+          break;
+        default:
+          console.error('Invalid path type:', pathType);
+          break;
+      }
     }
   }
 
@@ -105,8 +133,8 @@ export default class DestinationSystem extends System {
     return rightmostEntity;
   }
 
-  gatherDestinations(current, finalDest, minScoreThreshold = 1.0) {
-    // Compute the ideal direction vector from current to final destination)
+  gatherDestinations(current, finalDest, entityType, minScoreThreshold = 1.0) {
+    // Compute the ideal direction vector from current to final destination
     const idealDX = finalDest.pos.x - current.x;
     const idealDY = finalDest.pos.y - current.y;
     const idealDist = Math.hypot(idealDX, idealDY);
@@ -121,8 +149,16 @@ export default class DestinationSystem extends System {
 
     const candidates = [];
     
-    this.queries.potentialDestinations.results.forEach(entity => {
+    this.queries.destinations.results.forEach(entity => {
+      const destComp = entity.getComponent(DestinationComponent);
+      const typeComp = entity.getComponent(TypeComponent).type;
       const destPos = entity.getComponent(PositionComponent);
+      
+      // Don't include goals - those will get injected later
+      if (typeComp === 'goal') return;
+
+      // Skip if this destination is not for this entity type
+      if (!destComp.for.includes(entityType)) return;
       
       // Skip if destination is too close
       const distToDest = Math.hypot(destPos.x - current.x, destPos.y - current.y);
@@ -161,9 +197,9 @@ export default class DestinationSystem extends System {
         (progressPercent * PROGRESS_WEIGHT) +
         (pathProximityFactor * PATH_WEIGHT);
 
-      if (destPos.x === finalDest.pos.x && destPos.y === finalDest.pos.y) {
-        // Don't choose the final destination as a destination unless everything else sucks
-        score = minScoreThreshold
+      // If this is the goal destination, give it a minimum score
+      if (typeComp.type === 'goal') {
+        score = Math.max(score, minScoreThreshold);
       }
 
       if (score >= minScoreThreshold) {
@@ -189,8 +225,6 @@ export default class DestinationSystem extends System {
       return;
     }
 
-    const entityPosition = entity.getComponent(PositionComponent);
-
     this.worker.postMessage({
       entityId: entity.id,
       pathType: pathType,
@@ -202,23 +236,18 @@ export default class DestinationSystem extends System {
         x: Math.round(destination.x),
         y: Math.round(destination.y)
       }
-  })
-  }
-  
-  // Method to set the pathfinding worker
-  setPathfindingWorker(worker) {
-    this.worker = worker;
+    })
   }
 }
 
 DestinationSystem.queries = {
   needsDestination: {
-    components: [PositionComponent, VelocityComponent, PathComponent],
+    components: [PositionComponent, VelocityComponent, PathComponent, TypeComponent],
     listen: {
       changed: [PathComponent]
     }
   },
-  potentialDestinations: {
-    components: [PositionComponent, Not(VelocityComponent)]
+  destinations: {
+    components: [PositionComponent, DestinationComponent, TypeComponent]
   }
 };
