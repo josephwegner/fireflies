@@ -42,7 +42,7 @@ export default class DestinationSystem extends System {
           y: position.y
         }
         
-        const destinations = this.gatherDestinations(currentPos, finalDestination, entityType);
+        const destinations = this.gatherDestinations(currentPos, finalDestination, entityType, pathComp.direction);
 
         if (!destinations.length) {
           destinations.push(finalDestination)
@@ -59,7 +59,7 @@ export default class DestinationSystem extends System {
       } else if (pathComp.nextPath !== null && !pathComp.nextPath.length) {
         const lastPos = pathComp.currentPath[pathComp.currentPath.length - 1]
         
-        const destinations = this.gatherDestinations(lastPos, finalDestination, entityType);
+        const destinations = this.gatherDestinations(lastPos, finalDestination, entityType, pathComp.direction);
 
         if (!destinations.length) {
           destinations.push(finalDestination)
@@ -133,7 +133,7 @@ export default class DestinationSystem extends System {
     return rightmostEntity;
   }
 
-  gatherDestinations(current, finalDest, entityType, minScoreThreshold = 1.0) {
+  gatherDestinations(current, finalDest, entityType, minScoreThreshold = 1.0, direction) {
     // Compute the ideal direction vector from current to final destination
     const idealDX = finalDest.pos.x - current.x;
     const idealDY = finalDest.pos.y - current.y;
@@ -215,7 +215,8 @@ export default class DestinationSystem extends System {
     });
     
     // Sort candidates by score in descending order
-    candidates.sort((a, b) => b.score - a.score);
+    const sortModifier = direction === 'r' ? 1 : -1;
+    candidates.sort((a, b) => b.score - (a.score * sortModifier));
     return candidates;
   }
 

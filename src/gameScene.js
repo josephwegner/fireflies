@@ -53,35 +53,38 @@ export default class GameScene extends Phaser.Scene {
 
     // Create initial entities
     this.entities.add(Entities.firefly.createECSYEntity(this.world, 1, 3));
+    /*this.entities.add(Entities.firefly.createECSYEntity(this.world, 1, 3));
     this.entities.add(Entities.firefly.createECSYEntity(this.world, 1, 3));
-    this.entities.add(Entities.firefly.createECSYEntity(this.world, 1, 3));
     this.entities.add(Entities.firefly.createECSYEntity(this.world, 1, 4));
     this.entities.add(Entities.firefly.createECSYEntity(this.world, 1, 4));
     this.entities.add(Entities.firefly.createECSYEntity(this.world, 1, 4));
     this.entities.add(Entities.firefly.createECSYEntity(this.world, 1, 5));
     this.entities.add(Entities.firefly.createECSYEntity(this.world, 1, 5));
-    this.entities.add(Entities.firefly.createECSYEntity(this.world, 1, 5));
+    this.entities.add(Entities.firefly.createECSYEntity(this.world, 1, 5));*/
     
     this.entities.add(Entities.wisp.createECSYEntity(this.world, 10, 3));
     this.entities.add(Entities.wisp.createECSYEntity(this.world, 2, 4));
     this.entities.add(Entities.wisp.createECSYEntity(this.world, 3, 5));
     this.entities.add(Entities.wisp.createECSYEntity(this.world, 11, 6));
     this.entities.add(Entities.wisp.createECSYEntity(this.world, 9, 5));
+
+    this.entities.add(Entities.monster.createECSYEntity(this.world, 17, 4))
     
-    this.entities.add(Entities.goal.createECSYEntity(this.world, 16, 4));
+    this.entities.add(Entities.goal.createECSYEntity(this.world, 16, 4, 'firefly'));
+    this.entities.add(Entities.goal.createECSYEntity(this.world, 1, 4, 'monster'))
 
     this.map = [
-      [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-      [0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0],
-      [0, 0, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0],
-      [0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 1, 0, 1, 1, 0, 0, 0],
-      [0, 1, 1, 1, 1, 1, 0, 0, 1, 1, 1, 1, 1, 0, 0, 1, 1, 0, 0],
-      [0, 1, 1, 1, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 1, 1, 0],
-      [0, 1, 1, 1, 1, 1, 0, 0, 1, 1, 1, 1, 1, 0, 0, 1, 1, 0, 0],
-      [0, 1, 0, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 0, 0, 0],
-      [0, 0, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0],
-      [0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0],
-      [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+      [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+      [0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0],
+      [0, 0, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0, 0],
+      [0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 1, 0, 1, 1, 0, 0, 0, 0],
+      [0, 1, 1, 1, 1, 1, 0, 0, 1, 1, 1, 1, 1, 0, 0, 1, 1, 0, 1, 0],
+      [0, 1, 1, 1, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 1, 1, 1, 0],
+      [0, 1, 1, 1, 1, 1, 0, 0, 1, 1, 1, 1, 1, 0, 0, 1, 1, 0, 1, 0],
+      [0, 1, 0, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0],
+      [0, 0, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0, 0],
+      [0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0],
+      [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
     ];
 
     // Set up pathfinding worker
@@ -102,5 +105,6 @@ export default class GameScene extends Phaser.Scene {
     this.load.svg('firefly', 'assets/images/svg/firefly.svg', { width: 10, height: 10});
     this.load.svg('goal', 'assets/images/svg/firefly.svg', { width: 20, height: 20});
     this.load.image('wisp', 'assets/images/png/wisp.png');
+    this.load.image('monster', 'assets/images/png/monster.png');
   }
 }

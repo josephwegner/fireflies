@@ -3,6 +3,8 @@ import PositionComponent from '../components/PositionComponent';
 import RenderableComponent from '../components/RenderableComponent';
 import WallComponent from '../components/WallComponent';
 import TypeComponent from '../components/TypeComponent';
+import Entities from '../../entities/index.js'
+import PhysicsBodyComponent from '../components/PhysicsBodyComponent.js';
 
 export default class RenderSystem extends System {
   constructor(attributes) {
@@ -50,20 +52,20 @@ export default class RenderSystem extends System {
       const position = entity.getComponent(PositionComponent);
       const renderable = entity.getComponent(RenderableComponent);
       const type = entity.getComponent(TypeComponent).type;
+      const physicsBody = entity.getComponent(PhysicsBodyComponent)
 
       renderable.sprite = this.scene.add.sprite(
         (position.x * this.tileSize) + (this.tileSize / 2),
         (position.y * this.tileSize) + (this.tileSize / 2),
         type);
 
-        if (renderable.color) {
-          renderable.sprite.setTint(renderable.color)
-        }
+      if (renderable.color) {
+        renderable.sprite.setTint(renderable.color)
+      }
 
-        if (type === 'wisp') {
-          renderable.sprite.setDisplaySize(24, 24);
-          renderable.sprite.rotationSpeed = 0.01;
-        }
+      if (Entities[type].customizeSprite) {
+        Entities[type].customizeSprite(renderable.sprite)
+      }
     })
 
     this.queries.renderables.removed.forEach(entity => {

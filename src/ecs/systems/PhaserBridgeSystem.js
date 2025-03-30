@@ -13,35 +13,10 @@ export default class PhaserBridgeSystem extends System {
   }
   
   execute() {
-    // Handle creation of Phaser objects for new entities
-    this.queries.renderableEntities.added.forEach(entity => {
-      this.createPhaserObjects(entity);
-    });
-    
     // Handle updates to existing entities
     this.queries.renderableEntities.results.forEach(entity => {
       this.updatePhaserObjects(entity);
     });
-    
-    // Handle removal of Phaser objects for removed entities
-    this.queries.renderableEntities.removed.forEach(entity => {
-      this.removePhaserObjects(entity);
-    });
-  }
-  
-  createPhaserObjects(entity) {
-    if(entity.hasComponent(PhysicsBodyComponent)) return;
-
-    const renderable = entity.getComponent(RenderableComponent);
-    
-    let phaserObject = null;
-    // Create appropriate Phaser object based on renderable type
-    if (Entities[renderable.type]) {
-      phaserObject = Entities[renderable.type].createPhaserEntity(entity, this.scene, this.tileSize);
-    }
-
-    phaserObject.ecsyEntity = entity;
-    entity.addComponent(PhysicsBodyComponent, { body: phaserObject });
   }
   
   updatePhaserObjects(entity) {
@@ -49,26 +24,25 @@ export default class PhaserBridgeSystem extends System {
     
     const position = entity.getComponent(PositionComponent);
     const velocity = entity.getMutableComponent(VelocityComponent);
-    const physicsBody = entity.getComponent(PhysicsBodyComponent).body;
+    const physicsBody = entity.getComponent(PhysicsBodyComponent);
     const renderable = entity.getComponent(RenderableComponent);
     
-    // Update Phaser object position from ECS position
-    physicsBody.setPosition(
-      (position.x * this.tileSize) + this.tileSize - renderable.radius,
-      (position.y * this.tileSize) + this.tileSize - renderable.radius
-    );
+    // Always position at tile center
+    const newX = (position.x * this.tileSize) + (this.tileSize / 2) + (renderable.radius * 2);
+    const newY = (position.y * this.tileSize) + (this.tileSize / 2) + (renderable.radius * 2);
+
+    if (physicsBody.body) { 
+      physicsBody.body.setPosition(newX, newY); 
+    }
+
+    physicsBody.colliders.forEach(body => {
+      body.setPosition(newX, newY)
+    })
     
     // Sync physics velocity back to ECS
-    if (velocity) {
-      velocity.vx = physicsBody.body.velocity.x;
-      velocity.vy = physicsBody.body.velocity.y;
-    }
-  }
-  
-  removePhaserObjects(entity) {
-    if (entity.hasComponent(PhysicsBodyComponent)) {
-      const physicsBody = entity.getComponent(PhysicsBodyComponent).body;
-      physicsBody.destroy();
+    if (velocity && physicsBody.body) {
+      velocity.vx = physicsBody.body.body.velocity.x;
+      velocity.vy = physicsBody.body.body.velocity.y;
     }
   }
 }

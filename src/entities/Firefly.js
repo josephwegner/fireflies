@@ -3,6 +3,7 @@ import RenderableComponent from '../ecs/components/RenderableComponent';
 import VelocityComponent from '../ecs/components/VelocityComponent';
 import PathComponent from '../ecs/components/PathComponent';
 import TypeComponent from '../ecs/components/TypeComponent';
+import PhysicsBodyComponent from '../ecs/components/PhysicsBodyComponent';
 
 export default {
   createECSYEntity(world, x, y) {
@@ -13,29 +14,12 @@ export default {
       .addComponent(PathComponent, { path: [] })
       .addComponent(RenderableComponent, { type: 'firefly', color: 0xffffff, radius: 5 })
       .addComponent(TypeComponent, { type: 'firefly' })
+      .addComponent(PhysicsBodyComponent)
     
     return firefly;
   },
 
   createPhaserEntity(entity, world) {
-    const position = entity.getComponent(PositionComponent);
-    const renderable = entity.getComponent(RenderableComponent);
-
-    const sprite = world.physics.add.sprite(
-      (position.x * world.tileSize) + world.tileSize/2,
-      (position.y * world.tileSize) + world.tileSize/2,
-      'firefly'
-    );
     
-    const actualRadius = renderable.radius * 1.5;
-    sprite.setDisplayOrigin(actualRadius * 2.375, actualRadius * 2.375);
-    sprite.setCircle(actualRadius);
-    sprite.setAlpha(0);
-
-    // Set a small drag to prevent perpetual bouncing
-    sprite.setDamping(true);
-    sprite.setDrag(0.05);
-
-    return sprite;
   }
 }

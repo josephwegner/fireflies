@@ -49,7 +49,10 @@ export default class WallGenerationSystem extends System {
     });
 
     this.wallEntity.addComponent(InteractionComponent, {
-      interactions: { firefly: new RepulsionInteraction() }
+      interactions: { 
+        firefly: new RepulsionInteraction(),
+        monster: new RepulsionInteraction({ distance: 18.5 })
+      }
     });
   }
 

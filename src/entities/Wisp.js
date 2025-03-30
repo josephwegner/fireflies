@@ -2,6 +2,7 @@ import PositionComponent from '../ecs/components/PositionComponent';
 import RenderableComponent from '../ecs/components/RenderableComponent';
 import TypeComponent from '../ecs/components/TypeComponent';
 import DestinationComponent from '../ecs/components/DestinationComponent';
+import PhysicsBodyComponent from '../ecs/components/PhysicsBodyComponent';
 
 export default {
   createECSYEntity(world, x, y) {
@@ -10,12 +11,13 @@ export default {
     .addComponent(DestinationComponent, { for: ['firefly'] })
     .addComponent(RenderableComponent, { type: 'wisp', color: 0xffffff, radius: 24 })
     .addComponent(TypeComponent, { type: 'wisp' })
+    .addComponent(PhysicsBodyComponent)
   
     return destination;
   },
 
   createPhaserEntity(entity, world) {
-    const position = entity.getComponent(PositionComponent)
+    /*const position = entity.getComponent(PositionComponent)
 
     // Create Phaser sprite for wisp
     const sprite = world.physics.add.sprite(
@@ -26,6 +28,11 @@ export default {
 
     sprite.setAlpha(0);
 
-    return sprite;
+    return sprite;*/
+  },
+
+  customizeSprite(sprite) {
+    sprite.setDisplaySize(24, 24);
+    sprite.rotationSpeed = 0.01;
   }
 }

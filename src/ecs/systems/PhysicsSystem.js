@@ -3,6 +3,7 @@ import PositionComponent from '../components/PositionComponent';
 import VelocityComponent from '../components/VelocityComponent';
 import WallComponent from '../components/WallComponent';
 import PhysicsBodyComponent from '../components/PhysicsBodyComponent';
+import RenderableComponent from '../components/RenderableComponent';
 import InteractionComponent from '../components/InteractionComponent';
 import TypeComponent from '../components/TypeComponent';
 
@@ -11,11 +12,11 @@ export default class PhysicsSystem extends System {
     super(world, attributes);
     this.physics = attributes.physics;
     this.tileSize = attributes.tileSize;
+    this.interactionGroups = {}
     this.wallBodies = [];
   }
 
   init() {
-    // Set up physics groups
     this.entityGroup = this.physics.add.group();
     this.wallGroup = this.physics.add.group({
       immovable: true
@@ -38,6 +39,35 @@ export default class PhysicsSystem extends System {
       null,
       this
     );
+  }
+
+  createWallColliderSprite(entity) {
+    const position = entity.getComponent(PositionComponent);
+    const renderable = entity.getComponent(RenderableComponent);
+    const type = entity.getComponent(TypeComponent).type;
+
+    const sprite = this.physics.add.sprite(
+      (position.x * this.world.tileSize) + this.world.tileSize/2,
+      (position.y * this.world.tileSize) + this.world.tileSize/2,
+      type
+    );
+    
+    const actualRadius = renderable.radius * 1.5;
+    sprite.setDisplayOrigin(actualRadius * 2.375, actualRadius * 2.375);
+    sprite.setCircle(actualRadius);
+    sprite.setTintFill(0xffffff)
+    sprite.setAlpha(0);
+
+    console.log(type)
+    const physicsBody = entity.getComponent(PhysicsBodyComponent)
+    physicsBody.colliders.push(sprite)
+    sprite.ecsyEntity = entity
+
+    // Set a small drag to prevent perpetual bouncing
+    sprite.setDamping(true);
+    sprite.setDrag(0.05);
+
+    return sprite;
   }
   
   // Improved wall avoidance that preserves path following
@@ -104,12 +134,12 @@ export default class PhysicsSystem extends System {
   }
 
   execute(delta, time) {
-    this.queries.physicsBodies.added.forEach(entity => {
-      const physicsBody = entity.getComponent(PhysicsBodyComponent).body;
-      this.entityGroup.add(physicsBody);
+    this.queries.physicsEntities.added.forEach(entity => {
+      let phaserObject = this.createWallColliderSprite(entity)
+      this.entityGroup.add(phaserObject);
     });
 
-    this.queries.physicsBodies.removed.forEach(entity => {
+    this.queries.physicsEntities.removed.forEach(entity => {
       const physicsBody = entity.getComponent(PhysicsBodyComponent).body;
       this.entityGroup.remove(physicsBody);
     })
@@ -140,13 +170,6 @@ export default class PhysicsSystem extends System {
 PhysicsSystem.queries = {
   physicsEntities: {
     components: [PositionComponent, VelocityComponent],
-    listen: {
-      added: true,
-      removed: true
-    }
-  },
-  physicsBodies: {
-    components: [PhysicsBodyComponent],
     listen: {
       added: true,
       removed: true
