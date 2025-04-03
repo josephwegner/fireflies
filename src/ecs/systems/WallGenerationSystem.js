@@ -50,8 +50,8 @@ export default class WallGenerationSystem extends System {
 
     this.wallEntity.addComponent(InteractionComponent, {
       interactions: { 
-        firefly: new RepulsionInteraction(),
-        monster: new RepulsionInteraction({ distance: 18.5 })
+        firefly: new RepulsionInteraction({ distance: 10 }),
+        monster: new RepulsionInteraction({ distance: 20 })
       }
     });
   }
@@ -71,16 +71,15 @@ export default class WallGenerationSystem extends System {
 
     // Define midpoints for each cell edge
     const midpoints = {
-      top: [0.5, 0],    // ABmid
-      right: [1, 0.5],  // BCmid
-      bottom: [0.5, 1], // CDmid
-      left: [0, 0.5]    // DAmid
+      top: [0.5, 0],    
+      right: [1, 0.5],  
+      bottom: [0.5, 1], 
+      left: [0, 0.5]    
     };
 
     // Process each cell in the grid
     for (let y = 0; y < height - 1; y++) {
       for (let x = 0; x < width - 1; x++) {
-
         // Get the four corners of this cell
         const p0 = map[y][x];
         const p1 = map[y][x + 1];
@@ -109,7 +108,7 @@ export default class WallGenerationSystem extends System {
         });
       }
     }
-    // Connect segments into continuous contours
+    
     return this.buildContoursFromSegments(segments);
   }
 

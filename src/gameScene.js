@@ -15,6 +15,7 @@ import TypeComponent from './ecs/components/TypeComponent';
 import InteractionComponent from './ecs/components/InteractionComponent';
 import PhaserBridgeSystem from './ecs/systems/PhaserBridgeSystem';
 import DestinationComponent from './ecs/components/DestinationComponent.js';
+import DebugSystem from './ecs/systems/DebugSystem';
 import Entities from './entities/index.js';
 
 const TILE_SIZE = 32;
@@ -44,12 +45,16 @@ export default class GameScene extends Phaser.Scene {
       .registerSystem(WallGenerationSystem)
       .registerSystem(MovementSystem)
       .registerSystem(DestinationSystem)
-      .registerSystem(RenderSystem)
+      .registerSystem(RenderSystem, { tileSize: TILE_SIZE })
       .registerSystem(PhysicsSystem, { physics: this.physics, tileSize: this.tileSize})
       .registerSystem(PhaserBridgeSystem, { 
         scene: this, 
         tileSize: this.tileSize
       });
+
+    if (this.game.fireflies_debug) {
+      this.world.registerSystem(DebugSystem, { tileSize: TILE_SIZE })
+    }
 
     // Create initial entities
     this.entities.add(Entities.firefly.createECSYEntity(this.world, 1, 3));

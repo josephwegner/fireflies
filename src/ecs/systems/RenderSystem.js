@@ -4,14 +4,15 @@ import RenderableComponent from '../components/RenderableComponent';
 import WallComponent from '../components/WallComponent';
 import TypeComponent from '../components/TypeComponent';
 import Entities from '../../entities/index.js'
-import PhysicsBodyComponent from '../components/PhysicsBodyComponent.js';
+import PathComponent from '../components/PathComponent';
 
 export default class RenderSystem extends System {
-  constructor(attributes) {
-    super(attributes);
+  constructor(world, attributes) {
+    super(world, attributes);
     this.scene = this.world.scene
     this.graphics = this.scene.add.graphics()
-    this.tileSize = 32;
+    this.scene.graphics = this.graphics
+    this.tileSize = attributes.tileSize;
   } 
 
   execute() {
@@ -23,6 +24,7 @@ export default class RenderSystem extends System {
     // Render entities
     this.renderEntities();
   }
+
   renderWalls() {
     // Query for entities with WallComponent
     this.queries.walls.results.forEach(entity => {
@@ -52,7 +54,7 @@ export default class RenderSystem extends System {
       const position = entity.getComponent(PositionComponent);
       const renderable = entity.getComponent(RenderableComponent);
       const type = entity.getComponent(TypeComponent).type;
-      const physicsBody = entity.getComponent(PhysicsBodyComponent)
+      const path = entity.getComponent(PathComponent)
 
       renderable.sprite = this.scene.add.sprite(
         (position.x * this.tileSize) + (this.tileSize / 2),
@@ -92,13 +94,13 @@ export default class RenderSystem extends System {
 } 
 
 RenderSystem.queries = {
-    renderables: {
-      components: [PositionComponent, RenderableComponent],
-      listen: {
-        added: true,
-        removed: true,
-        changed: [ PositionComponent ]
-      }
-    },
-    walls: { components: [WallComponent] },
+  renderables: {
+    components: [PositionComponent, RenderableComponent],
+    listen: {
+      added: true,
+      removed: true,
+      changed: [ PositionComponent ]
+    }
+  },
+  walls: { components: [WallComponent] }
 }

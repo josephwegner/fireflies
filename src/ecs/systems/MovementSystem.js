@@ -43,7 +43,7 @@ export default class MovementSystem extends System {
         const dy = target.y - position.y;
         const dist = Vector.length(dx, dy);
 
-        if ((dist <= .75 && pathComp.currentPath.length > 1) || dist < .01) {
+        if ((dist <= .5 && pathComp.currentPath.length > 1) || dist < .01) {
           pathComp.currentPath.shift(); // Remove reached waypoint
 
           if (pathComp.currentPath.length === 0) {
