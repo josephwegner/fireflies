@@ -221,23 +221,24 @@ export default class DestinationSystem extends System {
   }
 
   requestPath(entity, start, destination, pathType) {
-    if(!this.worker) {
-      console.error('No pathfinding worker set');
-      return;
-    }
-
-    this.worker.postMessage({
+    // Convert grid coordinates to world coordinates if needed
+    const startPoint = {
+      x: Math.floor(start.x),
+      y: Math.floor(start.y)
+    };
+    
+    const endPoint = {
+      x: Math.floor(destination.x),
+      y: Math.floor(destination.y)
+    };
+    
+    // Send the path request to the worker
+    this.world.scene.pathfindingWorker.postMessage({
       entityId: entity.id,
-      pathType: pathType,
-      start: { 
-        x: Math.round(start.x), 
-        y: Math.round(start.y)
-      },
-      destination: {
-        x: Math.round(destination.x),
-        y: Math.round(destination.y)
-      }
-    })
+      start: startPoint,
+      destination: endPoint,
+      pathType
+    });
   }
 }
 

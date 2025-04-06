@@ -4,6 +4,7 @@ import PositionComponent from './ecs/components/PositionComponent';
 import VelocityComponent from './ecs/components/VelocityComponent';
 import PathComponent from './ecs/components/PathComponent';
 import RenderableComponent from './ecs/components/RenderableComponent';
+import NavMeshComponent from './ecs/components/NavMeshComponent';
 import WallComponent from './ecs/components/WallComponent';
 import MovementSystem from './ecs/systems/MovementSystem';
 import DestinationSystem from './ecs/systems/DestinationSystem';
@@ -15,6 +16,7 @@ import TypeComponent from './ecs/components/TypeComponent';
 import InteractionComponent from './ecs/components/InteractionComponent';
 import PhaserBridgeSystem from './ecs/systems/PhaserBridgeSystem';
 import DestinationComponent from './ecs/components/DestinationComponent.js';
+import NavMeshSystem from './ecs/systems/NavMeshSystem';
 import DebugSystem from './ecs/systems/DebugSystem';
 import Entities from './entities/index.js';
 
@@ -42,6 +44,7 @@ export default class GameScene extends Phaser.Scene {
       .registerComponent(PhysicsBodyComponent)
       .registerComponent(TypeComponent)
       .registerComponent(InteractionComponent)
+      .registerComponent(NavMeshComponent)
       .registerSystem(WallGenerationSystem)
       .registerSystem(MovementSystem)
       .registerSystem(DestinationSystem)
@@ -91,15 +94,33 @@ export default class GameScene extends Phaser.Scene {
       [0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0],
       [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
     ];
+    this.world.registerSystem(NavMeshSystem, { map: this.map })
 
-    // Set up pathfinding worker
-    this.pathfindingWorker.postMessage({
-      grid: {
-        height: Math.ceil(this.game.config.height / TILE_SIZE),
-        width: Math.ceil(this.game.config.width / TILE_SIZE)
-      },
-      map: this.map
-    });
+    // Listen for messages from the worker
+    this.pathfindingWorker.onmessage = (e) => {
+      if (e.data.error) {
+        console.error('Failed to load NavMesh in worker:', e.data.error);
+      } else if (e.data.type === 'navmesh_loaded') {
+        if (e.data.success) {
+          console.log('NavMesh successfully loaded in worker');
+        } else {
+          console.error('Failed to load NavMesh in worker:', e.data.error);
+        }
+      } else if (e.data.entityId) {
+        // Handle path response (this part remains similar to your existing code)
+        const entity = Array.from(this.entities).find(entity => entity.id === e.data.entityId);
+        if (entity) {
+          const pathComp = entity.getMutableComponent(PathComponent);
+          if (pathComp) {
+            if (e.data.pathType === 'current') {
+              pathComp.currentPath = e.data.path;
+            } else if (e.data.pathType === 'next') {
+              pathComp.nextPath = e.data.path;
+            }
+          }
+        }
+      }
+    };
   }
 
   update(time, delta) {
