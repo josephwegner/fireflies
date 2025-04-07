@@ -25,12 +25,10 @@ export default class NavMeshSystem extends System {
     
     this.navMeshEntity = this.world.createEntity()
       .addComponent(NavMeshComponent, {
-        polygons: navMeshData.polygons,
-        navMeshInstance: this.buildNavMeshInstance(navMeshData.polygons)
+        polygons: navMeshData.polygons
       });
 
     this.worker.postMessage({
-      tileSize: this.tileSize,
       navMeshData: navMeshData
     });
   }
@@ -124,25 +122,6 @@ export default class NavMeshSystem extends System {
   pointsEqual(p1, p2, epsilon = 0.001) {
     // Compare points with a small epsilon to account for floating point errors
     return Math.abs(p1.x - p2.x) < epsilon && Math.abs(p1.y - p2.y) < epsilon;
-  }
-
-  buildNavMeshInstance(polygons) {
-    if (!polygons || polygons.length === 0) {
-      return null;
-    }
-    
-    // Convert our polygons to the format expected by the navmesh library
-    const meshPolygons = polygons.map(poly => 
-      poly.map(p => [p.x, p.y])
-    );
-    
-    try {
-      // Create the navmesh instance
-      return new NavMesh(meshPolygons);
-    } catch (error) {
-      console.error('Error creating NavMesh instance:', error);
-      return null;
-    }
   }
 
   findPath(start, end) {

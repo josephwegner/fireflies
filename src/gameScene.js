@@ -60,7 +60,7 @@ export default class GameScene extends Phaser.Scene {
     }
 
     // Create initial entities
-    this.entities.add(Entities.firefly.createECSYEntity(this.world, 1, 3));
+    this.entities.add(Entities.firefly.createECSYEntity(this.world, 1 * TILE_SIZE + (TILE_SIZE / 2), 3 * TILE_SIZE + (TILE_SIZE / 2)));
     /*this.entities.add(Entities.firefly.createECSYEntity(this.world, 1, 3));
     this.entities.add(Entities.firefly.createECSYEntity(this.world, 1, 3));
     this.entities.add(Entities.firefly.createECSYEntity(this.world, 1, 4));
@@ -70,16 +70,16 @@ export default class GameScene extends Phaser.Scene {
     this.entities.add(Entities.firefly.createECSYEntity(this.world, 1, 5));
     this.entities.add(Entities.firefly.createECSYEntity(this.world, 1, 5));*/
     
-    this.entities.add(Entities.wisp.createECSYEntity(this.world, 10, 3));
-    this.entities.add(Entities.wisp.createECSYEntity(this.world, 2, 4));
-    this.entities.add(Entities.wisp.createECSYEntity(this.world, 3, 5));
-    this.entities.add(Entities.wisp.createECSYEntity(this.world, 11, 6));
-    this.entities.add(Entities.wisp.createECSYEntity(this.world, 9, 5));
+    this.entities.add(Entities.wisp.createECSYEntity(this.world, 10 * TILE_SIZE + (TILE_SIZE / 2), 3 * TILE_SIZE + (TILE_SIZE / 2)));
+    this.entities.add(Entities.wisp.createECSYEntity(this.world, 2 * TILE_SIZE + (TILE_SIZE / 2), 4 * TILE_SIZE + (TILE_SIZE / 2)));
+    this.entities.add(Entities.wisp.createECSYEntity(this.world, 3 * TILE_SIZE + (TILE_SIZE / 2), 5 * TILE_SIZE + (TILE_SIZE / 2)));
+    this.entities.add(Entities.wisp.createECSYEntity(this.world, 11 * TILE_SIZE + (TILE_SIZE / 2), 6 * TILE_SIZE + (TILE_SIZE / 2)));
+    this.entities.add(Entities.wisp.createECSYEntity(this.world, 9 * TILE_SIZE + (TILE_SIZE / 2), 5 * TILE_SIZE + (TILE_SIZE / 2)));
 
-    this.entities.add(Entities.monster.createECSYEntity(this.world, 17, 4))
+    this.entities.add(Entities.monster.createECSYEntity(this.world, 17 * TILE_SIZE + (TILE_SIZE / 2), 4 * TILE_SIZE + (TILE_SIZE / 2)))
     
-    this.entities.add(Entities.goal.createECSYEntity(this.world, 16, 4, 'firefly'));
-    this.entities.add(Entities.goal.createECSYEntity(this.world, 1, 4, 'monster'))
+    this.entities.add(Entities.goal.createECSYEntity(this.world, 16 * TILE_SIZE + (TILE_SIZE / 2), 4 * TILE_SIZE + (TILE_SIZE / 2), 'firefly'));
+    this.entities.add(Entities.goal.createECSYEntity(this.world, 1 * TILE_SIZE + (TILE_SIZE / 2), 4 * TILE_SIZE + (TILE_SIZE / 2), 'monster'))
 
     this.map = [
       [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
@@ -98,15 +98,7 @@ export default class GameScene extends Phaser.Scene {
 
     // Listen for messages from the worker
     this.pathfindingWorker.onmessage = (e) => {
-      if (e.data.error) {
-        console.error('Failed to load NavMesh in worker:', e.data.error);
-      } else if (e.data.type === 'navmesh_loaded') {
-        if (e.data.success) {
-          console.log('NavMesh successfully loaded in worker');
-        } else {
-          console.error('Failed to load NavMesh in worker:', e.data.error);
-        }
-      } else if (e.data.entityId) {
+      if (e.data.entityId !== undefined && e.data.path.length > 0) {
         // Handle path response (this part remains similar to your existing code)
         const entity = Array.from(this.entities).find(entity => entity.id === e.data.entityId);
         if (entity) {

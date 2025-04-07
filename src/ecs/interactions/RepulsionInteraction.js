@@ -42,8 +42,8 @@ export default class RepulsionInteraction extends BaseInteraction {
 
       if (distance < this.distance) {
         // Log the angle of repulsion
-        const forceMagnitude = (this.force / 10000) * Math.pow(1 - (distance / this.distance * tileSize), 2);
-
+        const forceMagnitude = (this.force / 1000) * Math.pow(1 - (distance / this.distance * 32), 2);
+        
         velocity.vx += dirX * forceMagnitude;
         velocity.vy += dirY * forceMagnitude;
       }

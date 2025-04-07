@@ -11,7 +11,6 @@ export default class PhysicsSystem extends System {
   constructor(world, attributes) {
     super(world, attributes);
     this.physics = attributes.physics;
-    this.tileSize = attributes.tileSize;
     this.interactionGroups = {}
     this.wallBodies = [];
   }
@@ -46,11 +45,7 @@ export default class PhysicsSystem extends System {
     const renderable = entity.getComponent(RenderableComponent);
     const type = entity.getComponent(TypeComponent).type;
 
-    const sprite = this.physics.add.sprite(
-      (position.x * this.world.tileSize) + this.world.tileSize/2,
-      (position.y * this.world.tileSize) + this.world.tileSize/2,
-      type
-    );
+    const sprite = this.physics.add.sprite(position.x, position.y, type);
     
     const actualRadius = renderable.radius * 1.5;
     sprite.setDisplayOrigin(actualRadius * 2.375, actualRadius * 2.375);
@@ -91,7 +86,7 @@ export default class PhysicsSystem extends System {
     const interactedWithType = interactedWithEntity.getComponent(TypeComponent).type;
 
     if (interactions[interactedWithType]) {
-      interactions[interactedWithType].apply(entityBody, entity, interactedWithEntityBody, interactedWithEntity, this.world, this.tileSize);
+      interactions[interactedWithType].apply(entityBody, entity, interactedWithEntityBody, interactedWithEntity, this.world);
     }
   }
 

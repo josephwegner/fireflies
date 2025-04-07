@@ -18,11 +18,7 @@ export default {
     const position = entity.getComponent(PositionComponent);
     const renderable = entity.getComponent(RenderableComponent);
 
-    const sprite = world.physics.add.sprite(
-      (position.x * world.tileSize) + world.tileSize/2,
-      (position.y * world.tileSize) + world.tileSize/2,
-      'goal'
-    );
+    const sprite = world.physics.add.sprite(position.x, position.y, 'goal');
     
     sprite.setDisplayOrigin(renderable.radius * 2.375, renderable.radius * 2.375);
     sprite.setCircle(renderable.radius);

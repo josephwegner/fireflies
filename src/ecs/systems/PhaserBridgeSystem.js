@@ -9,7 +9,6 @@ export default class PhaserBridgeSystem extends System {
   constructor(world, attributes) {
     super(world, attributes);
     this.scene = attributes.scene;
-    this.tileSize = attributes.tileSize;
   }
   
   execute() {
@@ -28,8 +27,8 @@ export default class PhaserBridgeSystem extends System {
     const renderable = entity.getComponent(RenderableComponent);
     
     // Always position at tile center
-    const newX = (position.x * this.tileSize) + (this.tileSize / 2) + (renderable.radius * 2);
-    const newY = (position.y * this.tileSize) + (this.tileSize / 2) + (renderable.radius * 2);
+    const newX = position.x + renderable.radius;
+    const newY = position.y + renderable.radius;
 
     if (physicsBody.body) { 
       physicsBody.body.setPosition(newX, newY); 

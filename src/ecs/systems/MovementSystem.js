@@ -3,7 +3,7 @@ import PositionComponent from '../components/PositionComponent';
 import VelocityComponent from '../components/VelocityComponent';
 import PathComponent from '../components/PathComponent';
 
-const SPEED = 1; // Speed in pixels per second
+const SPEED = 20; // Speed in pixels per second
 const FRICTION = 0.01;
 const MIN_VELOCITY = 0.001;
 

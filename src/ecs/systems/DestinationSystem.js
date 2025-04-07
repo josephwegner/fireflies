@@ -221,15 +221,14 @@ export default class DestinationSystem extends System {
   }
 
   requestPath(entity, start, destination, pathType) {
-    // Convert grid coordinates to world coordinates if needed
     const startPoint = {
-      x: Math.floor(start.x),
-      y: Math.floor(start.y)
+      x: start.x,  
+      y: start.y
     };
     
     const endPoint = {
-      x: Math.floor(destination.x),
-      y: Math.floor(destination.y)
+      x: destination.x,  
+      y: destination.y
     };
     
     // Send the path request to the worker

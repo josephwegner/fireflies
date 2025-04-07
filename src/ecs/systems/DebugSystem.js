@@ -26,7 +26,6 @@ export default class DebugSystem extends System {
   renderNavMesh() {
     if(
       !this.queries.navMesh.results.length > 0 || 
-      !this.queries.navMesh.results[0].getComponent(NavMeshComponent).navMeshInstance || 
       !this.queries.navMesh.results[0].getComponent(NavMeshComponent).polygons) { 
         return
       }
@@ -82,12 +81,10 @@ export default class DebugSystem extends System {
       
       if (path && path.currentPath && path.currentPath.length > 0) {
         this.scene.graphics.lineStyle(1, COLORS.GREEN , 1);
-        let x = (position.x * this.tileSize) + (this.tileSize / 2)
-        let y = (position.y * this.tileSize) + (this.tileSize / 2)
 
         this.scene.graphics.beginPath();
-        this.scene.graphics.moveTo(x, y);
-        this.scene.graphics.lineTo(path.currentPath[0].x * this.tileSize + (this.tileSize / 2), path.currentPath[0].y * this.tileSize + (this.tileSize / 2));
+        this.scene.graphics.moveTo(position.x, position.y);
+        this.scene.graphics.lineTo(path.currentPath[0].x, path.currentPath[0].y);
         this.scene.graphics.strokePath();
         this.scene.graphics.closePath();
       }

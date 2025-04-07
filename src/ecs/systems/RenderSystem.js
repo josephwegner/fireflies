@@ -12,7 +12,6 @@ export default class RenderSystem extends System {
     this.scene = this.world.scene
     this.graphics = this.scene.add.graphics()
     this.scene.graphics = this.graphics
-    this.tileSize = attributes.tileSize;
   } 
 
   execute() {
@@ -54,11 +53,10 @@ export default class RenderSystem extends System {
       const position = entity.getComponent(PositionComponent);
       const renderable = entity.getComponent(RenderableComponent);
       const type = entity.getComponent(TypeComponent).type;
-      const path = entity.getComponent(PathComponent)
 
       renderable.sprite = this.scene.add.sprite(
-        (position.x * this.tileSize) + (this.tileSize / 2),
-        (position.y * this.tileSize) + (this.tileSize / 2),
+        position.x,
+        position.y,
         type);
 
       if (renderable.color) {
@@ -79,9 +77,7 @@ export default class RenderSystem extends System {
     this.queries.renderables.changed.forEach(entity => {
       const renderable = entity.getComponent(RenderableComponent);
       const position = entity.getComponent(PositionComponent);
-      renderable.sprite.setPosition(
-        (position.x * this.tileSize) + (this.tileSize / 2),
-        (position.y * this.tileSize) + (this.tileSize / 2));
+      renderable.sprite.setPosition(position.x, position.y);
     })
 
     this.queries.renderables.results.forEach(entity => {
