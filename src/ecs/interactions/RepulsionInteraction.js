@@ -13,6 +13,7 @@ export default class RepulsionInteraction extends BaseInteraction {
     });
   }
 
+
   apply(entityBody, entity, interactedWithEntityBody, interactedWithEntity, world, tileSize) {
     if (!interactedWithEntity.hasComponent(PositionComponent) ||
         !interactedWithEntity.hasComponent(VelocityComponent) ||

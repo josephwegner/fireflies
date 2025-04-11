@@ -8,6 +8,7 @@
         "build": "webpack --mode production"
     },
     "dependencies": {
+        "@doodle3d/clipper-js": "^1.0.11",
         "earcut": "^3.0.1",
         "easystarjs": "^0.4.4",
         "ecsy": "^0.3.0",

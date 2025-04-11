@@ -4,7 +4,6 @@ import PositionComponent from './ecs/components/PositionComponent';
 import VelocityComponent from './ecs/components/VelocityComponent';
 import PathComponent from './ecs/components/PathComponent';
 import RenderableComponent from './ecs/components/RenderableComponent';
-import NavMeshComponent from './ecs/components/NavMeshComponent';
 import WallComponent from './ecs/components/WallComponent';
 import MovementSystem from './ecs/systems/MovementSystem';
 import DestinationSystem from './ecs/systems/DestinationSystem';
@@ -16,7 +15,6 @@ import TypeComponent from './ecs/components/TypeComponent';
 import InteractionComponent from './ecs/components/InteractionComponent';
 import PhaserBridgeSystem from './ecs/systems/PhaserBridgeSystem';
 import DestinationComponent from './ecs/components/DestinationComponent.js';
-import NavMeshSystem from './ecs/systems/NavMeshSystem';
 import DebugSystem from './ecs/systems/DebugSystem';
 import Entities from './entities/index.js';
 
@@ -32,7 +30,7 @@ export default class GameScene extends Phaser.Scene {
   create() {
     this.world = new World();
     this.world.scene = this
-    this.pathfindingWorker = new Worker(new URL('./pathfindingWorker.js', import.meta.url));
+    this.pathfindingWorker = new Worker(new URL('./workers/pathfinding/worker.js', import.meta.url));
 
     this.world
       .registerComponent(PositionComponent)
@@ -44,7 +42,6 @@ export default class GameScene extends Phaser.Scene {
       .registerComponent(PhysicsBodyComponent)
       .registerComponent(TypeComponent)
       .registerComponent(InteractionComponent)
-      .registerComponent(NavMeshComponent)
       .registerSystem(WallGenerationSystem)
       .registerSystem(MovementSystem)
       .registerSystem(DestinationSystem)
@@ -94,7 +91,6 @@ export default class GameScene extends Phaser.Scene {
       [0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0],
       [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
     ];
-    this.world.registerSystem(NavMeshSystem, { map: this.map })
 
     // Listen for messages from the worker
     this.pathfindingWorker.onmessage = (e) => {

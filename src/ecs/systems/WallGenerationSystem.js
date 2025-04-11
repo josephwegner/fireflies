@@ -26,6 +26,7 @@ const CASE_LOOKUP = {
 export default class WallGenerationSystem extends System {
   init() {
     this.wallEntity = null;
+    this.worker = this.world.scene.pathfindingWorker
   }
 
   execute() {
@@ -38,8 +39,9 @@ export default class WallGenerationSystem extends System {
     // Create an entity to hold all wall data
     this.wallEntity = this.world.createEntity()
     
+    const segments = this.generateWallSegments(map)
     this.wallEntity.addComponent(WallComponent, {
-      segments: this.generateWallSegments(map),
+      segments,
       thickness: 2,
       color: 0x888888
     });
@@ -54,6 +56,11 @@ export default class WallGenerationSystem extends System {
         monster: new RepulsionInteraction({ distance: 20 })
       }
     });
+
+    this.worker.postMessage({
+      action: 'buildNavMesh',
+      walls: segments
+    })
   }
 
   generateWallSegments(map) {

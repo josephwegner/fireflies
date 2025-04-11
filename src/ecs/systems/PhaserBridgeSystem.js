@@ -26,7 +26,6 @@ export default class PhaserBridgeSystem extends System {
     const physicsBody = entity.getComponent(PhysicsBodyComponent);
     const renderable = entity.getComponent(RenderableComponent);
     
-    // Always position at tile center
     const newX = position.x + renderable.radius;
     const newY = position.y + renderable.radius;
 

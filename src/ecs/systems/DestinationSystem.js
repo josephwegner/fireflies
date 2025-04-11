@@ -4,6 +4,7 @@ import VelocityComponent from '../components/VelocityComponent';
 import PathComponent from '../components/PathComponent';
 import DestinationComponent from '../components/DestinationComponent';
 import TypeComponent from '../components/TypeComponent';
+import RenderableComponent from '../components/RenderableComponent';
 
 export default class DestinationSystem extends System {
   constructor(world) {
@@ -230,13 +231,21 @@ export default class DestinationSystem extends System {
       x: destination.x,  
       y: destination.y
     };
+
+    let radius = 0
+    if (entity.hasComponent(RenderableComponent)) {
+      const renderComp = entity.getComponent(RenderableComponent)
+      radius = renderComp.radius
+    }
     
     // Send the path request to the worker
-    this.world.scene.pathfindingWorker.postMessage({
+    this.worker.postMessage({
+      action: 'pathfind',
       entityId: entity.id,
       start: startPoint,
       destination: endPoint,
-      pathType
+      pathType,
+      radius
     });
   }
 }
