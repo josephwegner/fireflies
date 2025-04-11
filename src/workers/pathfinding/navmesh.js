@@ -1,4 +1,3 @@
-import decomp from 'poly-decomp';
 import NavMesh from 'navmesh';
 import earcut, { flatten } from 'earcut';
 import Shape from '@doodle3d/clipper-js';
@@ -70,24 +69,6 @@ function indicesToTriangles(triangleIndices, polyData) {
   }
 
   return triangles;
-}
-
-function decompose(poly) {
-  try {
-    // Ensure the polygon is simple (no self-intersections)
-    if (!decomp.isSimple(poly)) {
-      console.warn('Non-simple polygon detected, attempting to fix');
-      // For non-simple polygons, we could try to fix them or just return the original
-      return poly;
-    }
-    decomp.makeCCW(poly)
-    // Decompose into convex parts
-    return decomp.quickDecomp(poly);
-    
-  } catch (error) {
-    console.error('Error in polygon decomposition:', error);
-    return poly; // Return original polygon on error
-  }
 }
 
 function pointsEqual(p1, p2, epsilon = 0.001) {
