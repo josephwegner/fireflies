@@ -26,7 +26,7 @@ self.onmessage = function(e) {
 
       const wallBufferSize = e.data.radius
       if (!bufferedNavMeshCache[wallBufferSize]) {
-        const shrunkPaths = shrinkPaths(this.baseMapPaths, e.data.radius)
+        const shrunkPaths = shrinkPaths(this.baseMapPaths, e.data.radius * 1.5)
         const navMesh = generateNavMesh(shrunkPaths)
         if (!navMesh) {
           console.error('Failed to generate navmesh', e.data.walls, e.data.radius)

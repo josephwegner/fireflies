@@ -18,4 +18,4 @@ const config = {
 
 const game = new Phaser.Game(config);
 
-game.fireflies_debug = true
+game.fireflies_debug = false

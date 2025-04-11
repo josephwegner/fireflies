@@ -50,12 +50,12 @@ export default class WallGenerationSystem extends System {
       type: 'wall'
     });
 
-    this.wallEntity.addComponent(InteractionComponent, {
+   /*this.wallEntity.addComponent(InteractionComponent, {
       interactions: { 
         firefly: new RepulsionInteraction({ distance: 10 }),
         monster: new RepulsionInteraction({ distance: 20 })
       }
-    });
+    });*/
 
     this.worker.postMessage({
       action: 'buildNavMesh',
