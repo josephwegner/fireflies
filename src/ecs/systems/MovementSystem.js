@@ -2,6 +2,7 @@ import { System } from 'ecsy';
 import PositionComponent from '../components/PositionComponent';
 import VelocityComponent from '../components/VelocityComponent';
 import PathComponent from '../components/PathComponent';
+import PhysicsBodyComponent from '../components/PhysicsBodyComponent';
 
 const SPEED = 20; // Speed in pixels per second
 const FRICTION = 0.01;
@@ -36,6 +37,9 @@ export default class MovementSystem extends System {
       const position = entity.getMutableComponent(PositionComponent);
       const velocity = entity.getMutableComponent(VelocityComponent);
       const pathComp = entity.getComponent(PathComponent);
+      const physicsBody = entity.getComponent(PhysicsBodyComponent);
+      
+      let moved = false;
 
       if (pathComp.currentPath !== null && pathComp.currentPath.length > 0) {
         const target = pathComp.currentPath[0];
@@ -61,11 +65,20 @@ export default class MovementSystem extends System {
           
           position.x += totalMovement.x;
           position.y += totalMovement.y;
+          moved = true;
         }
       } else {
         // Move based on velocity if no path is assigned
         position.x += velocity.vx * dt;
         position.y += velocity.vy * dt;
+        if (velocity.vx !== 0 || velocity.vy !== 0) {
+          moved = true;
+        }
+      }
+
+      // Update the sprite position directly
+      if (moved && physicsBody.sprite) {
+        physicsBody.sprite.setPosition(position.x, position.y);
       }
 
       this.applyFriction(velocity);
@@ -84,6 +97,6 @@ export default class MovementSystem extends System {
 
 MovementSystem.queries = {
   moving: {
-    components: [PositionComponent, VelocityComponent, PathComponent]
+    components: [PositionComponent, VelocityComponent, PathComponent, PhysicsBodyComponent]
   }
 };

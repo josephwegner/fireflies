@@ -7,13 +7,11 @@ import RenderableComponent from './ecs/components/RenderableComponent';
 import WallComponent from './ecs/components/WallComponent';
 import MovementSystem from './ecs/systems/MovementSystem';
 import DestinationSystem from './ecs/systems/DestinationSystem';
-import RenderSystem from './ecs/systems/RenderSystem';
 import WallGenerationSystem from './ecs/systems/WallGenerationSystem';
 import PhysicsSystem from './ecs/systems/PhysicsSystem';
 import PhysicsBodyComponent from './ecs/components/PhysicsBodyComponent';
 import TypeComponent from './ecs/components/TypeComponent';
 import InteractionComponent from './ecs/components/InteractionComponent';
-import PhaserBridgeSystem from './ecs/systems/PhaserBridgeSystem';
 import DestinationComponent from './ecs/components/DestinationComponent.js';
 import DebugSystem from './ecs/systems/DebugSystem';
 import Entities from './entities/index.js';
@@ -29,9 +27,16 @@ export default class GameScene extends Phaser.Scene {
 
   create() {
     this.world = new World();
-    this.world.scene = this
+    this.world.scene = this;
     this.pathfindingWorker = new Worker(new URL('./workers/pathfinding/worker.js', import.meta.url));
-
+    
+    // Initialize entity groups
+    this.entityGroup = this.physics.add.group();
+    this.wallGroup = this.physics.add.group({
+      immovable: true
+    });
+    
+    // Register all components
     this.world
       .registerComponent(PositionComponent)
       .registerComponent(VelocityComponent)
@@ -45,12 +50,11 @@ export default class GameScene extends Phaser.Scene {
       .registerSystem(WallGenerationSystem)
       .registerSystem(MovementSystem)
       .registerSystem(DestinationSystem)
-      .registerSystem(RenderSystem, { tileSize: TILE_SIZE })
-      .registerSystem(PhysicsSystem, { physics: this.physics, tileSize: this.tileSize})
-      .registerSystem(PhaserBridgeSystem, { 
-        scene: this, 
+      .registerSystem(PhysicsSystem, { 
+        physics: this.physics, 
+        scene: this,
         tileSize: this.tileSize
-      });
+      })
 
     if (this.game.fireflies_debug) {
       this.world.registerSystem(DebugSystem, { tileSize: TILE_SIZE })

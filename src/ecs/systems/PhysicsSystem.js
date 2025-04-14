@@ -6,11 +6,13 @@ import PhysicsBodyComponent from '../components/PhysicsBodyComponent';
 import RenderableComponent from '../components/RenderableComponent';
 import InteractionComponent from '../components/InteractionComponent';
 import TypeComponent from '../components/TypeComponent';
+import Entities from '../../entities/index.js';
 
 export default class PhysicsSystem extends System {
   constructor(world, attributes) {
     super(world, attributes);
     this.physics = attributes.physics;
+    this.scene = this.world.scene;
     this.interactionGroups = {}
     this.wallBodies = [];
   }
@@ -40,28 +42,36 @@ export default class PhysicsSystem extends System {
     );
   }
 
-  createWallColliderSprite(entity) {
+  createEntitySprite(entity) {
     const position = entity.getComponent(PositionComponent);
     const renderable = entity.getComponent(RenderableComponent);
     const type = entity.getComponent(TypeComponent).type;
 
     const sprite = this.physics.add.sprite(position.x, position.y, type);
+    sprite.ecsyEntity = entity;
     
-    const actualRadius = renderable.radius * 1.5;
-    sprite.setDisplayOrigin(actualRadius * 2.375, actualRadius * 2.375);
-    sprite.setCircle(actualRadius);
-    sprite.setTintFill(0xffffff)
-    sprite.setAlpha(0);
+    // Apply any customizations from the entity definition
+    if (renderable.color) {
+      sprite.setTint(renderable.color);
+    }
+    
+    if (Entities[type]?.customizeSprite) {
+      Entities[type].customizeSprite(sprite);
+    }
 
-    console.log(type)
-    const physicsBody = entity.getComponent(PhysicsBodyComponent)
-    physicsBody.colliders.push(sprite)
-    sprite.ecsyEntity = entity
-
-    // Set a small drag to prevent perpetual bouncing
+    // Set physics properties
+    if (renderable.radius) {
+      sprite.setCircle(renderable.radius);
+    }
+    
+    // Apply physics properties
     sprite.setDamping(true);
     sprite.setDrag(0.05);
-
+    
+    // Store the sprite in the physics component
+    const physicsBody = entity.getMutableComponent(PhysicsBodyComponent);
+    physicsBody.sprite = sprite;
+    
     return sprite;
   }
   
@@ -109,18 +119,18 @@ export default class PhysicsSystem extends System {
         const length = Math.hypot(secondSegmentX - firstSegmentX, secondSegmentY - firstSegmentY);
         const angle = Math.atan2(secondSegmentY - firstSegmentY, secondSegmentX - firstSegmentX);
         
-        // Create a physics body for this subsegment
+        // Create a visible wall body
         const wallBody = this.physics.add.sprite(midX, midY, 'wall');
         wallBody.ecsyEntity = wallEntity;
-        wallBody.setAlpha(0); // Make invisible (we'll render separately)
-        //wallBody.setAlpha(1); wallBody.setTintFill(0xFFFFFF);
+        wallBody.setDisplaySize(length, wall.thickness);
+        wallBody.rotation = angle;
+        
+        // Set the color to match the wall
+        wallBody.setTintFill(wall.color);
         
         // Ensure wall is truly immovable
         wallBody.setImmovable(true);
         wallBody.body.moves = false; // This is critical - prevents the physics engine from moving the wall
-        
-        wallBody.setDisplaySize(length, wall.thickness);
-        wallBody.rotation = angle;
         
         this.wallGroup.add(wallBody);
         this.wallBodies.push(wallBody);
@@ -130,19 +140,21 @@ export default class PhysicsSystem extends System {
 
   execute(delta, time) {
     this.queries.physicsEntities.added.forEach(entity => {
-      let phaserObject = this.createWallColliderSprite(entity)
-      this.entityGroup.add(phaserObject);
+      const sprite = this.createEntitySprite(entity);
+      this.entityGroup.add(sprite);
     });
 
     this.queries.physicsEntities.removed.forEach(entity => {
-      const physicsBody = entity.getComponent(PhysicsBodyComponent).body;
-      this.entityGroup.remove(physicsBody);
-    })
+      const physicsBody = entity.getComponent(PhysicsBodyComponent);
+      if (physicsBody.sprite) {
+        physicsBody.sprite.destroy();
+      }
+    });
 
-    // Process walls that need physics bodies
+    // Process walls
     this.queries.walls.added.forEach(wallEntity => {
       const wall = wallEntity.getComponent(WallComponent);
-      this.buildWallEntities(wallEntity, wall)
+      this.buildWallEntities(wallEntity, wall);
     });
     
     // Clean up removed walls
@@ -153,18 +165,19 @@ export default class PhysicsSystem extends System {
       this.wallBodies = [];
     });
 
+    // Rebuild walls if needed
     if (this.wallBodies.length === 0) {
       this.queries.walls.results.forEach(entity => {
-        const wall = entity.getComponent(WallComponent)
-        this.buildWallEntities(entity, wall)
-      })
+        const wall = entity.getComponent(WallComponent);
+        this.buildWallEntities(entity, wall);
+      });
     }
   }
 }
 
 PhysicsSystem.queries = {
   physicsEntities: {
-    components: [PositionComponent, VelocityComponent],
+    components: [PositionComponent, TypeComponent, PhysicsBodyComponent, RenderableComponent],
     listen: {
       added: true,
       removed: true

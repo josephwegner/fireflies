@@ -2,7 +2,7 @@ import PositionComponent from '../ecs/components/PositionComponent';
 import RenderableComponent from '../ecs/components/RenderableComponent';
 import TypeComponent from '../ecs/components/TypeComponent';
 import DestinationComponent from '../ecs/components/DestinationComponent';
-
+import PhysicsBodyComponent from '../ecs/components/PhysicsBodyComponent';
 export default {
   createECSYEntity(world, x, y, attractType) {
     let goal = world.createEntity()
@@ -10,10 +10,14 @@ export default {
       .addComponent(TypeComponent, { type: 'goal' })
       .addComponent(DestinationComponent, { for: [attractType] })
       .addComponent(RenderableComponent, { type: 'goal', color: 0x00ff00, radius: 10 })
-    
+      .addComponent(PhysicsBodyComponent);
     return goal;
   },
 
+  customizeSprite(sprite) {
+    sprite.setDisplaySize(20, 20);
+  },
+/*
   createPhaserEntity(entity, world) {
     const position = entity.getComponent(PositionComponent);
     const renderable = entity.getComponent(RenderableComponent);
@@ -26,4 +30,5 @@ export default {
 
     return sprite;
   }
+*/
 }

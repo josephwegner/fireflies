@@ -11,15 +11,15 @@ export default {
     const firefly = world.createEntity()
       .addComponent(PositionComponent, { x: x + Math.random() * JITTER, y: y + Math.random() * JITTER })
       .addComponent(VelocityComponent, { vx: 0, vy: 0 })
-      .addComponent(PathComponent, { path: [] })
+      .addComponent(PathComponent, { currentPath: [], nextPath: [] })
       .addComponent(RenderableComponent, { type: 'firefly', color: 0xffffff, radius: 5 })
       .addComponent(TypeComponent, { type: 'firefly' })
-      .addComponent(PhysicsBodyComponent)
+      .addComponent(PhysicsBodyComponent);
     
     return firefly;
   },
 
-  createPhaserEntity(entity, world) {
-    
+  customizeSprite(sprite) {
+    sprite.setDisplaySize(10, 10);
   }
 }

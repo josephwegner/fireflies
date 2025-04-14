@@ -15,22 +15,7 @@ export default {
   
     return destination;
   },
-
-  createPhaserEntity(entity, world) {
-    /*const position = entity.getComponent(PositionComponent)
-
-    // Create Phaser sprite for wisp
-    const sprite = world.physics.add.sprite(
-      (position.x * world.tileSize) + world.tileSize/2,
-      (position.y * world.tileSize) + world.tileSize/2,
-      'wisp'
-    );
-
-    sprite.setAlpha(0);
-
-    return sprite;*/
-  },
-
+  
   customizeSprite(sprite) {
     sprite.setDisplaySize(24, 24);
     sprite.rotationSpeed = 0.01;

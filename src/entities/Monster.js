@@ -19,6 +19,10 @@ export default {
     return monster;
   },
 
+  customizeSprite(sprite) {
+    sprite.setDisplaySize(18.5, 18.5);
+  },
+
   createPhaserEntity(entity, world) {
     const position = entity.getComponent(PositionComponent);
     const renderable = entity.getComponent(RenderableComponent);
