@@ -11,7 +11,7 @@ export default {
     const firefly = world.createEntity()
       .addComponent(PositionComponent, { x: x + Math.random() * JITTER, y: y + Math.random() * JITTER })
       .addComponent(VelocityComponent, { vx: 0, vy: 0 })
-      .addComponent(PathComponent, { currentPath: [], nextPath: [] })
+      .addComponent(PathComponent)
       .addComponent(RenderableComponent, { type: 'firefly', color: 0xffffff, radius: 5 })
       .addComponent(TypeComponent, { type: 'firefly' })
       .addComponent(PhysicsBodyComponent);
@@ -20,6 +20,7 @@ export default {
   },
 
   customizeSprite(sprite) {
-    sprite.setDisplaySize(10, 10);
+    const renderable = sprite.ecsyEntity.getComponent(RenderableComponent);
+    sprite.setDisplaySize(renderable.radius * 2, renderable.radius * 2);
   }
 }

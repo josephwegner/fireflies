@@ -20,28 +20,7 @@ export default {
   },
 
   customizeSprite(sprite) {
-    sprite.setDisplaySize(18.5, 18.5);
-  },
-
-  createPhaserEntity(entity, world) {
-    const position = entity.getComponent(PositionComponent);
-    const renderable = entity.getComponent(RenderableComponent);
-
-    const sprite = world.physics.add.sprite(position.x, position.y, 'monster');
-    
-    const actualRadius = renderable.radius * 1.5;
-    sprite.setDisplayOrigin(actualRadius, actualRadius);
-    sprite.setCircle(actualRadius);
-    sprite.setAlpha(0);
-
-    // Set a small drag to prevent perpetual bouncing
-    sprite.setDamping(true);
-    sprite.setDrag(0.05);
-
-    return sprite;
-  },
-
-  customizeSprite(sprite) {
-    sprite.setDisplaySize(18.5, 18.5);
+    const renderable = sprite.ecsyEntity.getComponent(RenderableComponent);
+    sprite.setDisplaySize(renderable.radius * 2, renderable.radius * 2);
   }
 }

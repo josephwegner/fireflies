@@ -6,7 +6,7 @@ import PhysicsBodyComponent from '../ecs/components/PhysicsBodyComponent';
 export default {
   createECSYEntity(world, x, y, attractType) {
     let goal = world.createEntity()
-      .addComponent(PositionComponent, { x: x, y: y} )
+      .addComponent(PositionComponent, { x, y } )
       .addComponent(TypeComponent, { type: 'goal' })
       .addComponent(DestinationComponent, { for: [attractType] })
       .addComponent(RenderableComponent, { type: 'goal', color: 0x00ff00, radius: 10 })
@@ -15,20 +15,7 @@ export default {
   },
 
   customizeSprite(sprite) {
-    sprite.setDisplaySize(20, 20);
-  },
-/*
-  createPhaserEntity(entity, world) {
-    const position = entity.getComponent(PositionComponent);
-    const renderable = entity.getComponent(RenderableComponent);
-
-    const sprite = world.physics.add.sprite(position.x, position.y, 'goal');
-    
-    sprite.setDisplayOrigin(renderable.radius * 2.375, renderable.radius * 2.375);
-    sprite.setCircle(renderable.radius);
-    sprite.setAlpha(0);
-
-    return sprite;
+    const renderable = sprite.ecsyEntity.getComponent(RenderableComponent);
+    sprite.setDisplaySize(renderable.radius * 2, renderable.radius * 2);
   }
-*/
 }
