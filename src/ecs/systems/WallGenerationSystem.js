@@ -1,8 +1,6 @@
 import { System } from 'ecsy';
 import WallComponent from '../components/WallComponent';
 import TypeComponent from '../components/TypeComponent';
-import InteractionComponent from '../components/InteractionComponent';
-import RepulsionInteraction from '../interactions/RepulsionInteraction';
 
 const CASE_LOOKUP = {
   0: [],
@@ -49,13 +47,6 @@ export default class WallGenerationSystem extends System {
     this.wallEntity.addComponent(TypeComponent, {
       type: 'wall'
     });
-
-   /*this.wallEntity.addComponent(InteractionComponent, {
-      interactions: { 
-        firefly: new RepulsionInteraction({ distance: 10 }),
-        monster: new RepulsionInteraction({ distance: 20 })
-      }
-    });*/
 
     this.worker.postMessage({
       action: 'buildNavMesh',

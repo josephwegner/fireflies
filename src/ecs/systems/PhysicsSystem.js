@@ -1,29 +1,28 @@
 import { System } from 'ecsy';
 import PositionComponent from '../components/PositionComponent';
-import VelocityComponent from '../components/VelocityComponent';
 import WallComponent from '../components/WallComponent';
 import PhysicsBodyComponent from '../components/PhysicsBodyComponent';
 import RenderableComponent from '../components/RenderableComponent';
-import InteractionComponent from '../components/InteractionComponent';
 import TypeComponent from '../components/TypeComponent';
+import TargetingComponent from '../components/TargetingComponent';
 import Entities from '../../entities/index.js';
+
 
 export default class PhysicsSystem extends System {
   constructor(world, attributes) {
     super(world, attributes);
     this.physics = attributes.physics;
     this.scene = this.world.scene;
-    this.interactionGroups = {}
     this.wallBodies = [];
   }
 
   init() {
     this.entityGroup = this.physics.add.group();
+    this.entityAggressionGroup = this.physics.add.group();
     this.wallGroup = this.physics.add.group({
       immovable: true
     });
     
-    // Use overlap for wall avoidance
     this.physics.add.overlap(
       this.entityGroup,
       this.wallGroup,
@@ -40,6 +39,38 @@ export default class PhysicsSystem extends System {
       null,
       this
     );
+
+    this.physics.add.overlap(
+      this.entityAggressionGroup,
+      this.entityGroup,
+      this.handleAggression.bind(this),
+      null,
+      this
+    );
+  }
+
+  createEntitySpriteGroup(entity) {
+    const physicsBody = entity.getComponent(PhysicsBodyComponent);
+    const group = this.physics.add.group();
+    group.ecsyEntity = entity;
+    physicsBody.spriteGroup = group;
+
+    return group;
+  }
+
+  createTargetingSprite(entity) {
+    const physicsBody = entity.getComponent(PhysicsBodyComponent);
+    const position = entity.getComponent(PositionComponent);
+    const targeting = entity.getComponent(TargetingComponent);
+
+    const sprite = this.physics.add.sprite(position.x, position.y, 'general');
+    sprite.setCircle(targeting.aggressionRadius);
+    sprite.setDisplayOrigin(targeting.aggressionRadius, targeting.aggressionRadius);
+    sprite.setAlpha(0);
+
+    sprite.ecsyEntity = entity;
+    physicsBody.targetingSprite = sprite;
+    return sprite;
   }
 
   createEntitySprite(entity) {
@@ -54,25 +85,37 @@ export default class PhysicsSystem extends System {
     if (renderable.color) {
       sprite.setTint(renderable.color);
     }
-    
+
     if (Entities[type]?.customizeSprite) {
       Entities[type].customizeSprite(sprite);
     }
-
-    // Set physics properties
-    if (renderable.radius) {
-      sprite.setCircle(renderable.radius);
-    }
-    
-    // Apply physics properties
-    sprite.setDamping(true);
-    sprite.setDrag(0.05);
     
     // Store the sprite in the physics component
     const physicsBody = entity.getMutableComponent(PhysicsBodyComponent);
-    physicsBody.sprite = sprite;
+    physicsBody.renderedSprite = sprite;
     
     return sprite;
+  }
+
+  handleAggression(aggressorBody, targetBody) {
+    const aggressor = aggressorBody.ecsyEntity;
+    const target = targetBody.ecsyEntity;
+
+    if (!aggressor || 
+        !target ||
+        !aggressor.hasComponent(TargetingComponent) ||
+        !target.hasComponent(TypeComponent)) {
+      return 
+    }
+
+    if (target === aggressor) { return }
+    
+    const targeting = aggressor.getComponent(TargetingComponent);
+    const targetType = target.getComponent(TypeComponent).type;
+
+    if (targeting.target === null && targeting.targetTypes.includes(targetType)) {
+      targeting.target = target
+    }
   }
   
   // Improved wall avoidance that preserves path following
@@ -82,22 +125,7 @@ export default class PhysicsSystem extends System {
 
     if (!entity || !wallEntity) { return }
 
-    this.processInteraction(entityBody, entity, wallBody, wallEntity);
-    this.processInteraction(wallBody, wallEntity, entityBody, entity);
-  }
-
-  processInteraction(entityBody, entity, interactedWithEntityBody, interactedWithEntity) {
-    if (!entity.hasComponent(InteractionComponent) ||
-        !interactedWithEntity.hasComponent(TypeComponent)) {
-      return;
-    }
-
-    const interactions = entity.getComponent(InteractionComponent).interactions;
-    const interactedWithType = interactedWithEntity.getComponent(TypeComponent).type;
-
-    if (interactions[interactedWithType]) {
-      interactions[interactedWithType].apply(entityBody, entity, interactedWithEntityBody, interactedWithEntity, this.world);
-    }
+    // Do nothing right now
   }
 
   buildWallEntities(wallEntity, wall) {
@@ -140,14 +168,22 @@ export default class PhysicsSystem extends System {
 
   execute(delta, time) {
     this.queries.physicsEntities.added.forEach(entity => {
-      const sprite = this.createEntitySprite(entity);
-      this.entityGroup.add(sprite);
+      const spriteGroup = this.createEntitySpriteGroup(entity);
+      const entitySprite = this.createEntitySprite(entity);
+      spriteGroup.add(entitySprite);
+      this.entityGroup.add(entitySprite);
+
+      if (entity.hasComponent(TargetingComponent)) {
+        const targetingSprite = this.createTargetingSprite(entity);
+        spriteGroup.add(targetingSprite);
+        this.entityAggressionGroup.add(targetingSprite);
+      }
     });
 
     this.queries.physicsEntities.removed.forEach(entity => {
       const physicsBody = entity.getComponent(PhysicsBodyComponent);
-      if (physicsBody.sprite) {
-        physicsBody.sprite.destroy();
+      if (physicsBody.spriteGroup) {
+        physicsBody.spriteGroup.destroy(true);
       }
     });
 

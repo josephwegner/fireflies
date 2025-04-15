@@ -4,6 +4,7 @@ import VelocityComponent from '../ecs/components/VelocityComponent';
 import PathComponent from '../ecs/components/PathComponent';
 import TypeComponent from '../ecs/components/TypeComponent';
 import PhysicsBodyComponent from '../ecs/components/PhysicsBodyComponent';
+import TargetingComponent from '../ecs/components/TargetingComponent';
 
 export default {
   createECSYEntity(world, x, y) {
@@ -14,7 +15,10 @@ export default {
       .addComponent(PathComponent)
       .addComponent(RenderableComponent, { type: 'firefly', color: 0xffffff, radius: 5 })
       .addComponent(TypeComponent, { type: 'firefly' })
-      .addComponent(PhysicsBodyComponent);
+      .addComponent(PhysicsBodyComponent)
+      .addComponent(TargetingComponent, {
+        targetTypes: ['monster']
+      });
     
     return firefly;
   },
@@ -22,5 +26,6 @@ export default {
   customizeSprite(sprite) {
     const renderable = sprite.ecsyEntity.getComponent(RenderableComponent);
     sprite.setDisplaySize(renderable.radius * 2, renderable.radius * 2);
+    sprite.setCircle(sprite.width / 2);
   }
 }

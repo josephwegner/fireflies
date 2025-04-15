@@ -17,5 +17,6 @@ export default {
   customizeSprite(sprite) {
     const renderable = sprite.ecsyEntity.getComponent(RenderableComponent);
     sprite.setDisplaySize(renderable.radius * 2, renderable.radius * 2);
+    sprite.setCircle(sprite.width / 2);
   }
 }

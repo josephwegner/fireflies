@@ -77,8 +77,8 @@ export default class MovementSystem extends System {
       }
 
       // Update the sprite position directly
-      if (moved && physicsBody.sprite) {
-        physicsBody.sprite.setPosition(position.x, position.y);
+      if (moved && physicsBody.spriteGroup) {
+        physicsBody.spriteGroup.setXY(position.x, position.y);
       }
 
       this.applyFriction(velocity);

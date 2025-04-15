@@ -9,7 +9,7 @@ export default {
     const destination = world.createEntity()
     .addComponent(PositionComponent, { x, y })
     .addComponent(DestinationComponent, { for: ['firefly'] })
-    .addComponent(RenderableComponent, { type: 'wisp', color: 0xffffff, radius: 24 })
+    .addComponent(RenderableComponent, { type: 'wisp', color: 0xffffff, radius: 12 })
     .addComponent(TypeComponent, { type: 'wisp' })
     .addComponent(PhysicsBodyComponent)
   
@@ -17,7 +17,9 @@ export default {
   },
   
   customizeSprite(sprite) {
-    sprite.setDisplaySize(24, 24);
+    const renderable = sprite.ecsyEntity.getComponent(RenderableComponent);
+    sprite.setDisplaySize(renderable.radius * 2, renderable.radius * 2);
+    sprite.setCircle(sprite.width / 2);
     sprite.rotationSpeed = 0.01;
   }
 }

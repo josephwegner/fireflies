@@ -11,8 +11,8 @@ import WallGenerationSystem from './ecs/systems/WallGenerationSystem';
 import PhysicsSystem from './ecs/systems/PhysicsSystem';
 import PhysicsBodyComponent from './ecs/components/PhysicsBodyComponent';
 import TypeComponent from './ecs/components/TypeComponent';
-import InteractionComponent from './ecs/components/InteractionComponent';
 import DestinationComponent from './ecs/components/DestinationComponent.js';
+import TargetingComponent from './ecs/components/TargetingComponent';
 import DebugSystem from './ecs/systems/DebugSystem';
 import Entities from './entities/index.js';
 
@@ -46,7 +46,7 @@ export default class GameScene extends Phaser.Scene {
       .registerComponent(WallComponent)
       .registerComponent(PhysicsBodyComponent)
       .registerComponent(TypeComponent)
-      .registerComponent(InteractionComponent)
+      .registerComponent(TargetingComponent)
       .registerSystem(WallGenerationSystem)
       .registerSystem(MovementSystem)
       .registerSystem(DestinationSystem)
@@ -120,8 +120,8 @@ export default class GameScene extends Phaser.Scene {
   }
 
   preload() {
-    this.load.svg('firefly', 'assets/images/svg/firefly.svg', { width: 10, height: 10});
-    this.load.svg('goal', 'assets/images/svg/firefly.svg', { width: 20, height: 20});
+    this.load.image('firefly', 'assets/images/png/firefly.png');
+    this.load.image('goal', 'assets/images/png/firefly.png');
     this.load.image('wisp', 'assets/images/png/wisp.png');
     this.load.image('monster', 'assets/images/png/monster.png');
   }

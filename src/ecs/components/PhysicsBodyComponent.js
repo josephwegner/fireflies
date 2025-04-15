@@ -3,5 +3,7 @@ import { Component, Types } from 'ecsy';
 export default class PhysicsBodyComponent extends Component {}
 
 PhysicsBodyComponent.schema = {
-  sprite: { type: Types.Ref, default: null }
+  spriteGroup: { type: Types.Ref, default: null },
+  targetingSprite: { type: Types.Ref, default: null },
+  renderedSprite: { type: Types.Ref, default: null }
 }; 
