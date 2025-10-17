@@ -13,7 +13,12 @@ import PhysicsBodyComponent from './ecs/components/PhysicsBodyComponent';
 import TypeComponent from './ecs/components/TypeComponent';
 import DestinationComponent from './ecs/components/DestinationComponent.js';
 import TargetingComponent from './ecs/components/TargetingComponent';
+import TargetComponent from './ecs/components/TargetComponent';
+import EntityComponent from './ecs/components/EntityComponent';
+import InteractionComponent from './ecs/components/InteractionComponent';
 import DebugSystem from './ecs/systems/DebugSystem';
+import TargetingSystem from './ecs/systems/TargetingSystem';
+import TargetSystem from './ecs/systems/TargetSystem';
 import Entities from './entities/index.js';
 
 const TILE_SIZE = 32;
@@ -46,41 +51,67 @@ export default class GameScene extends Phaser.Scene {
       .registerComponent(WallComponent)
       .registerComponent(PhysicsBodyComponent)
       .registerComponent(TypeComponent)
+      .registerComponent(EntityComponent)
+      .registerComponent(InteractionComponent)
       .registerComponent(TargetingComponent)
+      .registerComponent(TargetComponent)
       .registerSystem(WallGenerationSystem)
-      .registerSystem(MovementSystem)
-      .registerSystem(DestinationSystem)
-      .registerSystem(PhysicsSystem, { 
-        physics: this.physics, 
+      .registerSystem(PhysicsSystem, {
+        physics: this.physics,
         scene: this,
         tileSize: this.tileSize
       })
+      .registerSystem(MovementSystem)
+      .registerSystem(DestinationSystem)
+      .registerSystem(TargetingSystem)
+      .registerSystem(TargetSystem)
 
     if (this.game.fireflies_debug) {
       this.world.registerSystem(DebugSystem, { tileSize: TILE_SIZE })
     }
 
     // Create initial entities
-    this.entities.add(Entities.firefly.createECSYEntity(this.world, 1 * TILE_SIZE + (TILE_SIZE / 2), 3 * TILE_SIZE + (TILE_SIZE / 2)));
-    /*this.entities.add(Entities.firefly.createECSYEntity(this.world, 1, 3));
-    this.entities.add(Entities.firefly.createECSYEntity(this.world, 1, 3));
-    this.entities.add(Entities.firefly.createECSYEntity(this.world, 1, 4));
-    this.entities.add(Entities.firefly.createECSYEntity(this.world, 1, 4));
-    this.entities.add(Entities.firefly.createECSYEntity(this.world, 1, 4));
-    this.entities.add(Entities.firefly.createECSYEntity(this.world, 1, 5));
-    this.entities.add(Entities.firefly.createECSYEntity(this.world, 1, 5));
-    this.entities.add(Entities.firefly.createECSYEntity(this.world, 1, 5));*/
-    
-    this.entities.add(Entities.wisp.createECSYEntity(this.world, 10 * TILE_SIZE + (TILE_SIZE / 2), 3 * TILE_SIZE + (TILE_SIZE / 2)));
-    this.entities.add(Entities.wisp.createECSYEntity(this.world, 2 * TILE_SIZE + (TILE_SIZE / 2), 4 * TILE_SIZE + (TILE_SIZE / 2)));
-    this.entities.add(Entities.wisp.createECSYEntity(this.world, 3 * TILE_SIZE + (TILE_SIZE / 2), 5 * TILE_SIZE + (TILE_SIZE / 2)));
-    this.entities.add(Entities.wisp.createECSYEntity(this.world, 11 * TILE_SIZE + (TILE_SIZE / 2), 6 * TILE_SIZE + (TILE_SIZE / 2)));
-    this.entities.add(Entities.wisp.createECSYEntity(this.world, 9 * TILE_SIZE + (TILE_SIZE / 2), 5 * TILE_SIZE + (TILE_SIZE / 2)));
+    this.entities.add(new Entities.firefly(
+      this.world,
+      1 * TILE_SIZE + (TILE_SIZE / 2),
+      3 * TILE_SIZE + (TILE_SIZE / 2)
+    ).ecsyEntity)
 
-    this.entities.add(Entities.monster.createECSYEntity(this.world, 17 * TILE_SIZE + (TILE_SIZE / 2), 4 * TILE_SIZE + (TILE_SIZE / 2)))
+    const wisps = [
+      [10, 3],
+      [2, 4],
+      [3, 5],
+      [11, 6],
+      [9, 5] 
+    ]
+
+    wisps.forEach(wisp => {
+      this.entities.add(new Entities.wisp(
+        this.world,
+        wisp[0] * TILE_SIZE + (TILE_SIZE / 2),
+        wisp[1] * TILE_SIZE + (TILE_SIZE / 2)
+      ).ecsyEntity)
+    })
+
+    this.entities.add(new Entities.monster(
+      this.world,
+      17 * TILE_SIZE + (TILE_SIZE / 2),
+      4 * TILE_SIZE + (TILE_SIZE / 2)
+    ).ecsyEntity)
     
-    this.entities.add(Entities.goal.createECSYEntity(this.world, 16 * TILE_SIZE + (TILE_SIZE / 2), 4 * TILE_SIZE + (TILE_SIZE / 2), 'firefly'));
-    this.entities.add(Entities.goal.createECSYEntity(this.world, 1 * TILE_SIZE + (TILE_SIZE / 2), 4 * TILE_SIZE + (TILE_SIZE / 2), 'monster'))
+    this.entities.add(new Entities.goal(
+      this.world,
+      16 * TILE_SIZE + (TILE_SIZE / 2),
+      4 * TILE_SIZE + (TILE_SIZE / 2),
+      'firefly'
+    ).ecsyEntity)
+
+    this.entities.add(new Entities.goal(
+      this.world,
+      1 * TILE_SIZE + (TILE_SIZE / 2),
+      4 * TILE_SIZE + (TILE_SIZE / 2),
+      'monster',
+    ).ecsyEntity)
 
     this.map = [
       [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],

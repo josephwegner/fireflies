@@ -1,6 +1,6 @@
-import firefly from './Firefly.js';
-import goal from './Goal.js';
-import monster from './Monster.js'
-import wisp from './Wisp.js';
+import Firefly from './Firefly.js';
+import Goal from './Goal.js';
+import Monster from './Monster.js'
+import Wisp from './Wisp.js';
 
-export default { firefly, goal, monster, wisp };
+export default { firefly: Firefly, goal: Goal, monster: Monster, wisp: Wisp };

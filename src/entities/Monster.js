@@ -4,11 +4,14 @@ import VelocityComponent from '../ecs/components/VelocityComponent';
 import PathComponent from '../ecs/components/PathComponent';
 import TypeComponent from '../ecs/components/TypeComponent';
 import PhysicsBodyComponent from '../ecs/components/PhysicsBodyComponent';
+import EntityComponent from '../ecs/components/EntityComponent';
+import Entity from '../entities/Entity.js';
 
-export default {
+export default class Monster extends Entity {
   createECSYEntity(world, x, y) {
     const JITTER = 0.3;
     const monster = world.createEntity()
+      .addComponent(EntityComponent, { entity: this })
       .addComponent(PositionComponent, { x: x + Math.random() * JITTER, y: y + Math.random() * JITTER })
       .addComponent(VelocityComponent, { vx: 0, vy: 0 })
       .addComponent(PathComponent)
@@ -17,7 +20,7 @@ export default {
       .addComponent(PhysicsBodyComponent)
     
     return monster;
-  },
+  }
 
   customizeSprite(sprite) {
     const renderable = sprite.ecsyEntity.getComponent(RenderableComponent);

@@ -32,7 +32,7 @@ export default class DestinationSystem extends System {
 
       // Find the goal destination for this entity type
       const finalDestination = this.findGoalDestination(entityType);
-      
+
       if (!finalDestination) {
         return; // No goal found for this entity type
       }
