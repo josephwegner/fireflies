@@ -55,6 +55,7 @@ export class DestinationSystem extends System {
           return;
         }
 
+        // Currently the only message we get from the worker is the pathfinding result, so assume that
         const { entityId, path, pathType } = event.data;
 
         if (entityId !== undefined) {

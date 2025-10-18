@@ -25,12 +25,22 @@ export default defineConfig({
   build: {
     outDir: 'dist',
     sourcemap: true,
+    chunkSizeWarningLimit: 1000, // Increase limit for Phaser
     rollupOptions: {
       output: {
         manualChunks: {
           phaser: ['phaser'],
-          ecsy: ['ecsy']
+          ecsy: ['ecsy'],
+          worker: ['./src/workers/pathfinding/worker.ts']
         }
+      }
+    },
+    minify: 'terser',
+    terserOptions: {
+      compress: {
+        drop_console: true, // Remove console logs in production
+        drop_debugger: true,
+        pure_funcs: ['console.log', 'console.debug']
       }
     }
   }

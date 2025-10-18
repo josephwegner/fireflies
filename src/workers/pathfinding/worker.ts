@@ -2,16 +2,12 @@ import { pathfind } from './pathfinding';
 import { generateNavMesh, shrinkPaths, wallsToPaths } from './navmesh';
 import { WorkerMessage, Point, NavMesh } from './types';
 
-/* This will be an object of the format:
- * {
- *   <wallBufferSize:string>: NavMesh
- * }
- *
- * Every time we get a pathfinding request, we check if a wall
- * buffer already exists for the radius of the object. We create a fresh
- * NavMesh if not.
+/* NavMesh cache with LRU eviction
+ * Caches NavMesh by entity radius to avoid recomputation
+ * Uses Map for insertion order tracking (LRU)
  */
-const bufferedNavMeshCache: Record<number, NavMesh> = {};
+const MAX_CACHE_SIZE = 10; // Maximum number of cached NavMeshes
+const bufferedNavMeshCache = new Map<number, NavMesh>();
 let baseMapPaths: Point[][] | null = null;
 
 self.onmessage = function(e: MessageEvent<WorkerMessage>) {
@@ -33,19 +29,36 @@ self.onmessage = function(e: MessageEvent<WorkerMessage>) {
         }
 
         const wallBufferSize = e.data.radius;
-        if (!bufferedNavMeshCache[wallBufferSize]) {
+        let navMesh = bufferedNavMeshCache.get(wallBufferSize);
+
+        if (!navMesh) {
+          // Generate new NavMesh
           const multiplier = e.data.wallBufferMultiplier || 1.5;
           const shrunkPaths = shrinkPaths(baseMapPaths, e.data.radius * multiplier);
-          const navMesh = generateNavMesh(shrunkPaths);
+          navMesh = generateNavMesh(shrunkPaths);
+
           if (!navMesh) {
             console.error('[Worker] Failed to generate navmesh');
             return;
           }
 
-          bufferedNavMeshCache[wallBufferSize] = navMesh;
+          // Implement LRU eviction
+          if (bufferedNavMeshCache.size >= MAX_CACHE_SIZE) {
+            // Remove oldest entry (first key in Map)
+            const firstKey = bufferedNavMeshCache.keys().next().value;
+            if (firstKey !== undefined) {
+              bufferedNavMeshCache.delete(firstKey);
+            }
+          }
+
+          bufferedNavMeshCache.set(wallBufferSize, navMesh);
+        } else {
+          // Move to end for LRU (delete and re-add)
+          bufferedNavMeshCache.delete(wallBufferSize);
+          bufferedNavMeshCache.set(wallBufferSize, navMesh);
         }
 
-        const path = pathfind(bufferedNavMeshCache[wallBufferSize], e.data.start, e.data.destination);
+        const path = pathfind(navMesh, e.data.start, e.data.destination);
 
         if (path) {
           const formattedPath = path.map(point => ({
