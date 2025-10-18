@@ -1,4 +1,4 @@
-export const GAME_CONFIG = {
+export const GAME_CONFIG = Object.freeze({
   // Canvas
   WIDTH: 800,
   HEIGHT: 600,
@@ -15,4 +15,4 @@ export const GAME_CONFIG = {
   // Wall Generation (Catmull-Rom smoothing)
   WALL_SMOOTHING_TENSION: 0.5,
   WALL_SMOOTHING_POINTS_PER_SEGMENT: 5
-};
+});

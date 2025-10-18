@@ -6,12 +6,12 @@ export interface EntityConfig {
   isStatic: boolean;
   speed?: number;
   interactionRadius?: number;
-  interactsWith?: string[];
+  interactsWith?: readonly string[];
   direction?: string;
 }
 
-export const ENTITY_CONFIG: Record<string, EntityConfig> = {
-  firefly: {
+export const ENTITY_CONFIG: Readonly<Record<string, Readonly<EntityConfig>>> = Object.freeze({
+  firefly: Object.freeze({
     type: 'firefly',
     color: 0xffffff,
     radius: 5,
@@ -19,17 +19,17 @@ export const ENTITY_CONFIG: Record<string, EntityConfig> = {
     isStatic: false,
     speed: 20,
     interactionRadius: 30,
-    interactsWith: ['monster'],
+    interactsWith: Object.freeze(['monster']),
     direction: 'r'
-  },
-  wisp: {
+  }),
+  wisp: Object.freeze({
     type: 'wisp',
     color: 0xffffff,
     radius: 12,
     mass: 1,
     isStatic: true
-  },
-  monster: {
+  }),
+  monster: Object.freeze({
     type: 'monster',
     color: 0xff0000,
     radius: 8,
@@ -37,12 +37,12 @@ export const ENTITY_CONFIG: Record<string, EntityConfig> = {
     isStatic: false,
     speed: 20,
     direction: 'l'
-  },
-  goal: {
+  }),
+  goal: Object.freeze({
     type: 'goal',
     color: 0x00ff00,
     radius: 10,
     mass: 1,
     isStatic: true
-  }
-};
+  })
+});

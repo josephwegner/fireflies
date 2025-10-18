@@ -21,7 +21,7 @@ export interface EntityConfig {
   radius: number;
   sprite: string;
   interactionRadius?: number;
-  interactsWith?: string[];
+  interactsWith?: readonly string[];
 }
 
 export interface GameConfig {

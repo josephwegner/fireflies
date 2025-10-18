@@ -1,7 +1,7 @@
 import { Component, Types } from 'ecsy';
 
 export class Interaction extends Component<Interaction> {
-  interactsWith!: string[];
+  interactsWith!: readonly string[];
   interactionRadius!: number;
   onInteract!: () => void;
 

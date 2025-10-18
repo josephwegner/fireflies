@@ -50,7 +50,7 @@ export class GameScene extends Phaser.Scene {
   create(): void {
     this.world = new World();
     this.pathfindingWorker = new Worker(
-      new URL('../workers/pathfinding/worker.js', import.meta.url),
+      new URL('../workers/pathfinding/worker.ts', import.meta.url),
       { type: 'module' }
     );
 

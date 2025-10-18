@@ -1,4 +1,4 @@
-export const PHYSICS_CONFIG = {
+export const PHYSICS_CONFIG = Object.freeze({
   // Movement
   DEFAULT_SPEED: 20,
   FRICTION: 0.01,
@@ -16,4 +16,4 @@ export const PHYSICS_CONFIG = {
 
   // Spawning
   POSITION_JITTER: 0.3
-};
+});
