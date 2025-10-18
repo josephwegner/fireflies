@@ -2,26 +2,7 @@ import { System } from 'ecsy';
 import { Position, Velocity, Path } from '@/ecs/components';
 import { PHYSICS_CONFIG } from '@/config';
 import { gameEvents, GameEvents } from '@/events';
-
-const Vector = {
-  length(x: number, y: number): number {
-    return Math.sqrt(x * x + y * y);
-  },
-
-  normalize(x: number, y: number): { x: number; y: number } {
-    const len = this.length(x, y);
-    if (len === 0) return { x: 0, y: 0 };
-    return { x: x / len, y: y / len };
-  },
-
-  scale(vector: { x: number; y: number }, scalar: number): { x: number; y: number } {
-    return { x: vector.x * scalar, y: vector.y * scalar };
-  },
-
-  add(v1: { x: number; y: number }, v2: { x: number; y: number }): { x: number; y: number } {
-    return { x: v1.x + v2.x, y: v1.y + v2.y };
-  }
-};
+import { Vector } from '@/utils';
 
 export class MovementSystem extends System {
   execute(delta?: number): void {

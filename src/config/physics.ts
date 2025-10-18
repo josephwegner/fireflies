@@ -9,6 +9,11 @@ export const PHYSICS_CONFIG = {
   PATH_ARRIVAL_MIN: 0.01,
   WALL_BUFFER_MULTIPLIER: 1.5,
 
+  // Destination Scoring (for pathfinding destination selection)
+  PATH_PROXIMITY_WEIGHT: 3,
+  PROGRESS_WEIGHT: 0.1,
+  MIN_SCORE_THRESHOLD: 1.0,
+
   // Spawning
   POSITION_JITTER: 0.3
 };

@@ -191,7 +191,7 @@ export class WallGenerationSystem extends System {
     if (points.length < 3) return points;
 
     const smoothedPoints: Point[] = [];
-    const tension = 0.5;
+    const tension = GAME_CONFIG.WALL_SMOOTHING_TENSION;
 
     smoothedPoints.push(points[0]);
 
@@ -201,7 +201,7 @@ export class WallGenerationSystem extends System {
       const p2 = points[i + 1];
       const p3 = i < points.length - 2 ? points[i + 2] : points[i + 1];
 
-      const numPoints = 5;
+      const numPoints = GAME_CONFIG.WALL_SMOOTHING_POINTS_PER_SEGMENT;
       for (let t = 0; t < 1; t += 1 / numPoints) {
         smoothedPoints.push(this.getCatmullRomPoint(t, p0, p1, p2, p3, tension));
       }

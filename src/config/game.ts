@@ -10,5 +10,9 @@ export const GAME_CONFIG = {
 
   // Walls
   WALL_THICKNESS: 2,
-  WALL_COLOR: 0x888888
+  WALL_COLOR: 0x888888,
+
+  // Wall Generation (Catmull-Rom smoothing)
+  WALL_SMOOTHING_TENSION: 0.5,
+  WALL_SMOOTHING_POINTS_PER_SEGMENT: 5
 };

@@ -193,7 +193,7 @@ export class DestinationSystem extends System {
     finalDest: DestinationCandidate,
     entityType: string,
     direction: string,
-    minScoreThreshold: number = 1.0
+    minScoreThreshold: number = PHYSICS_CONFIG.MIN_SCORE_THRESHOLD
   ): DestinationCandidate[] {
     const idealDX = finalDest.pos.x - current.x;
     const idealDY = finalDest.pos.y - current.y;
@@ -234,9 +234,7 @@ export class DestinationSystem extends System {
       const progressPercent = progress / idealDist;
       const pathProximityFactor = 1 / (distanceFromPath + 0.5);
 
-      const PATH_WEIGHT = 3;
-      const PROGRESS_WEIGHT = 0.1;
-      let score = (progressPercent * PROGRESS_WEIGHT) + (pathProximityFactor * PATH_WEIGHT);
+      let score = (progressPercent * PHYSICS_CONFIG.PROGRESS_WEIGHT) + (pathProximityFactor * PHYSICS_CONFIG.PATH_PROXIMITY_WEIGHT);
 
       if (typeComp === 'goal') {
         score = Math.max(score, minScoreThreshold);
