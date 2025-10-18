@@ -62,8 +62,20 @@ export class RenderingSystem extends System {
 
     const container = this.scene.add.container(position.x, position.y);
 
-    const sprite = this.scene.add.circle(0, 0, renderable.radius, renderable.color);
-    container.add(sprite);
+    // Use sprite if available, otherwise fall back to circle
+    if (renderable.sprite && this.scene.textures.exists(renderable.sprite)) {
+      const sprite = this.scene.add.sprite(0, 0, renderable.sprite);
+
+      // Scale sprite to match the desired radius
+      const scale = (renderable.radius * 2) / Math.max(sprite.width, sprite.height);
+      sprite.setScale(scale);
+
+      container.add(sprite);
+    } else {
+      // Fallback to circle if no sprite or sprite not loaded
+      const circle = this.scene.add.circle(0, 0, renderable.radius, renderable.color);
+      container.add(circle);
+    }
 
     this.spriteMap.set(entity, container);
   }

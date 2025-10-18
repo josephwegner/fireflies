@@ -91,6 +91,7 @@ export class DestinationSystem extends System {
         return;
       }
 
+      // If we don't have a current path, we need to request one
       if (!pathComp.currentPath.length) {
         // Don't spam requests if we're already waiting for a response
         if (this.pendingRequests.has(entity.id)) {
@@ -110,9 +111,14 @@ export class DestinationSystem extends System {
           y: destinations[0].pos.y
         }, 'current');
 
+        // If no destinations were found, we still want to clear the next path,
+        // so the entity doesn't get stuck waiting for a response that will never come.
+        // This allows the system to recover and try again later.
         if (destinations.length < 1) {
           pathComp.nextPath = [];
         }
+        
+      // If we have a current path, but no next path, we need to request one
       } else if (pathComp.nextPath && !pathComp.nextPath.length) {
         const lastPos = pathComp.currentPath[pathComp.currentPath.length - 1];
         const destinations = this.gatherDestinations(lastPos, finalDestination, entityType, pathComp.direction);

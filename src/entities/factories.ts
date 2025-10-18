@@ -33,6 +33,7 @@ export function createFirefly(world: World, x: number, y: number): ECSEntity {
     })
     .addComponent(Renderable, {
       type: config.type,
+      sprite: config.type, // Use type as sprite key
       color: config.color,
       radius: config.radius
     })
@@ -60,6 +61,7 @@ export function createWisp(world: World, x: number, y: number): ECSEntity {
     .addComponent(Destination, { for: ['firefly'] })
     .addComponent(Renderable, {
       type: config.type,
+      sprite: config.type, // Use type as sprite key
       color: config.color,
       radius: config.radius
     })
@@ -87,6 +89,7 @@ export function createMonster(world: World, x: number, y: number): ECSEntity {
     })
     .addComponent(Renderable, {
       type: config.type,
+      sprite: config.type, // Use type as sprite key
       color: config.color,
       radius: config.radius
     })
@@ -111,6 +114,7 @@ export function createGoal(
     .addComponent(Destination, { for: [attractType] })
     .addComponent(Renderable, {
       type: config.type,
+      sprite: config.type, // Use type as sprite key
       color: config.color,
       radius: config.radius
     })
