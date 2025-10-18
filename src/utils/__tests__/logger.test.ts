@@ -7,6 +7,7 @@ describe('Logger', () => {
 
   beforeEach(() => {
     logger = Logger.getInstance();
+    logger.reset(); // Reset to default state to prevent test pollution
     logger.setLevel(LogLevel.DEBUG);
     logger.enable('*');
 

@@ -34,6 +34,21 @@ export class Logger {
   }
 
   /**
+   * Reset logger to default state (for testing)
+   */
+  reset(): void {
+    const mode = (import.meta as any).env?.MODE || 'development';
+    if (mode === 'production') {
+      this.level = LogLevel.WARN;
+    } else if (mode === 'test') {
+      this.level = LogLevel.ERROR;
+    } else {
+      this.level = LogLevel.DEBUG;
+    }
+    this.enabledNamespaces = new Set(['*']);
+  }
+
+  /**
    * Set the minimum log level
    */
   setLevel(level: LogLevel): void {

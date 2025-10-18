@@ -12,6 +12,9 @@ describe('TargetingSystem', () => {
     world.registerComponent(Targeting);
     world.registerComponent(Target);
     world.registerSystem(TargetingSystem);
+
+    // Clear singleton event listeners to prevent pollution
+    gameEvents.clear();
   });
 
   it('should acquire target when potential targets exist', () => {
