@@ -6,4 +6,6 @@ export const COLORS = {
   PURPLE: 0x800080,
   GREY: 0x808080,
   WHITE: 0xffffff
-}
+} as const;
+
+export type Color = typeof COLORS[keyof typeof COLORS];

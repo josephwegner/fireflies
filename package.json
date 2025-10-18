@@ -2,10 +2,11 @@
     "name": "firefly-lantern-keepers-poc",
     "version": "1.0.0",
     "description": "PoC for Firefly Lantern Keepers using Phaser 3, ECSY, Easy-Star.js, and Web Workers.",
-    "main": "src/main.js",
+    "type": "module",
     "scripts": {
-        "start": "webpack serve --open --mode development",
-        "build": "webpack --mode production"
+        "dev": "vite",
+        "build": "tsc && vite build",
+        "preview": "vite preview"
     },
     "dependencies": {
         "@doodle3d/clipper-js": "^1.0.11",
@@ -17,7 +18,11 @@
     "devDependencies": {
         "@babel/core": "^7.18.9",
         "@babel/preset-env": "^7.18.9",
+        "@types/node": "^24.8.1",
         "babel-loader": "^8.2.5",
+        "typescript": "^5.9.3",
+        "vite": "^7.1.10",
+        "vite-plugin-static-copy": "^3.1.4",
         "webpack": "^5.74.0",
         "webpack-cli": "^4.10.0",
         "webpack-dev-server": "^4.11.1"
