@@ -10,38 +10,50 @@ describe('GameEvents', () => {
 
   it('should emit and receive events', () => {
     const callback = vi.fn();
-    events.on('test:event', callback);
-    events.emit('test:event', { data: 'test' });
+    events.on(GameEvents.PATH_COMPLETED, callback);
+    events.emit(GameEvents.PATH_COMPLETED, {
+      entity: { id: 1 } as any,
+      position: { x: 10, y: 20 }
+    });
 
-    expect(callback).toHaveBeenCalledWith({ data: 'test' });
+    expect(callback).toHaveBeenCalledWith({
+      entity: { id: 1 },
+      position: { x: 10, y: 20 }
+    });
   });
 
   it('should handle multiple listeners', () => {
     const callback1 = vi.fn();
     const callback2 = vi.fn();
+    const testData = { entity: { id: 1 } as any, target: { id: 2 } as any };
 
-    events.on('test:event', callback1);
-    events.on('test:event', callback2);
-    events.emit('test:event', 'data');
+    events.on(GameEvents.TARGET_ACQUIRED, callback1);
+    events.on(GameEvents.TARGET_ACQUIRED, callback2);
+    events.emit(GameEvents.TARGET_ACQUIRED, testData);
 
-    expect(callback1).toHaveBeenCalledWith('data');
-    expect(callback2).toHaveBeenCalledWith('data');
+    expect(callback1).toHaveBeenCalledWith(testData);
+    expect(callback2).toHaveBeenCalledWith(testData);
   });
 
   it('should remove listeners with off', () => {
     const callback = vi.fn();
-    events.on('test:event', callback);
-    events.off('test:event', callback);
-    events.emit('test:event');
+    events.on(GameEvents.TARGET_ACQUIRED, callback);
+    events.off(GameEvents.TARGET_ACQUIRED, callback);
+    events.emit(GameEvents.TARGET_ACQUIRED, {
+      entity: { id: 1 } as any,
+      target: { id: 2 } as any
+    });
 
     expect(callback).not.toHaveBeenCalled();
   });
 
   it('should fire once listeners only once', () => {
     const callback = vi.fn();
-    events.once('test:event', callback);
-    events.emit('test:event');
-    events.emit('test:event');
+    const testData = { entity: { id: 1 } as any, position: { x: 10, y: 20 } };
+
+    events.once(GameEvents.PATH_COMPLETED, callback);
+    events.emit(GameEvents.PATH_COMPLETED, testData);
+    events.emit(GameEvents.PATH_COMPLETED, testData);
 
     expect(callback).toHaveBeenCalledTimes(1);
   });
@@ -50,10 +62,13 @@ describe('GameEvents', () => {
     const callback1 = vi.fn();
     const callback2 = vi.fn();
 
-    events.on('test:event', callback1);
-    events.on('test:event', callback2);
-    events.clear('test:event');
-    events.emit('test:event');
+    events.on(GameEvents.PATH_COMPLETED, callback1);
+    events.on(GameEvents.PATH_COMPLETED, callback2);
+    events.clear(GameEvents.PATH_COMPLETED);
+    events.emit(GameEvents.PATH_COMPLETED, {
+      entity: { id: 1 } as any,
+      position: { x: 10, y: 20 }
+    });
 
     expect(callback1).not.toHaveBeenCalled();
     expect(callback2).not.toHaveBeenCalled();
@@ -63,11 +78,17 @@ describe('GameEvents', () => {
     const callback1 = vi.fn();
     const callback2 = vi.fn();
 
-    events.on('event1', callback1);
-    events.on('event2', callback2);
+    events.on(GameEvents.PATH_COMPLETED, callback1);
+    events.on(GameEvents.TARGET_ACQUIRED, callback2);
     events.clear();
-    events.emit('event1');
-    events.emit('event2');
+    events.emit(GameEvents.PATH_COMPLETED, {
+      entity: { id: 1 } as any,
+      position: { x: 10, y: 20 }
+    });
+    events.emit(GameEvents.TARGET_ACQUIRED, {
+      entity: { id: 1 } as any,
+      target: { id: 2 } as any
+    });
 
     expect(callback1).not.toHaveBeenCalled();
     expect(callback2).not.toHaveBeenCalled();

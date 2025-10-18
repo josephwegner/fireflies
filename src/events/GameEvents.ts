@@ -1,4 +1,17 @@
-type EventCallback = (...args: any[]) => void;
+import { ECSEntity } from '@/types';
+
+// Define typed event payloads
+export interface GameEventPayloads {
+  [GameEvents.ENTITY_REACHED_GOAL]: { entity: ECSEntity; position: { x: number; y: number } };
+  [GameEvents.ENTITY_DIED]: { entity: ECSEntity; position: { x: number; y: number } };
+  [GameEvents.ENTITY_SPAWNED]: { entity: ECSEntity; type: string };
+  [GameEvents.TARGET_ACQUIRED]: { entity: ECSEntity; target: ECSEntity };
+  [GameEvents.TARGET_LOST]: { entity: ECSEntity; target: ECSEntity };
+  [GameEvents.PATH_COMPLETED]: { entity: ECSEntity; position: { x: number; y: number } };
+  [GameEvents.INTERACTION_OCCURRED]: { entity: ECSEntity; target: ECSEntity; type: string };
+}
+
+type EventCallback<T = any> = (data: T) => void;
 
 export class GameEvents {
   private listeners: Map<string, EventCallback[]> = new Map();
@@ -13,22 +26,28 @@ export class GameEvents {
   static readonly INTERACTION_OCCURRED = 'interaction:occurred';
 
   /**
-   * Subscribe to an event
+   * Subscribe to an event with type-safe payload
    */
-  on(event: string, callback: EventCallback): void {
+  on<K extends keyof GameEventPayloads>(
+    event: K,
+    callback: EventCallback<GameEventPayloads[K]>
+  ): void {
     if (!this.listeners.has(event)) {
       this.listeners.set(event, []);
     }
-    this.listeners.get(event)!.push(callback);
+    this.listeners.get(event)!.push(callback as EventCallback);
   }
 
   /**
    * Unsubscribe from an event
    */
-  off(event: string, callback: EventCallback): void {
+  off<K extends keyof GameEventPayloads>(
+    event: K,
+    callback: EventCallback<GameEventPayloads[K]>
+  ): void {
     const callbacks = this.listeners.get(event);
     if (callbacks) {
-      const index = callbacks.indexOf(callback);
+      const index = callbacks.indexOf(callback as EventCallback);
       if (index !== -1) {
         callbacks.splice(index, 1);
       }
@@ -36,22 +55,28 @@ export class GameEvents {
   }
 
   /**
-   * Emit an event with optional data
+   * Emit an event with type-safe payload
    */
-  emit(event: string, ...args: any[]): void {
-    console.log('[GameEvents]', event, ...args);
+  emit<K extends keyof GameEventPayloads>(
+    event: K,
+    data: GameEventPayloads[K]
+  ): void {
+    console.log('[GameEvents]', event, data);
     const callbacks = this.listeners.get(event);
     if (callbacks) {
-      callbacks.forEach(callback => callback(...args));
+      callbacks.forEach(callback => callback(data));
     }
   }
 
   /**
    * Subscribe to an event that will only fire once
    */
-  once(event: string, callback: EventCallback): void {
-    const onceCallback = (...args: any[]) => {
-      callback(...args);
+  once<K extends keyof GameEventPayloads>(
+    event: K,
+    callback: EventCallback<GameEventPayloads[K]>
+  ): void {
+    const onceCallback = (data: GameEventPayloads[K]) => {
+      callback(data);
       this.off(event, onceCallback);
     };
     this.on(event, onceCallback);
@@ -60,7 +85,7 @@ export class GameEvents {
   /**
    * Remove all listeners for a specific event, or all events if no event specified
    */
-  clear(event?: string): void {
+  clear<K extends keyof GameEventPayloads>(event?: K): void {
     if (event) {
       this.listeners.delete(event);
     } else {
