@@ -9,6 +9,9 @@ import {
   Targeting,
   Destination,
   Interaction,
+  Health,
+  Combat,
+  CombatState,
   FireflyTag,
   WispTag,
   MonsterTag,
@@ -49,6 +52,19 @@ export function createFirefly(world: World, x: number, y: number): ECSEntity {
     })
     .addComponent(Targeting, {
       potentialTargets: []
+    })
+    .addComponent(Health, {
+      currentHealth: config.health!,
+      maxHealth: config.health!,
+      isDead: false
+    })
+    .addComponent(Combat, {
+      state: CombatState.IDLE,
+      chargeTime: 0,
+      attackElapsed: 0,
+      recoveryElapsed: 0,
+      attackPattern: config.combat!,
+      hasHit: false
     })
     .addComponent(FireflyTag);
 }
@@ -97,6 +113,27 @@ export function createMonster(world: World, x: number, y: number): ECSEntity {
       mass: config.mass,
       isStatic: config.isStatic,
       collisionRadius: config.radius
+    })
+    .addComponent(Interaction, {
+      interactsWith: config.interactsWith!,
+      interactionRadius: config.interactionRadius!,
+      onInteract: () => {}
+    })
+    .addComponent(Targeting, {
+      potentialTargets: []
+    })
+    .addComponent(Health, {
+      currentHealth: config.health!,
+      maxHealth: config.health!,
+      isDead: false
+    })
+    .addComponent(Combat, {
+      state: CombatState.IDLE,
+      chargeTime: 0,
+      attackElapsed: 0,
+      recoveryElapsed: 0,
+      attackPattern: config.combat!,
+      hasHit: false
     })
     .addComponent(MonsterTag);
 }

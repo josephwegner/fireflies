@@ -16,6 +16,8 @@ import {
   Targeting,
   Target,
   Interaction,
+  Health,
+  Combat,
   FireflyTag,
   WispTag,
   MonsterTag,
@@ -38,6 +40,8 @@ describe('Entity Factories', () => {
       .registerComponent(Targeting)
       .registerComponent(Target)
       .registerComponent(Interaction)
+      .registerComponent(Health)
+      .registerComponent(Combat)
       .registerComponent(FireflyTag)
       .registerComponent(WispTag)
       .registerComponent(MonsterTag)
@@ -195,11 +199,13 @@ describe('Entity Factories', () => {
       expect(entity.hasComponent(MonsterTag)).toBe(true);
     });
 
-    it('should not have targeting or interaction components', () => {
+    it('should have targeting and interaction components for combat', () => {
       const entity = createMonster(world, 100, 200);
 
-      expect(entity.hasComponent(Targeting)).toBe(false);
-      expect(entity.hasComponent(Interaction)).toBe(false);
+      expect(entity.hasComponent(Targeting)).toBe(true);
+      expect(entity.hasComponent(Interaction)).toBe(true);
+      expect(entity.hasComponent(Health)).toBe(true);
+      expect(entity.hasComponent(Combat)).toBe(true);
     });
 
     it('should initialize position with jitter', () => {

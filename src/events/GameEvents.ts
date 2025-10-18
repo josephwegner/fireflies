@@ -9,6 +9,10 @@ export interface GameEventPayloads {
   [GameEvents.TARGET_LOST]: { entity: ECSEntity; target: ECSEntity };
   [GameEvents.PATH_COMPLETED]: { entity: ECSEntity; position: { x: number; y: number } };
   [GameEvents.INTERACTION_OCCURRED]: { entity: ECSEntity; target: ECSEntity; type: string };
+  [GameEvents.ATTACK_STARTED]: { entity: ECSEntity; target: ECSEntity; attackType: string };
+  [GameEvents.ATTACK_HIT]: { attacker: ECSEntity; target: ECSEntity; damage: number; knockbackForce?: number };
+  [GameEvents.ATTACK_COMPLETED]: { entity: ECSEntity };
+  [GameEvents.KNOCKBACK_APPLIED]: { entity: ECSEntity; force: { x: number; y: number } };
 }
 
 type EventCallback<T = any> = (data: T) => void;
@@ -24,6 +28,10 @@ export class GameEvents {
   static readonly TARGET_LOST = 'target:lost';
   static readonly PATH_COMPLETED = 'path:completed';
   static readonly INTERACTION_OCCURRED = 'interaction:occurred';
+  static readonly ATTACK_STARTED = 'combat:attackStarted';
+  static readonly ATTACK_HIT = 'combat:attackHit';
+  static readonly ATTACK_COMPLETED = 'combat:attackCompleted';
+  static readonly KNOCKBACK_APPLIED = 'combat:knockbackApplied';
 
   /**
    * Subscribe to an event with type-safe payload

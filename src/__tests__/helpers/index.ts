@@ -6,3 +6,4 @@ export * from './phaser-mocks';
 
 // Test constants
 export * from './constants';
+export * from './setup';

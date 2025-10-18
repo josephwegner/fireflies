@@ -3,3 +3,8 @@ export { Targeting } from './Targeting';
 export { Destination } from './Destination';
 export { Path } from './Path';
 export { Interaction } from './Interaction';
+export { Health } from './Health';
+export { Combat, CombatState } from './Combat';
+export type { AttackPattern } from './Combat';
+export { Knockback } from './Knockback';
+export type { KnockbackForce } from './Knockback';

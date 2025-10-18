@@ -10,6 +10,9 @@ import {
   Targeting,
   Target,
   Interaction,
+  Health,
+  Combat,
+  Knockback,
   Wall,
   FireflyTag,
   WispTag,
@@ -21,9 +24,13 @@ import {
   RenderingSystem,
   WallRenderingSystem,
   MovementSystem,
+  InteractionSystem,
   TargetingSystem,
   DestinationSystem,
-  WallGenerationSystem
+  WallGenerationSystem,
+  DamageSystem,
+  KnockbackSystem,
+  CombatSystem
 } from '@/ecs/systems';
 import {
   createFirefly,
@@ -33,6 +40,7 @@ import {
 } from '@/entities/factories';
 import { GAME_CONFIG } from '@/config';
 import { AssetLoader } from '@/assets';
+import { AttackHandlerRegistry } from '@/ecs/systems/gameplay/attacks/AttackHandlerRegistry';
 
 export class GameScene extends Phaser.Scene {
   private world!: World;
@@ -55,6 +63,9 @@ export class GameScene extends Phaser.Scene {
     this.createMap();
     this.registerSystems();
     this.createEntities();
+
+    // Initialize attack handlers before creating entities
+    AttackHandlerRegistry.initialize();
   }
 
   protected createWorker(): Worker {
@@ -75,6 +86,9 @@ export class GameScene extends Phaser.Scene {
       .registerComponent(Targeting)
       .registerComponent(Target)
       .registerComponent(Interaction)
+      .registerComponent(Health)
+      .registerComponent(Combat)
+      .registerComponent(Knockback)
       .registerComponent(Wall)
       .registerComponent(FireflyTag)
       .registerComponent(WispTag)
@@ -86,11 +100,15 @@ export class GameScene extends Phaser.Scene {
   private registerSystems(): void {
     this.world
       .registerSystem(WallGenerationSystem, { worker: this.pathfindingWorker, map: this.map })
-      .registerSystem(WallRenderingSystem, { scene: this })
-      .registerSystem(RenderingSystem, { scene: this })
+      .registerSystem(InteractionSystem)
+      .registerSystem(TargetingSystem)
+      .registerSystem(CombatSystem)
+      .registerSystem(DamageSystem)
+      .registerSystem(KnockbackSystem)
       .registerSystem(MovementSystem)
       .registerSystem(DestinationSystem, { worker: this.pathfindingWorker })
-      .registerSystem(TargetingSystem);
+      .registerSystem(WallRenderingSystem, { scene: this })
+      .registerSystem(RenderingSystem, { scene: this });
   }
 
   private createMap(): void {

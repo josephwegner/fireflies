@@ -8,6 +8,17 @@ export interface EntityConfig {
   interactionRadius?: number;
   interactsWith?: readonly string[];
   direction?: string;
+  health?: number;
+  combat?: {
+    chargeTime: number;
+    attackDuration: number;
+    recoveryTime: number;
+    damage: number;
+    handlerType: string; // 'dash', 'pulse', 'projectile', etc.
+    dashSpeed?: number;
+    radius?: number;
+    knockbackForce?: number;
+  };
 }
 
 export const ENTITY_CONFIG: Readonly<Record<string, Readonly<EntityConfig>>> = Object.freeze({
@@ -20,7 +31,17 @@ export const ENTITY_CONFIG: Readonly<Record<string, Readonly<EntityConfig>>> = O
     speed: 20,
     interactionRadius: 30,
     interactsWith: Object.freeze(['monster']),
-    direction: 'r'
+    direction: 'r',
+    health: 50,
+    combat: Object.freeze({
+      chargeTime: 1000,
+      attackDuration: 300,
+      recoveryTime: 400,
+      damage: 10,
+      handlerType: 'dash', // Instead of attackType
+      dashSpeed: 100,
+      knockbackForce: 50
+    })
   }),
   wisp: Object.freeze({
     type: 'wisp',
@@ -36,7 +57,19 @@ export const ENTITY_CONFIG: Readonly<Record<string, Readonly<EntityConfig>>> = O
     mass: 1,
     isStatic: false,
     speed: 20,
-    direction: 'l'
+    direction: 'l',
+    interactionRadius: 40,
+    interactsWith: Object.freeze(['firefly']),
+    health: 100,
+    combat: Object.freeze({
+      chargeTime: 1500,
+      attackDuration: 100,
+      recoveryTime: 0,
+      damage: 25,
+      handlerType: 'pulse',
+      radius: 40, // Changed from pulseRadius to radius
+      knockbackForce: 30
+    })
   }),
   goal: Object.freeze({
     type: 'goal',

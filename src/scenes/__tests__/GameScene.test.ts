@@ -221,13 +221,14 @@ describe('GameScene', () => {
       expect(systems.some((s: any) => s instanceof TargetingSystem)).toBe(true);
     });
 
-    it('should register exactly 6 systems', () => {
+    it('should register exactly 10 systems', () => {
       scene.create();
 
       const world = scene.getWorld()!;
       const systemCount = world.systemManager._systems.length;
 
-      expect(systemCount).toBe(6);
+      // 10 systems: WallGeneration, Interaction, Targeting, Combat, Damage, Knockback, Movement, Destination, WallRendering, Rendering
+      expect(systemCount).toBe(10);
     });
 
     it('should pass scene to rendering systems', () => {
