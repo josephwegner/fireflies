@@ -1,5 +1,5 @@
 import { pathfind } from './pathfinding.js'
-import { generateNavMesh, generateMapPolygons, shrinkPaths, wallsToPaths } from './navmesh.js'
+import { generateNavMesh, shrinkPaths, wallsToPaths } from './navmesh.js'
 
 /* This will be an object of the format:
  * {
@@ -13,14 +13,20 @@ import { generateNavMesh, generateMapPolygons, shrinkPaths, wallsToPaths } from 
 let bufferedNavMeshCache = {}
 
 self.onmessage = function(e) {
-  switch(e.data.action) {
-    case 'buildNavMesh':
-      this.baseMapPaths = wallsToPaths(e.data.walls)
-      break
+  try {
+    switch(e.data.action) {
+      case 'buildNavMesh':
+        this.baseMapPaths = wallsToPaths(e.data.walls)
+
+        self.postMessage({
+          action: 'navmeshReady',
+          pathCount: this.baseMapPaths?.length || 0
+        });
+        break
 
     case 'pathfind':
       if (!this.baseMapPaths) {
-        console.error('No polygons available')
+        console.error('[Worker] No baseMapPaths available - navmesh not built yet!')
         return
       }
 
@@ -29,7 +35,7 @@ self.onmessage = function(e) {
         const shrunkPaths = shrinkPaths(this.baseMapPaths, e.data.radius * 1.5)
         const navMesh = generateNavMesh(shrunkPaths)
         if (!navMesh) {
-          console.error('Failed to generate navmesh', e.data.walls, e.data.radius)
+          console.error('[Worker] Failed to generate navmesh')
           return
         }
 
@@ -38,14 +44,7 @@ self.onmessage = function(e) {
 
       const path = pathfind(bufferedNavMeshCache[wallBufferSize], e.data.start, e.data.destination)
 
-      if (!path) {
-        console.warn('No path found', {
-          entityId: e.data.entityId,
-          start: e.data.start,
-          destination: e.data.destination,
-          pathType: e.data.pathType
-        });
-      } else {
+      if (path) {
         const formattedPath = path.map(point => {
           return {
             x: point.x,
@@ -61,7 +60,15 @@ self.onmessage = function(e) {
       }
       break
 
-    default:
-      console.error('Unknown pathfinding worker action', e.data)
+      default:
+        console.error('[Worker] Unknown action:', e.data.action)
+    }
+  } catch (error) {
+    console.error('[Worker] Error:', error.message);
+    self.postMessage({
+      action: 'error',
+      error: error.message,
+      stack: error.stack
+    });
   }
 }

@@ -47,6 +47,8 @@ declare module 'ecsy' {
     priority: number;
     executeTime: number;
 
+    constructor(world: World, attributes?: any);
+
     init?(attributes?: any): void;
     execute?(delta?: number, time?: number): void;
     stop?(): void;
@@ -80,4 +82,13 @@ declare module 'ecsy' {
   export function Not<T extends Component>(
     component: ComponentConstructor<T>
   ): ComponentConstructor<T>;
+
+  export namespace Types {
+    export const Number: any;
+    export const String: any;
+    export const Boolean: any;
+    export const Array: any;
+    export const Ref: any;
+    export const JSON: any;
+  }
 }
