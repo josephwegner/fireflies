@@ -22,8 +22,7 @@ describe('MovementSystem', () => {
     entity.addComponent(Path, {
       currentPath: [{ x: 10, y: 10 }],
       nextPath: [],
-      direction: 'r',
-      speed: 20
+      direction: 'r'
     });
 
     const initialX = 0;
@@ -46,8 +45,7 @@ describe('MovementSystem', () => {
     entity.addComponent(Path, {
       currentPath: [{ x: 10, y: 10 }],
       nextPath: [],
-      direction: 'r',
-      speed: 20
+      direction: 'r'
     });
 
     world.execute(100, 100); // Large delta to ensure arrival
@@ -65,8 +63,7 @@ describe('MovementSystem', () => {
     entity.addComponent(Path, {
       currentPath: [],
       nextPath: [{ x: 20, y: 20 }],
-      direction: 'r',
-      speed: 20
+      direction: 'r'
     });
 
     // First execution should not move to next path yet
@@ -87,8 +84,7 @@ describe('MovementSystem', () => {
     entity.addComponent(Path, {
       currentPath: [],
       nextPath: [],
-      direction: 'r',
-      speed: 20
+      direction: 'r'
     });
 
     world.execute(16, 16);
@@ -109,8 +105,7 @@ describe('MovementSystem', () => {
     entity.addComponent(Path, {
       currentPath: [],
       nextPath: [],
-      direction: 'r',
-      speed: 20
+      direction: 'r'
     });
 
     world.execute(16, 16);
@@ -133,8 +128,7 @@ describe('MovementSystem', () => {
         { x: 15, y: 15 }
       ],
       nextPath: [],
-      direction: 'r',
-      speed: 20
+      direction: 'r'
     });
 
     const pathComp = entity.getComponent(Path)!;
@@ -154,8 +148,7 @@ describe('MovementSystem', () => {
     entity.addComponent(Path, {
       currentPath: [],
       nextPath: [],
-      direction: 'r',
-      speed: 20
+      direction: 'r'
     });
 
     // Should not throw error
@@ -184,8 +177,7 @@ describe('MovementSystem', () => {
     entity.addComponent(Path, {
       currentPath: [{ x: 100, y: 0 }], // Move right
       nextPath: [],
-      direction: 'r',
-      speed: 20
+      direction: 'r'
     });
 
     world.execute(16, 16);
@@ -205,8 +197,7 @@ describe('MovementSystem', () => {
     entity.addComponent(Path, {
       currentPath: [{ x: 10, y: 10 }],
       nextPath: [],
-      direction: 'r',
-      speed: 20
+      direction: 'r'
     });
 
     world.execute(16, 16);

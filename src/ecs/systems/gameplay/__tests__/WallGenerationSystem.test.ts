@@ -165,9 +165,9 @@ describe('WallGenerationSystem', () => {
     const wall = system.wallEntity.getComponent(Wall)!;
 
     // Smoothed segments should have more points than the original marching squares contour
-    wall.segments.forEach(segment => {
+    wall.segments.forEach((segment: any[]) => {
       expect(segment.length).toBeGreaterThan(3);
-      segment.forEach(point => {
+      segment.forEach((point: any) => {
         expect(typeof point.x).toBe('number');
         expect(typeof point.y).toBe('number');
         expect(point.x).toBeGreaterThanOrEqual(0);

@@ -13,9 +13,10 @@ export class Logger {
 
   private constructor() {
     // Set log level based on environment
-    if (import.meta.env.MODE === 'production') {
+    const mode = (import.meta as any).env?.MODE || 'development';
+    if (mode === 'production') {
       this.level = LogLevel.WARN;
-    } else if (import.meta.env.MODE === 'test') {
+    } else if (mode === 'test') {
       this.level = LogLevel.ERROR;
     } else {
       this.level = LogLevel.DEBUG;
