@@ -69,7 +69,8 @@ self.onmessage = function(e) {
     self.postMessage({
       action: 'error',
       error: error.message,
-      stack: error.stack
+      stack: error.stack,
+      entityId: e.data?.entityId // Include entityId so we can clear pending request
     });
   }
 }

@@ -32,15 +32,27 @@ export class RenderingSystem extends System {
     const { renderables } = this.queries;
 
     renderables.added?.forEach((entity) => {
-      this.createSprite(entity);
+      try {
+        this.createSprite(entity);
+      } catch (error) {
+        console.error('[RenderingSystem] Error creating sprite for entity:', entity.id, error);
+      }
     });
 
     renderables.removed?.forEach((entity) => {
-      this.destroySprite(entity);
+      try {
+        this.destroySprite(entity);
+      } catch (error) {
+        console.error('[RenderingSystem] Error destroying sprite for entity:', entity.id, error);
+      }
     });
 
     renderables.results.forEach((entity) => {
-      this.updateSprite(entity);
+      try {
+        this.updateSprite(entity);
+      } catch (error) {
+        console.error('[RenderingSystem] Error updating sprite for entity:', entity.id, error);
+      }
     });
   }
 

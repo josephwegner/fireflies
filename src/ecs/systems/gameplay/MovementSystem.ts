@@ -28,9 +28,10 @@ export class MovementSystem extends System {
     const dt = (delta || 16) / 1000;
 
     this.queries.moving.results.forEach(entity => {
-      const position = entity.getMutableComponent(Position)!;
-      const velocity = entity.getMutableComponent(Velocity)!;
-      const pathComp = entity.getComponent(Path);
+      try {
+        const position = entity.getMutableComponent(Position)!;
+        const velocity = entity.getMutableComponent(Velocity)!;
+        const pathComp = entity.getComponent(Path);
 
       if (pathComp && pathComp.currentPath && pathComp.currentPath.length > 0) {
         const target = pathComp.currentPath[0];
@@ -65,7 +66,10 @@ export class MovementSystem extends System {
         position.y += velocity.vy * dt;
       }
 
-      this.applyFriction(velocity);
+        this.applyFriction(velocity);
+      } catch (error) {
+        console.error('[MovementSystem] Error processing entity:', entity.id, error);
+      }
     });
   }
 

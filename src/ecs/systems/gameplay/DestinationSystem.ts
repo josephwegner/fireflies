@@ -18,10 +18,24 @@ interface DestinationCandidate {
 
 export class DestinationSystem extends System {
   private worker!: PathfindingWorker;
-  private pendingRequests = new Set<number>();
+  private pendingRequests = new Map<number, NodeJS.Timeout>();
 
   constructor(world: any, attributes?: any) {
     super(world, attributes);
+  }
+
+  stop(): void {
+    // Clean up all pending request timeouts
+    this.pendingRequests.forEach((timeout) => {
+      clearTimeout(timeout);
+    });
+    this.pendingRequests.clear();
+
+    // Clean up worker listeners to prevent memory leak
+    if (this.worker) {
+      this.worker.onmessage = null;
+      this.worker.onerror = null;
+    }
   }
 
   init(attributes?: any): void {
@@ -34,13 +48,17 @@ export class DestinationSystem extends System {
 
         if (event.data.action === 'error') {
           console.error('[DestinationSystem] Worker error:', event.data.error);
+          // Clear pending request on error
+          if (event.data.entityId !== undefined) {
+            this.clearPendingRequest(event.data.entityId);
+          }
           return;
         }
 
         const { entityId, path, pathType } = event.data;
 
         if (entityId !== undefined) {
-          this.pendingRequests.delete(entityId);
+          this.clearPendingRequest(entityId);
 
           const entity = this.findEntityById(entityId);
           if (entity) {
@@ -57,9 +75,10 @@ export class DestinationSystem extends System {
 
   execute(_delta?: number, _time?: number): void {
     this.queries.needsDestination.results.forEach(entity => {
-      const position = entity.getComponent(Position)!;
-      const pathComp = entity.getMutableComponent(Path)!;
-      const entityType = this.getEntityType(entity);
+      try {
+        const position = entity.getComponent(Position)!;
+        const pathComp = entity.getMutableComponent(Path)!;
+        const entityType = this.getEntityType(entity);
 
       if (!pathComp.currentPath) {
         return;
@@ -84,7 +103,7 @@ export class DestinationSystem extends System {
           destinations.push(finalDestination);
         }
 
-        this.pendingRequests.add(entity.id);
+        this.addPendingRequest(entity.id);
         this.requestPath(entity, currentPos, {
           x: destinations[0].pos.x,
           y: destinations[0].pos.y
@@ -110,7 +129,33 @@ export class DestinationSystem extends System {
           pathComp.nextPath = [];
         }
       }
+      } catch (error) {
+        console.error('[DestinationSystem] Error processing entity:', entity.id, error);
+        // Clear pending request on error to allow retry
+        this.clearPendingRequest(entity.id);
+      }
     });
+  }
+
+  private clearPendingRequest(entityId: number): void {
+    const timeout = this.pendingRequests.get(entityId);
+    if (timeout) {
+      clearTimeout(timeout);
+      this.pendingRequests.delete(entityId);
+    }
+  }
+
+  private addPendingRequest(entityId: number): void {
+    // Clear any existing timeout
+    this.clearPendingRequest(entityId);
+
+    // Set timeout to automatically clear after 5 seconds
+    const timeout = setTimeout(() => {
+      console.warn('[DestinationSystem] Pathfinding request timeout for entity', entityId);
+      this.pendingRequests.delete(entityId);
+    }, 5000);
+
+    this.pendingRequests.set(entityId, timeout);
   }
 
   private getEntityType(entity: ECSEntity): string {

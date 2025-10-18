@@ -152,7 +152,12 @@ export class GameScene extends Phaser.Scene {
   }
 
   update(time: number, delta: number): void {
-    this.world.execute(delta, time);
+    try {
+      this.world.execute(delta, time);
+    } catch (error) {
+      console.error('[GameScene] Error during system execution:', error);
+      // Game continues running even if a system crashes
+    }
   }
 
 }
