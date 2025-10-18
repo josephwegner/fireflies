@@ -2,3 +2,4 @@ node_modules
 .cursor
 .DS_Store
 .ai
+dist
