@@ -2,6 +2,7 @@ import { System } from 'ecsy';
 import { Position, Velocity, Path, Destination, Renderable } from '@/ecs/components';
 import { FireflyTag, MonsterTag, WispTag, GoalTag } from '@/ecs/components';
 import { ECSEntity } from '@/types';
+import { PHYSICS_CONFIG } from '@/config';
 
 interface PathfindingWorker extends Worker {
   onmessage: ((this: Worker, ev: MessageEvent) => any) | null;
@@ -233,7 +234,8 @@ export class DestinationSystem extends System {
       start: startPoint,
       destination: endPoint,
       pathType,
-      radius
+      radius,
+      wallBufferMultiplier: PHYSICS_CONFIG.WALL_BUFFER_MULTIPLIER
     });
   }
 

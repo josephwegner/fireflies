@@ -1,6 +1,7 @@
 import { System, Not } from 'ecsy';
 import { Targeting, Target } from '@/ecs/components';
 import { ECSEntity } from '@/types';
+import { gameEvents, GameEvents } from '@/events';
 
 export class TargetingSystem extends System {
   execute(): void {
@@ -15,6 +16,9 @@ export class TargetingSystem extends System {
   acquireTarget(entity: ECSEntity, potentialTargets: ECSEntity[]): void {
     const target = potentialTargets[0];
     entity.addComponent(Target, { target });
+
+    // Emit target acquired event
+    gameEvents.emit(GameEvents.TARGET_ACQUIRED, { entity, target });
   }
 
   static queries = {

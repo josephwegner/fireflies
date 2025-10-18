@@ -31,13 +31,12 @@ import {
   createMonster,
   createGoal
 } from '@/entities/factories';
-
-const TILE_SIZE = 32;
+import { GAME_CONFIG } from '@/config';
+import { AssetLoader } from '@/assets';
 
 export class GameScene extends Phaser.Scene {
   private world!: World;
   private pathfindingWorker!: Worker;
-  private tileSize: number = TILE_SIZE;
   private map!: number[][];
 
   constructor() {
@@ -45,10 +44,7 @@ export class GameScene extends Phaser.Scene {
   }
 
   preload(): void {
-    this.load.image('firefly', 'assets/images/png/firefly.png');
-    this.load.image('goal', 'assets/images/png/firefly.png');
-    this.load.image('wisp', 'assets/images/png/wisp.png');
-    this.load.image('monster', 'assets/images/png/monster.png');
+    AssetLoader.preloadAll(this);
   }
 
   create(): void {
@@ -110,10 +106,12 @@ export class GameScene extends Phaser.Scene {
   }
 
   private createEntities(): void {
+    const TILE = GAME_CONFIG.TILE_SIZE;
+
     createFirefly(
       this.world,
-      1 * TILE_SIZE + TILE_SIZE / 2,
-      3 * TILE_SIZE + TILE_SIZE / 2
+      1 * TILE + TILE / 2,
+      3 * TILE + TILE / 2
     );
 
     const wispPositions = [
@@ -127,28 +125,28 @@ export class GameScene extends Phaser.Scene {
     wispPositions.forEach(([x, y]) => {
       createWisp(
         this.world,
-        x * TILE_SIZE + TILE_SIZE / 2,
-        y * TILE_SIZE + TILE_SIZE / 2
+        x * TILE + TILE / 2,
+        y * TILE + TILE / 2
       );
     });
 
     createMonster(
       this.world,
-      17 * TILE_SIZE + TILE_SIZE / 2,
-      4 * TILE_SIZE + TILE_SIZE / 2
+      17 * TILE + TILE / 2,
+      4 * TILE + TILE / 2
     );
 
     createGoal(
       this.world,
-      16 * TILE_SIZE + TILE_SIZE / 2,
-      4 * TILE_SIZE + TILE_SIZE / 2,
+      16 * TILE + TILE / 2,
+      4 * TILE + TILE / 2,
       'firefly'
     );
 
     createGoal(
       this.world,
-      1 * TILE_SIZE + TILE_SIZE / 2,
-      4 * TILE_SIZE + TILE_SIZE / 2,
+      1 * TILE + TILE / 2,
+      4 * TILE + TILE / 2,
       'monster'
     );
   }

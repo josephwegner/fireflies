@@ -1,9 +1,7 @@
 import { System } from 'ecsy';
 import { Position, Velocity, Path } from '@/ecs/components';
-
-const SPEED = 20;
-const FRICTION = 0.01;
-const MIN_VELOCITY = 0.001;
+import { PHYSICS_CONFIG } from '@/config';
+import { gameEvents, GameEvents } from '@/events';
 
 const Vector = {
   length(x: number, y: number): number {
@@ -40,16 +38,21 @@ export class MovementSystem extends System {
         const dy = target.y - position.y;
         const dist = Vector.length(dx, dy);
 
-        if ((dist <= 0.5 && pathComp.currentPath.length > 1) || dist < 0.01) {
+        if ((dist <= PHYSICS_CONFIG.PATH_ARRIVAL_THRESHOLD && pathComp.currentPath.length > 1) || dist < PHYSICS_CONFIG.PATH_ARRIVAL_MIN) {
           pathComp.currentPath.shift();
 
           if (pathComp.currentPath.length === 0) {
             pathComp.currentPath = pathComp.nextPath;
             pathComp.nextPath = [];
+
+            // Emit path completed event
+            if (pathComp.currentPath.length === 0) {
+              gameEvents.emit(GameEvents.PATH_COMPLETED, { entity, position: { x: position.x, y: position.y } });
+            }
           }
         } else {
           const direction = Vector.normalize(dx, dy);
-          const pathMovement = Vector.scale(direction, SPEED * dt);
+          const pathMovement = Vector.scale(direction, PHYSICS_CONFIG.DEFAULT_SPEED * dt);
           const velocityMovement = { x: velocity.vx * dt, y: velocity.vy * dt };
 
           const totalMovement = Vector.add(pathMovement, velocityMovement);
@@ -67,11 +70,11 @@ export class MovementSystem extends System {
   }
 
   applyFriction(velocity: Velocity): void {
-    velocity.vx *= FRICTION;
-    velocity.vy *= FRICTION;
+    velocity.vx *= PHYSICS_CONFIG.FRICTION;
+    velocity.vy *= PHYSICS_CONFIG.FRICTION;
 
-    if (Math.abs(velocity.vx) < MIN_VELOCITY) velocity.vx = 0;
-    if (Math.abs(velocity.vy) < MIN_VELOCITY) velocity.vy = 0;
+    if (Math.abs(velocity.vx) < PHYSICS_CONFIG.MIN_VELOCITY) velocity.vx = 0;
+    if (Math.abs(velocity.vy) < PHYSICS_CONFIG.MIN_VELOCITY) velocity.vy = 0;
   }
 
   static queries = {

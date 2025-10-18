@@ -15,34 +15,35 @@ import {
   GoalTag
 } from '@/ecs/components';
 import { ECSEntity } from '@/types';
-
-const JITTER = 0.3;
+import { ENTITY_CONFIG, PHYSICS_CONFIG } from '@/config';
 
 export function createFirefly(world: World, x: number, y: number): ECSEntity {
+  const config = ENTITY_CONFIG.firefly;
+
   return world.createEntity()
     .addComponent(Position, {
-      x: x + Math.random() * JITTER,
-      y: y + Math.random() * JITTER
+      x: x + Math.random() * PHYSICS_CONFIG.POSITION_JITTER,
+      y: y + Math.random() * PHYSICS_CONFIG.POSITION_JITTER
     })
     .addComponent(Velocity, { vx: 0, vy: 0 })
     .addComponent(Path, {
       currentPath: [],
       nextPath: [],
-      direction: 'r'
+      direction: config.direction!
     })
     .addComponent(Renderable, {
-      type: 'firefly',
-      color: 0xffffff,
-      radius: 5
+      type: config.type,
+      color: config.color,
+      radius: config.radius
     })
     .addComponent(PhysicsBody, {
-      mass: 1,
-      isStatic: false,
-      collisionRadius: 5
+      mass: config.mass,
+      isStatic: config.isStatic,
+      collisionRadius: config.radius
     })
     .addComponent(Interaction, {
-      interactsWith: ['monster'],
-      interactionRadius: 30,
+      interactsWith: config.interactsWith!,
+      interactionRadius: config.interactionRadius!,
       onInteract: () => {}
     })
     .addComponent(Targeting, {
@@ -52,43 +53,47 @@ export function createFirefly(world: World, x: number, y: number): ECSEntity {
 }
 
 export function createWisp(world: World, x: number, y: number): ECSEntity {
+  const config = ENTITY_CONFIG.wisp;
+
   return world.createEntity()
     .addComponent(Position, { x, y })
     .addComponent(Destination, { for: ['firefly'] })
     .addComponent(Renderable, {
-      type: 'wisp',
-      color: 0xffffff,
-      radius: 12
+      type: config.type,
+      color: config.color,
+      radius: config.radius
     })
     .addComponent(PhysicsBody, {
-      mass: 1,
-      isStatic: true,
-      collisionRadius: 12
+      mass: config.mass,
+      isStatic: config.isStatic,
+      collisionRadius: config.radius
     })
     .addComponent(WispTag);
 }
 
 export function createMonster(world: World, x: number, y: number): ECSEntity {
+  const config = ENTITY_CONFIG.monster;
+
   return world.createEntity()
     .addComponent(Position, {
-      x: x + Math.random() * JITTER,
-      y: y + Math.random() * JITTER
+      x: x + Math.random() * PHYSICS_CONFIG.POSITION_JITTER,
+      y: y + Math.random() * PHYSICS_CONFIG.POSITION_JITTER
     })
     .addComponent(Velocity, { vx: 0, vy: 0 })
     .addComponent(Path, {
       currentPath: [],
       nextPath: [],
-      direction: 'l'
+      direction: config.direction!
     })
     .addComponent(Renderable, {
-      type: 'monster',
-      color: 0xff0000,
-      radius: 8
+      type: config.type,
+      color: config.color,
+      radius: config.radius
     })
     .addComponent(PhysicsBody, {
-      mass: 1,
-      isStatic: false,
-      collisionRadius: 8
+      mass: config.mass,
+      isStatic: config.isStatic,
+      collisionRadius: config.radius
     })
     .addComponent(MonsterTag);
 }
@@ -99,18 +104,20 @@ export function createGoal(
   y: number,
   attractType: string
 ): ECSEntity {
+  const config = ENTITY_CONFIG.goal;
+
   return world.createEntity()
     .addComponent(Position, { x, y })
     .addComponent(Destination, { for: [attractType] })
     .addComponent(Renderable, {
-      type: 'goal',
-      color: 0x00ff00,
-      radius: 10
+      type: config.type,
+      color: config.color,
+      radius: config.radius
     })
     .addComponent(PhysicsBody, {
-      mass: 1,
-      isStatic: true,
-      collisionRadius: 10
+      mass: config.mass,
+      isStatic: config.isStatic,
+      collisionRadius: config.radius
     })
     .addComponent(GoalTag);
 }

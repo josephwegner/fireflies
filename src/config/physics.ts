@@ -1,0 +1,14 @@
+export const PHYSICS_CONFIG = {
+  // Movement
+  DEFAULT_SPEED: 20,
+  FRICTION: 0.01,
+  MIN_VELOCITY: 0.001,
+
+  // Pathfinding
+  PATH_ARRIVAL_THRESHOLD: 0.5,
+  PATH_ARRIVAL_MIN: 0.01,
+  WALL_BUFFER_MULTIPLIER: 1.5,
+
+  // Spawning
+  POSITION_JITTER: 0.3
+};

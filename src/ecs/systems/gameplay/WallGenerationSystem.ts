@@ -1,6 +1,7 @@
 import { System } from 'ecsy';
 import { Wall, WallTag } from '@/ecs/components';
 import { ECSEntity } from '@/types';
+import { GAME_CONFIG } from '@/config';
 
 interface Point {
   x: number;
@@ -49,8 +50,8 @@ export class WallGenerationSystem extends System {
     const segments = this.generateWallSegments(this.map);
     this.wallEntity.addComponent(Wall, {
       segments,
-      thickness: 2,
-      color: 0x888888
+      thickness: GAME_CONFIG.WALL_THICKNESS,
+      color: GAME_CONFIG.WALL_COLOR
     });
 
     this.wallEntity.addComponent(WallTag);
@@ -62,8 +63,7 @@ export class WallGenerationSystem extends System {
   }
 
   private generateWallSegments(map: number[][]): Point[][] {
-    const tileSize = 32;
-    const contours = this.marchingSquaresContours(map, tileSize);
+    const contours = this.marchingSquaresContours(map, GAME_CONFIG.TILE_SIZE);
     return contours.map(contour => this.smoothWallSegment(contour));
   }
 
