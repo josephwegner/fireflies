@@ -1,12 +1,20 @@
 import { System } from 'ecsy';
-import { Interaction, Position, Targeting, FireflyTag, MonsterTag, WispTag } from '@/ecs/components';
+import { Interaction, Position, Targeting, Renderable } from '@/ecs/components';
 import { ECSEntity } from '@/types';
-import { Vector } from '@/utils';
+import { Vector, SpatialGrid } from '@/utils';
 
 export class InteractionSystem extends System {
+  private spatialGrid!: SpatialGrid;
+
+  constructor(world: any, attributes?: any) {
+    super(world, attributes);
+    if (attributes?.spatialGrid) {
+      this.spatialGrid = attributes.spatialGrid;
+    }
+  }
+
   execute(): void {
     const interactiveEntities = this.queries.interactive.results;
-    const allPositionedEntities = this.queries.positioned.results;
 
     // Clear previous potential targets and rebuild each frame
     interactiveEntities.forEach(entity => {
@@ -16,7 +24,7 @@ export class InteractionSystem extends System {
       }
     });
 
-    // Check each interactive entity against all positioned entities
+    // Check each interactive entity against nearby entities from spatial grid
     interactiveEntities.forEach(entity => {
       const interaction = entity.getComponent(Interaction)!;
       const position = entity.getComponent(Position)!;
@@ -24,15 +32,22 @@ export class InteractionSystem extends System {
 
       if (!targeting) return;
 
-      // Check against all positioned entities in the world
-      allPositionedEntities.forEach(otherEntity => {
+      // Use spatial grid to get nearby entities instead of checking all entities
+      const nearbyEntities = this.spatialGrid.getNearby(
+        position.x,
+        position.y,
+        interaction.interactionRadius
+      );
+
+      // Check each nearby entity
+      nearbyEntities.forEach(otherEntity => {
         // Skip self
         if (entity === otherEntity) return;
 
         // Check if other entity is in the interactsWith list
         if (!this.canInteractWith(otherEntity, interaction.interactsWith)) return;
 
-        // Check if in range
+        // Check if in range (spatial grid returns candidates, still need exact distance)
         const otherPosition = otherEntity.getComponent(Position);
         if (!otherPosition) return;
 
@@ -48,20 +63,10 @@ export class InteractionSystem extends System {
   }
 
   canInteractWith(entity: ECSEntity, interactsWith: readonly string[]): boolean {
-    for (const type of interactsWith) {
-      switch (type) {
-        case 'firefly':
-          if (entity.hasComponent(FireflyTag)) return true;
-          break;
-        case 'monster':
-          if (entity.hasComponent(MonsterTag)) return true;
-          break;
-        case 'wisp':
-          if (entity.hasComponent(WispTag)) return true;
-          break;
-      }
-    }
-    return false;
+    const renderable = entity.getComponent(Renderable);
+    if (!renderable) return false;
+    
+    return interactsWith.includes(renderable.type);
   }
 
   static queries = {

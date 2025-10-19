@@ -5,17 +5,12 @@ import {
   Velocity,
   Path,
   Renderable,
-  PhysicsBody,
   Destination,
   Targeting,
-  Target,
-  Interaction,
-  Wall,
   FireflyTag,
   WispTag,
   MonsterTag,
   GoalTag,
-  WallTag
 } from '@/ecs/components';
 import {
   RenderingSystem,
@@ -23,8 +18,11 @@ import {
   MovementSystem,
   TargetingSystem,
   DestinationSystem,
-  WallGenerationSystem
+  WallGenerationSystem,
+  InteractionSystem,
+  CombatSystem
 } from '@/ecs/systems';
+import { SpatialGrid } from '@/utils';
 
 // Mock Phaser before importing GameScene
 vi.mock('phaser', () => {
@@ -98,6 +96,10 @@ class TestableGameScene extends GameScene {
 
   getMap(): number[][] | undefined {
     return (this as any).map;
+  }
+
+  getSpatialGrid(): SpatialGrid | undefined {
+    return (this as any).spatialGrid;
   }
 
   // Override to avoid Worker creation
@@ -267,6 +269,36 @@ describe('GameScene', () => {
       const wallGenSystem = systems.find((s: any) => s instanceof WallGenerationSystem) as any;
 
       expect(wallGenSystem.map).toBe(map);
+    });
+  });
+
+  describe('create - Spatial Grid Integration', () => {
+    it('should initialize spatial grid during create', () => {
+      scene.create();
+
+      const spatialGrid = scene.getSpatialGrid();
+      expect(spatialGrid).toBeDefined();
+      expect(spatialGrid).toBeInstanceOf(SpatialGrid);
+    });
+
+    it('should pass spatial grid to InteractionSystem', () => {
+      scene.create();
+
+      const world = scene.getWorld()!;
+      const interactionSystem = world.getSystem(InteractionSystem) as any;
+      
+      expect(interactionSystem.spatialGrid).toBeDefined();
+      expect(interactionSystem.spatialGrid).toBeInstanceOf(SpatialGrid);
+    });
+
+    it('should pass spatial grid to CombatSystem', () => {
+      scene.create();
+
+      const world = scene.getWorld()!;
+      const combatSystem = world.getSystem(CombatSystem) as any;
+      
+      expect(combatSystem.spatialGrid).toBeDefined();
+      expect(combatSystem.spatialGrid).toBeInstanceOf(SpatialGrid);
     });
   });
 
@@ -479,6 +511,72 @@ describe('GameScene', () => {
 
       // ECSY world.execute takes (delta, time)
       expect(executeSpy).toHaveBeenCalledWith(32, 500);
+    });
+  });
+
+  describe('update - Spatial Grid Population', () => {
+    it('should populate spatial grid with positioned entities before executing systems', () => {
+      scene.create();
+
+      const spatialGrid = scene.getSpatialGrid()!;
+
+      const clearSpy = vi.spyOn(spatialGrid, 'clear');
+      const insertSpy = vi.spyOn(spatialGrid, 'insert');
+
+      scene.update(0, 16);
+
+      expect(clearSpy).toHaveBeenCalled();
+
+      // Verify entities were inserted (9 entities total: 1 firefly, 5 wisps, 1 monster, 2 goals)
+      expect(insertSpy).toHaveBeenCalled();
+      expect(insertSpy.mock.calls.length).toBeGreaterThan(0);
+    });
+
+    it('should insert entities with their position coordinates', () => {
+      scene.create();
+
+      const spatialGrid = scene.getSpatialGrid()!;
+      const insertSpy = vi.spyOn(spatialGrid, 'insert');
+
+      scene.update(0, 16);
+
+      const calls = insertSpy.mock.calls;
+      expect(calls.length).toBeGreaterThan(0);
+      
+      // Each call should be (entity, x, y) where x and y are numbers
+      calls.forEach((call) => {
+        expect(call).toHaveLength(3);
+        expect(call[0]).toBeDefined(); // entity
+        expect(typeof call[1]).toBe('number'); // x coordinate
+        expect(typeof call[2]).toBe('number'); // y coordinate
+      });
+    });
+    it('should populate grid before calling world.execute', () => {
+      scene.create();
+
+      const world = scene.getWorld()!;
+      const spatialGrid = scene.getSpatialGrid()!;
+
+      let gridClearedBeforeExecute = false;
+      let gridInsertedBeforeExecute = false;
+
+      vi.spyOn(spatialGrid, 'clear').mockImplementation(() => {
+        gridClearedBeforeExecute = true;
+      });
+      
+      vi.spyOn(spatialGrid, 'insert').mockImplementation(() => {
+        gridInsertedBeforeExecute = true;
+      });
+
+      const originalExecute = world.execute.bind(world);
+      vi.spyOn(world, 'execute').mockImplementation((...args) => {
+        // At the time execute is called, grid should already be populated
+        expect(gridClearedBeforeExecute).toBe(true);
+        expect(gridInsertedBeforeExecute).toBe(true);
+        return originalExecute(...args);
+      });
+
+      scene.update(0, 16);
     });
   });
 

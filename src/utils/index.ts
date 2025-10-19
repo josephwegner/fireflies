@@ -1,2 +1,3 @@
 export * from './vector';
 export * from './logger';
+export * from './SpatialGrid';

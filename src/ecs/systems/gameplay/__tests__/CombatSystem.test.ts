@@ -6,8 +6,9 @@ import { gameEvents, GameEvents } from '@/events';
 import { ENTITY_CONFIG } from '@/config';
 import { AttackHandlerRegistry } from '../attacks/AttackHandlerRegistry';
 import { AttackPattern } from '@/ecs/components/AttackPattern';
-import { setup, getEntities, TestSetup } from '@/__tests__/helpers';
+import { setup, getEntities, TestSetup, executeWithSpatialGrid } from '@/__tests__/helpers';
 import { ECSEntity } from '@/types';
+import { SpatialGrid } from '@/utils';
 
 const MOCK_ATTACK_PATTERN: AttackPattern = {
   handlerType: 'dash',
@@ -34,6 +35,7 @@ const MOCK_PULSE_PATTERN: AttackPattern = {
 describe('CombatSystem', () => {
   let world: World;
   let system: CombatSystem;
+  let spatialGrid: SpatialGrid;
 
   afterEach(() => {
     // Clean up all event listeners after each test
@@ -55,11 +57,28 @@ describe('CombatSystem', () => {
     // Initialize attack handlers for combat system
     AttackHandlerRegistry.initialize();
 
-    world.registerSystem(CombatSystem);
+    // Create and pass spatial grid to CombatSystem
+    spatialGrid = new SpatialGrid(100);
+    world.registerSystem(CombatSystem, { spatialGrid });
     system = world.getSystem(CombatSystem) as CombatSystem;
     
     gameEvents.clear();
   });
+
+  // Helper to populate spatial grid before executing
+  const populateGridAndExecute = (delta: number = 16) => {
+    spatialGrid.clear();
+    const positionedEntities = (world.entityManager as any)._entities.filter(
+      (e: any) => e.hasComponent(Position)
+    );
+    positionedEntities.forEach((entity: any) => {
+      const pos = entity.getComponent(Position);
+      if (pos) {
+        spatialGrid.insert(entity, pos.x, pos.y);
+      }
+    });
+    world.execute(delta, delta);
+  };
 
   describe('state transitions', () => {
     it('should transition from IDLE to CHARGING when target acquired', () => {
@@ -81,7 +100,7 @@ describe('CombatSystem', () => {
         hasHit: false
       });
 
-      world.execute(16, 16);
+      populateGridAndExecute(16);
 
       const combat = attacker.getComponent(Combat)!;
       expect(combat.state).toBe(CombatState.CHARGING);
@@ -108,7 +127,7 @@ describe('CombatSystem', () => {
 
       // Run a few frames to complete charge
       for (let i = 0; i < 5; i++) {
-        world.execute(16, 16);
+        populateGridAndExecute(16);
       }
 
       const combat = attacker.getComponent(Combat)!;
@@ -137,7 +156,7 @@ describe('CombatSystem', () => {
 
       // Run frames to complete attack
       for (let i = 0; i < 5; i++) {
-        world.execute(16, 16);
+        populateGridAndExecute(16);
       }
 
       const combat = attacker.getComponent(Combat)!;
@@ -165,7 +184,7 @@ describe('CombatSystem', () => {
 
       // Run frames to complete recovery
       for (let i = 0; i < 5; i++) {
-        world.execute(16, 16);
+        populateGridAndExecute(16);
       }
 
       const combat = attacker.getComponent(Combat)!;
@@ -178,6 +197,7 @@ describe('CombatSystem', () => {
   describe('firefly attacks', () => {
     let world: TestSetup['world'];
     let combatSystem: TestSetup['combatSystem'];
+    let spatialGrid: TestSetup['spatialGrid'];
     let firefly: ECSEntity;
     let monster: ECSEntity;
 
@@ -185,6 +205,7 @@ describe('CombatSystem', () => {
       const setupResult = setup();
       world = setupResult.world;
       combatSystem = setupResult.combatSystem;
+      spatialGrid = setupResult.spatialGrid;
       const entities = getEntities(world);
       firefly = entities.firefly;
       monster = entities.monster;
@@ -210,7 +231,7 @@ describe('CombatSystem', () => {
       });
       attacker.addComponent(FireflyTag);
 
-      world.execute(16, 16);
+      executeWithSpatialGrid(world, spatialGrid, 16);
 
       const velocity = attacker.getComponent(Velocity)!;
       // Should have dash velocity toward target
@@ -246,7 +267,7 @@ describe('CombatSystem', () => {
         attackHitFired = true;
       });
 
-      world.execute(16, 16);
+      executeWithSpatialGrid(world, spatialGrid, 16);
 
       expect(attackHitFired).toBe(true);
     });
@@ -277,7 +298,7 @@ describe('CombatSystem', () => {
         attackStartedFired = true;
       });
 
-      world.execute(16, 16);
+      executeWithSpatialGrid(world, spatialGrid, 16);
 
       expect(attackStartedFired).toBe(true);
     });
@@ -286,6 +307,7 @@ describe('CombatSystem', () => {
   describe('monster attacks', () => {
     let world: TestSetup['world'];
     let combatSystem: TestSetup['combatSystem'];
+    let spatialGrid: TestSetup['spatialGrid'];
     let firefly: ECSEntity;
     let monster: ECSEntity;
 
@@ -293,6 +315,7 @@ describe('CombatSystem', () => {
       const setupResult = setup();
       world = setupResult.world;
       combatSystem = setupResult.combatSystem;
+      spatialGrid = setupResult.spatialGrid;
       const entities = getEntities(world);
       firefly = entities.firefly;
       monster = entities.monster;
@@ -334,7 +357,7 @@ describe('CombatSystem', () => {
         hitCount++;
       });
 
-      world.execute(16, 16);
+      executeWithSpatialGrid(world, spatialGrid, 16);
 
       // Should hit both targets in radius
       expect(hitCount).toBeGreaterThan(0);
@@ -362,7 +385,7 @@ describe('CombatSystem', () => {
 
       const initialX = 100;
 
-      world.execute(16, 16);
+      executeWithSpatialGrid(world, spatialGrid, 16);
 
       const position = attacker.getComponent(Position)!;
       // Monster should still be moving toward target while charging
@@ -391,7 +414,7 @@ describe('CombatSystem', () => {
         hasHit: false
       });
 
-      world.execute(16, 16);
+      populateGridAndExecute(16);
 
       expect(attacker.hasComponent(Target)).toBe(false);
     });
@@ -417,7 +440,7 @@ describe('CombatSystem', () => {
       });
       attacker.addComponent(FireflyTag);
 
-      world.execute(16, 16);
+      populateGridAndExecute(16);
 
       expect(attacker.hasComponent(Target)).toBe(false);
     });
@@ -442,7 +465,7 @@ describe('CombatSystem', () => {
       });
       attacker.addComponent(FireflyTag);
 
-      world.execute(16, 16);
+      populateGridAndExecute(16);
 
       const combat = attacker.getComponent(Combat)!;
       expect(combat.state).toBe(CombatState.IDLE);
@@ -466,7 +489,7 @@ describe('CombatSystem', () => {
       });
 
       expect(() => {
-        world.execute(16, 16);
+        populateGridAndExecute(16);
       }).not.toThrow();
     });
 
@@ -490,7 +513,7 @@ describe('CombatSystem', () => {
       });
 
       expect(() => {
-        world.execute(16, 16);
+        populateGridAndExecute(16);
       }).not.toThrow();
 
       // Dead entities shouldn't attack
@@ -516,7 +539,7 @@ describe('CombatSystem', () => {
       });
 
       expect(() => {
-        world.execute(16, 16);
+        populateGridAndExecute(16);
       }).not.toThrow();
     });
   });
@@ -574,11 +597,13 @@ describe('CombatSystem', () => {
   describe('PulseAttackHandler', () => {
     let world: TestSetup['world'];
     let combatSystem: TestSetup['combatSystem'];
+    let spatialGrid: TestSetup['spatialGrid'];
 
     beforeEach(() => {
       const setupResult = setup();
       world = setupResult.world;
       combatSystem = setupResult.combatSystem;
+      spatialGrid = setupResult.spatialGrid;
       
       // Set up spy on gameEvents.emit
       vi.spyOn(gameEvents, 'emit');
@@ -608,7 +633,7 @@ describe('CombatSystem', () => {
       attacker.addComponent(Target, { target });
 
       // Act
-      world.execute(16, 16);
+      executeWithSpatialGrid(world, spatialGrid, 16);
 
       // Assert
       expect(gameEvents.emit).toHaveBeenCalledWith(GameEvents.ATTACK_HIT, {
@@ -646,7 +671,7 @@ describe('CombatSystem', () => {
       attacker.addComponent(Target, { target });
 
       // Act
-      world.execute(16, 16);
+      executeWithSpatialGrid(world, spatialGrid, 16);
 
       // Assert
       expect(gameEvents.emit).not.toHaveBeenCalledWith(
@@ -695,7 +720,7 @@ describe('CombatSystem', () => {
       attacker.addComponent(Target, { target: target1 });
 
       // Act
-      world.execute(16, 16);
+      executeWithSpatialGrid(world, spatialGrid, 16);
 
       // Assert
       expect(gameEvents.emit).toHaveBeenCalledTimes(2);
@@ -734,13 +759,93 @@ describe('CombatSystem', () => {
       attacker.addComponent(Target, { target });
 
       // Act
-      world.execute(16, 16);
+      executeWithSpatialGrid(world, spatialGrid, 16);
 
       // Assert
       expect(gameEvents.emit).not.toHaveBeenCalledWith(
         GameEvents.ATTACK_HIT,
         expect.objectContaining({ target })
       );
+    });
+  });
+
+  describe('spatial grid integration', () => {
+    it('should pass spatial grid to attack handlers via context', () => {
+      const attacker = world.createEntity();
+      const target = world.createEntity();
+      
+      target.addComponent(Position, { x: 10, y: 0 });
+      target.addComponent(Health, { currentHealth: 100, maxHealth: 100 });
+      target.addComponent(FireflyTag);
+      target.addComponent(PhysicsBody, { mass: 1, isStatic: false, collisionRadius: 5 });
+      
+      attacker.addComponent(Combat, {
+        state: CombatState.ATTACKING,
+        chargeTime: 1000,
+        attackElapsed: 0,
+        recoveryElapsed: 0,
+        hasHit: false,
+        attackPattern: MOCK_PULSE_PATTERN,
+      });
+      attacker.addComponent(Position, { x: 0, y: 0 });
+      attacker.addComponent(Velocity, { vx: 0, vy: 0 });
+      attacker.addComponent(Health, { currentHealth: 100, maxHealth: 100 });
+      attacker.addComponent(MonsterTag);
+      attacker.addComponent(PhysicsBody, { mass: 1, isStatic: false, collisionRadius: 5 });
+      attacker.addComponent(Target, { target });
+
+      // Don't add target to grid - if grid is used, no hit should occur
+      spatialGrid.clear();
+      spatialGrid.insert(attacker, 0, 0);
+
+      vi.spyOn(gameEvents, 'emit');
+
+      world.execute(16, 16);
+
+      // If spatial grid is passed and used, attack won't find the target
+      expect(gameEvents.emit).not.toHaveBeenCalledWith(GameEvents.ATTACK_HIT, expect.anything());
+    });
+
+    it('should find targets when properly added to spatial grid', () => {
+      const attacker = world.createEntity();
+      const target = world.createEntity();
+      
+      target.addComponent(Position, { x: 10, y: 0 });
+      target.addComponent(Health, { currentHealth: 100, maxHealth: 100 });
+      target.addComponent(FireflyTag);
+      target.addComponent(PhysicsBody, { mass: 1, isStatic: false, collisionRadius: 5 });
+      
+      attacker.addComponent(Combat, {
+        state: CombatState.ATTACKING,
+        chargeTime: 1000,
+        attackElapsed: 0,
+        recoveryElapsed: 0,
+        hasHit: false,
+        attackPattern: MOCK_PULSE_PATTERN,
+      });
+      attacker.addComponent(Position, { x: 0, y: 0 });
+      attacker.addComponent(Velocity, { vx: 0, vy: 0 });
+      attacker.addComponent(Health, { currentHealth: 100, maxHealth: 100 });
+      attacker.addComponent(MonsterTag);
+      attacker.addComponent(PhysicsBody, { mass: 1, isStatic: false, collisionRadius: 5 });
+      attacker.addComponent(Target, { target });
+
+      // Properly populate grid
+      spatialGrid.clear();
+      spatialGrid.insert(attacker, 0, 0);
+      spatialGrid.insert(target, 10, 0);
+
+      vi.spyOn(gameEvents, 'emit');
+
+      world.execute(16, 16);
+
+      // Now it should find and hit the target
+      expect(gameEvents.emit).toHaveBeenCalledWith(GameEvents.ATTACK_HIT, {
+        attacker,
+        target,
+        damage: MOCK_PULSE_PATTERN.damage,
+        knockbackForce: MOCK_PULSE_PATTERN.knockbackForce,
+      });
     });
   });
 });

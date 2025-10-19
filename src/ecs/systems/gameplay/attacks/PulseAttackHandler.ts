@@ -6,14 +6,16 @@ import { ECSEntity } from '@/types';
 import { TagComponent } from 'ecsy';
 
 export class PulseAttackHandler implements AttackHandler {
-  execute({ attacker, combat, world }: AttackContext): void {
+  execute({ attacker, combat, world, spatialGrid }: AttackContext): void {
     const attackerPos = attacker.getComponent(Position);
     if (!attackerPos) return;
 
-    // Get all entities in the world
-    const allEntities = Array.from((world.entityManager as any)._entities);
+    // Use spatial grid if available, otherwise fall back to all entities
+    const entitiesToCheck = spatialGrid
+      ? spatialGrid.getNearby(attackerPos.x, attackerPos.y, combat.attackPattern.radius ?? 0)
+      : Array.from((world.entityManager as any)._entities);
 
-    allEntities.forEach((entity: ECSEntity) => {
+    entitiesToCheck.forEach((entity: ECSEntity) => {
       // Don't hit self
       if (entity === attacker) return;
       

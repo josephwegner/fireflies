@@ -1,17 +1,24 @@
-import { System } from 'ecsy';
+import { System, World } from 'ecsy';
 import { Combat, CombatState, Health, Target, Position, Velocity, PhysicsBody, FireflyTag, MonsterTag } from '@/ecs/components';
 import { gameEvents, GameEvents } from '@/events';
 import { ECSEntity } from '@/types';
 import { Vector } from '@/utils';
 import { ENTITY_CONFIG } from '@/config';
-import { AttackHandler, AttackContext } from './attacks/AttackHandler';
-import { DashAttackHandler } from './attacks/DashAttackHandler';
-import { PulseAttackHandler } from './attacks/PulseAttackHandler';
+import { AttackContext } from './attacks/AttackHandler';
+import { AttackHandlerRegistry } from './attacks/AttackHandlerRegistry';
 import { TagComponent } from 'ecsy';
+import { SpatialGrid } from '@/utils';
 
 export class CombatSystem extends System {
-  private dashHandler = new DashAttackHandler();
-  private pulseHandler = new PulseAttackHandler();
+  private spatialGrid?: SpatialGrid;
+
+  constructor(world: World, attributes?: any) {
+    super(world, attributes);
+    AttackHandlerRegistry.initialize();
+    if (attributes?.spatialGrid) {
+      this.spatialGrid = attributes.spatialGrid;
+    }
+  }
 
   execute(delta?: number): void {
     const dt = delta || 16;
@@ -29,21 +36,31 @@ export class CombatSystem extends System {
           if (target) {
             entity.removeComponent(Target);
           }
-          this.resetCombatState(combat);
           return;
         }
 
-        // Check if we have a valid target
-        if (!target || !this.isValidTarget(entity, target.target, combat)) {
-          if (target) {
-            entity.removeComponent(Target);
+        if (!target) {
+          // No target, remain idle
+          if (combat.state !== CombatState.IDLE) {
+            combat.state = CombatState.IDLE;
+            combat.chargeTime = 0;
+            combat.attackElapsed = 0;
+            combat.recoveryElapsed = 0;
           }
-          this.resetCombatState(combat);
           return;
         }
 
-        // Update combat state machine
-        this.updateCombatState(entity, combat, target.target, position, velocity, dt);
+        const targetEntity = target.target;
+
+        // Validate target
+        if (!this.isValidTarget(entity, targetEntity, combat)) {
+          entity.removeComponent(Target);
+          combat.state = CombatState.IDLE;
+          combat.chargeTime = 0;
+          return;
+        }
+
+        this.updateCombatState(entity, combat, targetEntity, position, velocity, dt);
       } catch (error) {
         console.error('[CombatSystem] Error processing entity:', entity.id, error);
       }
@@ -109,166 +126,81 @@ export class CombatSystem extends System {
   ): void {
     switch (combat.state) {
       case CombatState.IDLE:
-        // Start charging when we have a target
-        this.transitionToCharging(combat);
+        // Start charging
+        combat.state = CombatState.CHARGING;
+        combat.chargeTime = 0;
         break;
 
       case CombatState.CHARGING:
-        // Increment charge time
         combat.chargeTime += dt;
-
-        // Check if charge is complete
         if (combat.chargeTime >= combat.attackPattern.chargeTime) {
-          this.transitionToAttacking(entity, combat, target, position);
+          combat.state = CombatState.ATTACKING;
+          combat.attackElapsed = 0;
+          combat.hasHit = false;
+          gameEvents.emit(GameEvents.ATTACK_STARTED, { attacker: entity, target });
         }
         break;
 
       case CombatState.ATTACKING:
-        // Handle attacking state with attack handlers
-        this.handleAttackingState(entity, combat, dt);
+        // Call onAttackStart on first frame of attacking (for dash attacks, etc.)
+        if (combat.attackElapsed === 0) {
+          const handler = AttackHandlerRegistry.get(combat.attackPattern.handlerType);
+          if (handler?.onAttackStart) {
+            const context: AttackContext = {
+              attacker: entity,
+              combat,
+              world: this.world,
+              spatialGrid: this.spatialGrid,
+              target: target,
+              position,
+              velocity
+            };
+            handler.onAttackStart(context);
+          }
+        }
+
+        combat.attackElapsed += dt;
+
+        // Get and execute attack handler
+        const handler = AttackHandlerRegistry.get(combat.attackPattern.handlerType);
+        if (handler) {
+          const context: AttackContext = {
+            attacker: entity,
+            combat,
+            world: this.world,
+            spatialGrid: this.spatialGrid,
+            target: target,
+            position,
+            velocity
+          };
+          handler.execute(context);
+        }
+
+        // Check if attack duration is complete
+        if (combat.attackElapsed >= combat.attackPattern.attackDuration) {
+          combat.state = CombatState.RECOVERING;
+          combat.recoveryElapsed = 0;
+          gameEvents.emit(GameEvents.ATTACK_COMPLETED, { attacker: entity });
+        }
         break;
 
       case CombatState.RECOVERING:
-        // Update recovery elapsed time
         combat.recoveryElapsed += dt;
-
-        // Check if recovery is complete
         if (combat.recoveryElapsed >= combat.attackPattern.recoveryTime) {
-          this.transitionToIdle(combat);
+          // Recovery complete, back to idle
+          combat.state = CombatState.IDLE;
+          combat.chargeTime = 0;
+          combat.attackElapsed = 0;
+          combat.recoveryElapsed = 0;
+          combat.hasHit = false;
         }
         break;
     }
-  }
-
-  transitionToCharging(combat: Combat): void {
-    combat.state = CombatState.CHARGING;
-    combat.chargeTime = 0;
-  }
-
-  transitionToAttacking(entity: ECSEntity, combat: Combat, target: ECSEntity, position: Position): void {
-    combat.state = CombatState.ATTACKING;
-    combat.attackElapsed = 0;
-    combat.hasHit = false;
-
-    gameEvents.emit(GameEvents.ATTACK_STARTED, {
-      entity,
-      target,
-      attackType: combat.attackPattern.handlerType
-    });
-  }
-
-  transitionToRecovering(entity: ECSEntity, combat: Combat): void {
-    combat.state = CombatState.RECOVERING;
-    combat.recoveryElapsed = 0;
-
-    gameEvents.emit(GameEvents.ATTACK_COMPLETED, { entity });
-  }
-
-  transitionToIdle(combat: Combat): void {
-    combat.state = CombatState.IDLE;
-    combat.chargeTime = 0;
-    combat.attackElapsed = 0;
-    combat.recoveryElapsed = 0;
-    combat.hasHit = false;
-  }
-
-  resetCombatState(combat: Combat): void {
-    combat.state = CombatState.IDLE;
-    combat.chargeTime = 0;
-    combat.attackElapsed = 0;
-    combat.recoveryElapsed = 0;
-    combat.hasHit = false;
-  }
-
-  handleAttackingState(entity: ECSEntity, combat: Combat, dt: number): void {
-    const target = entity.getComponent(Target)?.target;
-    if (!target) {
-      this.transitionToRecovering(entity, combat);
-      return;
-    }
-
-    // Get the attack handler based on type
-    let handler: AttackHandler | undefined;
-    switch (combat.attackPattern.handlerType) {
-      case 'dash':
-        handler = this.dashHandler;
-        break;
-      case 'pulse':
-        handler = this.pulseHandler;
-        break;
-      default:
-        console.warn(`No handler found for attack type: ${combat.attackPattern.handlerType}`);
-        this.transitionToRecovering(entity, combat);
-        return;
-    }
-
-    // Call onAttackStart once at the very beginning (before incrementing elapsed time)
-    if (combat.attackElapsed === 0 && handler.onAttackStart) {
-      const context = this.createAttackContext(entity, target, combat, dt);
-      handler.onAttackStart(context);
-    }
-
-    // Increment elapsed time
-    combat.attackElapsed += dt;
-
-    // Execute attack logic every frame
-    const context = this.createAttackContext(entity, target, combat, dt);
-    handler.execute(context);
-
-    // Transition when attack duration complete
-    if (combat.attackElapsed >= combat.attackPattern.attackDuration) {
-      if (handler.onAttackEnd) {
-        handler.onAttackEnd(context);
-      }
-      this.transitionToRecovering(entity, combat);
-    }
-  }
-
-  createAttackContext(
-    attacker: ECSEntity,
-    target: ECSEntity,
-    combat: Combat,
-    dt: number
-  ): AttackContext {
-    return {
-      attacker,
-      target,
-      combat,
-      position: attacker.getMutableComponent(Position)!,
-      velocity: attacker.getMutableComponent(Velocity)!,
-      dt,
-      world: this.world
-    };
   }
 
   static queries = {
     combatants: {
       components: [Combat, Health, Position, Velocity]
-    },
-    enemies: {
-      components: [FireflyTag, Position, Health]
     }
   };
 }
-
-export class AttackHandlerRegistry {
-  private static handlers = new Map<string, AttackHandler>();
-
-  static register(type: string, handler: AttackHandler): void {
-    this.handlers.set(type, handler);
-  }
-
-  static get(type: string): AttackHandler | undefined {
-    return this.handlers.get(type);
-  }
-
-  static initialize(): void {
-    // Register all attack handlers
-    this.register('dash', new DashAttackHandler());
-    this.register('pulse', new PulseAttackHandler());
-    // Easy to add more:
-    // this.register('projectile', new ProjectileAttackHandler());
-    // this.register('beam', new BeamAttackHandler());
-  }
-}
-

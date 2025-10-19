@@ -17,10 +17,12 @@ import { AttackHandlerRegistry } from '@/ecs/systems/gameplay/attacks/AttackHand
 import { gameEvents } from '@/events';
 import { createTestFirefly, createTestMonster } from './entities';
 import { ECSEntity } from '@/types';
+import { SpatialGrid } from '@/utils';
 
 export interface TestSetup {
   world: World;
   combatSystem: CombatSystem;
+  spatialGrid: SpatialGrid;
 }
 
 export function setup(): TestSetup {
@@ -40,12 +42,29 @@ export function setup(): TestSetup {
 
   AttackHandlerRegistry.initialize();
 
-  world.registerSystem(CombatSystem);
+  // Create spatial grid and pass to CombatSystem
+  const spatialGrid = new SpatialGrid(100);
+  world.registerSystem(CombatSystem, { spatialGrid });
   const combatSystem = world.getSystem(CombatSystem) as CombatSystem;
 
   gameEvents.clear();
 
-  return { world, combatSystem };
+  return { world, combatSystem, spatialGrid };
+}
+
+// Helper to populate spatial grid and execute world
+export function executeWithSpatialGrid(world: World, spatialGrid: SpatialGrid, delta: number = 16): void {
+  spatialGrid.clear();
+  const positionedEntities = (world.entityManager as any)._entities.filter(
+    (e: any) => e.hasComponent(Position)
+  );
+  positionedEntities.forEach((entity: any) => {
+    const pos = entity.getComponent(Position);
+    if (pos) {
+      spatialGrid.insert(entity, pos.x, pos.y);
+    }
+  });
+  world.execute(delta, delta);
 }
 
 export interface TestEntities {

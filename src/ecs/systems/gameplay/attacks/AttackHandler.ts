@@ -1,24 +1,19 @@
 import { World } from 'ecsy';
-import { ECSEntity } from '@/types';
 import { Combat, Position, Velocity } from '@/ecs/components';
+import { ECSEntity } from '@/types';
+import { SpatialGrid } from '@/utils';
 
 export interface AttackContext {
   attacker: ECSEntity;
-  target: ECSEntity;
   combat: Combat;
-  position: Position;
-  velocity: Velocity;
-  dt: number;
   world: World;
+  spatialGrid?: SpatialGrid;
+  target?: ECSEntity;
+  position?: Position;
+  velocity?: Velocity;
 }
 
 export interface AttackHandler {
-  // Called every frame during ATTACKING state
   execute(context: AttackContext): void;
-  
-  // Optional: Called when entering ATTACKING state
   onAttackStart?(context: AttackContext): void;
-  
-  // Optional: Called when exiting ATTACKING state
-  onAttackEnd?(context: AttackContext): void;
 }

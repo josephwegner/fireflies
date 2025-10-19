@@ -38,14 +38,16 @@ import {
   createMonster,
   createGoal
 } from '@/entities/factories';
-import { GAME_CONFIG } from '@/config';
+import { GAME_CONFIG, PHYSICS_CONFIG } from '@/config';
 import { AssetLoader } from '@/assets';
 import { AttackHandlerRegistry } from '@/ecs/systems/gameplay/attacks/AttackHandlerRegistry';
+import { SpatialGrid } from '@/utils';
 
 export class GameScene extends Phaser.Scene {
   private world!: World;
   private pathfindingWorker!: Worker;
   private map!: number[][];
+  private spatialGrid!: SpatialGrid;
 
   constructor() {
     super('GameScene');
@@ -58,6 +60,7 @@ export class GameScene extends Phaser.Scene {
   create(): void {
     this.world = new World();
     this.pathfindingWorker = this.createWorker();
+    this.spatialGrid = new SpatialGrid(PHYSICS_CONFIG.SPATIAL_GRID_CELL_SIZE);
 
     this.registerComponents();
     this.createMap();
@@ -100,9 +103,9 @@ export class GameScene extends Phaser.Scene {
   private registerSystems(): void {
     this.world
       .registerSystem(WallGenerationSystem, { worker: this.pathfindingWorker, map: this.map })
-      .registerSystem(InteractionSystem)
+      .registerSystem(InteractionSystem, { spatialGrid: this.spatialGrid })
       .registerSystem(TargetingSystem)
-      .registerSystem(CombatSystem)
+      .registerSystem(CombatSystem, { spatialGrid: this.spatialGrid })
       .registerSystem(DamageSystem)
       .registerSystem(KnockbackSystem)
       .registerSystem(MovementSystem)
@@ -175,6 +178,22 @@ export class GameScene extends Phaser.Scene {
 
   update(time: number, delta: number): void {
     try {
+      // Rebuild spatial grid each frame
+      this.spatialGrid.clear();
+      
+      // Get all entities with Position component and insert into grid
+      const positionedEntities = (this.world.entityManager as any)._entities.filter(
+        (entity: any) => entity.hasComponent(Position)
+      );
+      
+      positionedEntities.forEach((entity: any) => {
+        const position = entity.getComponent(Position);
+        if (position) {
+          this.spatialGrid.insert(entity, position.x, position.y);
+        }
+      });
+
+      // Execute all systems with populated spatial grid
       this.world.execute(delta, time);
     } catch (error) {
       console.error('[GameScene] Error during system execution:', error);

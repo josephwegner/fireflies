@@ -5,14 +5,17 @@ import {
   Position,
   Interaction,
   Targeting,
+  Renderable,
   FireflyTag,
   MonsterTag,
   WispTag
 } from '@/ecs/components';
+import { SpatialGrid } from '@/utils';
 
 describe('InteractionSystem', () => {
   let world: World;
   let system: InteractionSystem;
+  let spatialGrid: SpatialGrid;
 
   beforeEach(() => {
     world = new World();
@@ -20,13 +23,31 @@ describe('InteractionSystem', () => {
       .registerComponent(Position)
       .registerComponent(Interaction)
       .registerComponent(Targeting)
+      .registerComponent(Renderable)
       .registerComponent(FireflyTag)
       .registerComponent(MonsterTag)
       .registerComponent(WispTag);
 
-    world.registerSystem(InteractionSystem);
+    spatialGrid = new SpatialGrid(100);
+    world.registerSystem(InteractionSystem, { spatialGrid });
     system = world.getSystem(InteractionSystem) as InteractionSystem;
   });
+
+  // Helper to populate spatial grid before executing system
+  const populateGridAndExecute = () => {
+    spatialGrid.clear();
+    // Get all positioned entities and insert them into the grid
+    const positionedEntities = (world.entityManager as any)._entities.filter(
+      (e: any) => e.hasComponent(Position)
+    );
+    positionedEntities.forEach((entity: any) => {
+      const pos = entity.getComponent(Position);
+      if (pos) {
+        spatialGrid.insert(entity, pos.x, pos.y);
+      }
+    });
+    system.execute();
+  };
 
   describe('potentialTargets population', () => {
     it('should populate potentialTargets when entities are in range', () => {
@@ -36,15 +57,17 @@ describe('InteractionSystem', () => {
         .addComponent(Position, { x: 100, y: 100 })
         .addComponent(Interaction, { interactionRadius: 50, interactsWith: ['monster'] })
         .addComponent(Targeting, { potentialTargets: [] })
+        .addComponent(Renderable, { type: 'firefly' })
         .addComponent(FireflyTag);
 
       // Create a monster at position (120, 100) - distance is 20, within radius
       const monster = world.createEntity();
       monster
         .addComponent(Position, { x: 120, y: 100 })
+        .addComponent(Renderable, { type: 'monster' })
         .addComponent(MonsterTag);
 
-      system.execute();
+      populateGridAndExecute();
 
       const targeting = firefly.getComponent(Targeting)!;
       expect(targeting.potentialTargets).toHaveLength(1);
@@ -65,7 +88,7 @@ describe('InteractionSystem', () => {
         .addComponent(Position, { x: 150, y: 100 })
         .addComponent(MonsterTag);
 
-      system.execute();
+      populateGridAndExecute();
 
       const targeting = firefly.getComponent(Targeting)!;
       expect(targeting.potentialTargets).toHaveLength(0);
@@ -77,15 +100,17 @@ describe('InteractionSystem', () => {
         .addComponent(Position, { x: 100, y: 100 })
         .addComponent(Interaction, { interactionRadius: 50, interactsWith: ['monster'] })
         .addComponent(Targeting, { potentialTargets: [] })
+        .addComponent(Renderable, { type: 'firefly' })
         .addComponent(FireflyTag);
 
       const monster = world.createEntity();
       monster
         .addComponent(Position, { x: 120, y: 100 })
+        .addComponent(Renderable, { type: 'monster' })
         .addComponent(MonsterTag);
 
       // First frame: monster in range
-      system.execute();
+      populateGridAndExecute();
       let targeting = firefly.getComponent(Targeting)!;
       expect(targeting.potentialTargets).toHaveLength(1);
 
@@ -94,7 +119,7 @@ describe('InteractionSystem', () => {
       monsterPos.x = 200;
 
       // Second frame: should clear and not re-add
-      system.execute();
+      populateGridAndExecute();
       targeting = firefly.getComponent(Targeting)!;
       expect(targeting.potentialTargets).toHaveLength(0);
     });
@@ -107,7 +132,7 @@ describe('InteractionSystem', () => {
         .addComponent(Targeting, { potentialTargets: [] })
         .addComponent(FireflyTag);
 
-      system.execute();
+      populateGridAndExecute();
 
       const targeting = firefly.getComponent(Targeting)!;
       expect(targeting.potentialTargets).toHaveLength(0);
@@ -127,15 +152,17 @@ describe('InteractionSystem', () => {
       const firefly = world.createEntity();
       firefly
         .addComponent(Position, { x: 110, y: 100 })
+        .addComponent(Renderable, { type: 'firefly' })
         .addComponent(FireflyTag);
 
       // Add a wisp (should NOT be added)
       const wisp = world.createEntity();
       wisp
         .addComponent(Position, { x: 115, y: 100 })
+        .addComponent(Renderable, { type: 'wisp' })
         .addComponent(WispTag);
 
-      system.execute();
+      populateGridAndExecute();
 
       const targeting = monster.getComponent(Targeting)!;
       expect(targeting.potentialTargets).toHaveLength(1);
@@ -153,14 +180,16 @@ describe('InteractionSystem', () => {
       const firefly = world.createEntity();
       firefly
         .addComponent(Position, { x: 110, y: 100 })
+        .addComponent(Renderable, { type: 'firefly' })
         .addComponent(FireflyTag);
 
       const wisp = world.createEntity();
       wisp
         .addComponent(Position, { x: 120, y: 100 })
+        .addComponent(Renderable, { type: 'wisp' })
         .addComponent(WispTag);
 
-      system.execute();
+      populateGridAndExecute();
 
       const targeting = entity.getComponent(Targeting)!;
       expect(targeting.potentialTargets).toHaveLength(2);
@@ -179,9 +208,10 @@ describe('InteractionSystem', () => {
       const monster = world.createEntity();
       monster
         .addComponent(Position, { x: 110, y: 100 })
+        .addComponent(Renderable, { type: 'monster' })
         .addComponent(MonsterTag);
 
-      system.execute();
+      populateGridAndExecute();
 
       const targeting = entity.getComponent(Targeting)!;
       expect(targeting.potentialTargets).toHaveLength(0);
@@ -201,9 +231,10 @@ describe('InteractionSystem', () => {
       const monster = world.createEntity();
       monster
         .addComponent(Position, { x: 130, y: 140 })
+        .addComponent(Renderable, { type: 'monster' })
         .addComponent(MonsterTag);
 
-      system.execute();
+      populateGridAndExecute();
 
       const targeting = firefly.getComponent(Targeting)!;
       expect(targeting.potentialTargets).toHaveLength(1);
@@ -221,9 +252,10 @@ describe('InteractionSystem', () => {
       const monster = world.createEntity();
       monster
         .addComponent(Position, { x: 130, y: 100 })
+        .addComponent(Renderable, { type: 'monster' })
         .addComponent(MonsterTag);
 
-      system.execute();
+      populateGridAndExecute();
 
       const targeting = firefly.getComponent(Targeting)!;
       expect(targeting.potentialTargets).toHaveLength(1);
@@ -251,14 +283,16 @@ describe('InteractionSystem', () => {
       const monster1 = world.createEntity();
       monster1
         .addComponent(Position, { x: 120, y: 100 })
+        .addComponent(Renderable, { type: 'monster' })
         .addComponent(MonsterTag);
 
       const monster2 = world.createEntity();
       monster2
         .addComponent(Position, { x: 220, y: 200 })
+        .addComponent(Renderable, { type: 'monster' })
         .addComponent(MonsterTag);
 
-      system.execute();
+      populateGridAndExecute();
 
       const targeting1 = firefly1.getComponent(Targeting)!;
       const targeting2 = firefly2.getComponent(Targeting)!;
@@ -282,19 +316,22 @@ describe('InteractionSystem', () => {
       const monster1 = world.createEntity();
       monster1
         .addComponent(Position, { x: 110, y: 100 })
+        .addComponent(Renderable, { type: 'monster' })
         .addComponent(MonsterTag);
 
       const monster2 = world.createEntity();
       monster2
         .addComponent(Position, { x: 120, y: 100 })
+        .addComponent(Renderable, { type: 'monster' })
         .addComponent(MonsterTag);
 
       const monster3 = world.createEntity();
       monster3
         .addComponent(Position, { x: 130, y: 100 })
+        .addComponent(Renderable, { type: 'monster' })
         .addComponent(MonsterTag);
 
-      system.execute();
+      populateGridAndExecute();
 
       const targeting = firefly.getComponent(Targeting)!;
       expect(targeting.potentialTargets).toHaveLength(3);
@@ -315,9 +352,10 @@ describe('InteractionSystem', () => {
 
       // Monster without Position - should be ignored
       const monster = world.createEntity();
-      monster.addComponent(MonsterTag);
+      monster.addComponent(Renderable, { type: 'monster' })
+        .addComponent(MonsterTag);
 
-      expect(() => system.execute()).not.toThrow();
+      expect(() => populateGridAndExecute()).not.toThrow();
 
       const targeting = firefly.getComponent(Targeting)!;
       expect(targeting.potentialTargets).toHaveLength(0);
@@ -333,10 +371,11 @@ describe('InteractionSystem', () => {
       const monster = world.createEntity();
       monster
         .addComponent(Position, { x: 110, y: 100 })
+        .addComponent(Renderable, { type: 'monster' })
         .addComponent(MonsterTag);
 
       // Should not throw when entity lacks Targeting component
-      expect(() => system.execute()).not.toThrow();
+      expect(() => populateGridAndExecute()).not.toThrow();
     });
 
     it('should handle zero interaction radius', () => {
@@ -351,16 +390,17 @@ describe('InteractionSystem', () => {
       const monster = world.createEntity();
       monster
         .addComponent(Position, { x: 100, y: 100 })
+        .addComponent(Renderable, { type: 'monster' })
         .addComponent(MonsterTag);
 
-      system.execute();
+      populateGridAndExecute();
 
       const targeting = firefly.getComponent(Targeting)!;
       expect(targeting.potentialTargets).toHaveLength(1);
     });
 
     it('should handle no entities in world', () => {
-      expect(() => system.execute()).not.toThrow();
+      expect(() => populateGridAndExecute()).not.toThrow();
     });
 
     it('should handle single entity in world', () => {
@@ -371,54 +411,129 @@ describe('InteractionSystem', () => {
         .addComponent(Targeting, { potentialTargets: [] })
         .addComponent(FireflyTag);
 
-      expect(() => system.execute()).not.toThrow();
+      expect(() => populateGridAndExecute()).not.toThrow();
 
       const targeting = firefly.getComponent(Targeting)!;
       expect(targeting.potentialTargets).toHaveLength(0);
     });
   });
 
+  describe('spatial grid optimization', () => {
+    it('should use spatial grid getNearby instead of checking all entities', () => {
+      const firefly = world.createEntity();
+      firefly
+        .addComponent(Position, { x: 50, y: 50 })
+        .addComponent(Interaction, { interactionRadius: 30, interactsWith: ['monster'] })
+        .addComponent(Targeting, { potentialTargets: [] })
+        .addComponent(FireflyTag);
+
+      const monster = world.createEntity();
+      monster
+        .addComponent(Position, { x: 60, y: 60 })
+        .addComponent(Renderable, { type: 'monster' })
+        .addComponent(MonsterTag);
+
+      // Populate grid but don't add the monster to it
+      spatialGrid.clear();
+      spatialGrid.insert(firefly, 50, 50);
+      // Intentionally NOT inserting monster into grid
+
+      system.execute();
+
+      const targeting = firefly.getComponent(Targeting)!;
+      // If system uses spatial grid, it won't find the monster since it's not in the grid
+      // If system iterates all entities, it would find the monster
+      expect(targeting.potentialTargets).toHaveLength(0);
+    });
+
+    it('should find entities when they are properly added to spatial grid', () => {
+      const firefly = world.createEntity();
+      firefly
+        .addComponent(Position, { x: 50, y: 50 })
+        .addComponent(Interaction, { interactionRadius: 30, interactsWith: ['monster'] })
+        .addComponent(Targeting, { potentialTargets: [] })
+        .addComponent(FireflyTag);
+
+      const monster = world.createEntity();
+      monster
+        .addComponent(Position, { x: 60, y: 60 })
+        .addComponent(Renderable, { type: 'monster' })
+        .addComponent(MonsterTag);
+
+      // Properly populate grid with both entities
+      spatialGrid.clear();
+      spatialGrid.insert(firefly, 50, 50);
+      spatialGrid.insert(monster, 60, 60);
+
+      system.execute();
+
+      const targeting = firefly.getComponent(Targeting)!;
+      // Now it should find the monster since it's in the grid
+      expect(targeting.potentialTargets).toHaveLength(1);
+      expect(targeting.potentialTargets[0]).toBe(monster);
+    });
+  });
+
   describe('canInteractWith helper', () => {
     it('should return true for firefly entities when looking for fireflies', () => {
       const firefly = world.createEntity();
-      firefly.addComponent(FireflyTag);
+      firefly
+        .addComponent(Renderable, { type: 'firefly' })
+        .addComponent(FireflyTag);
 
       expect(system.canInteractWith(firefly, ['firefly'])).toBe(true);
     });
 
     it('should return true for monster entities when looking for monsters', () => {
       const monster = world.createEntity();
-      monster.addComponent(MonsterTag);
+      monster
+        .addComponent(Renderable, { type: 'monster' })
+        .addComponent(MonsterTag);
 
       expect(system.canInteractWith(monster, ['monster'])).toBe(true);
     });
 
     it('should return true for wisp entities when looking for wisps', () => {
       const wisp = world.createEntity();
-      wisp.addComponent(WispTag);
+      wisp
+        .addComponent(Renderable, { type: 'wisp' })
+        .addComponent(WispTag);
 
       expect(system.canInteractWith(wisp, ['wisp'])).toBe(true);
     });
 
     it('should return false when entity type does not match', () => {
       const firefly = world.createEntity();
-      firefly.addComponent(FireflyTag);
+      firefly
+        .addComponent(Renderable, { type: 'firefly' })
+        .addComponent(FireflyTag);
 
       expect(system.canInteractWith(firefly, ['monster'])).toBe(false);
     });
 
     it('should return false for empty interactsWith array', () => {
       const firefly = world.createEntity();
-      firefly.addComponent(FireflyTag);
+      firefly
+        .addComponent(Renderable, { type: 'firefly' })
+        .addComponent(FireflyTag);
 
       expect(system.canInteractWith(firefly, [])).toBe(false);
     });
 
     it('should return true if any type in interactsWith matches', () => {
       const firefly = world.createEntity();
-      firefly.addComponent(FireflyTag);
+      firefly
+        .addComponent(Renderable, { type: 'firefly' })
+        .addComponent(FireflyTag);
 
       expect(system.canInteractWith(firefly, ['monster', 'firefly', 'wisp'])).toBe(true);
+    });
+    
+    it('should return false when entity has no Renderable component', () => {
+      const entity = world.createEntity();
+      entity.addComponent(FireflyTag);
+
+      expect(system.canInteractWith(entity, ['firefly'])).toBe(false);
     });
   });
 });
