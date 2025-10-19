@@ -6,6 +6,7 @@ import {
   Interaction,
   Targeting,
   Renderable,
+  Health,
   FireflyTag,
   MonsterTag,
   WispTag
@@ -24,6 +25,7 @@ describe('InteractionSystem', () => {
       .registerComponent(Interaction)
       .registerComponent(Targeting)
       .registerComponent(Renderable)
+      .registerComponent(Health)
       .registerComponent(FireflyTag)
       .registerComponent(MonsterTag)
       .registerComponent(WispTag);
@@ -534,6 +536,111 @@ describe('InteractionSystem', () => {
       entity.addComponent(FireflyTag);
 
       expect(system.canInteractWith(entity, ['firefly'])).toBe(false);
+    });
+  });
+
+  describe('dead entity filtering', () => {
+    it('should not add dead entities to potentialTargets', () => {
+      const firefly = world.createEntity();
+      firefly
+        .addComponent(Position, { x: 100, y: 100 })
+        .addComponent(Interaction, { interactionRadius: 50, interactsWith: ['monster'] })
+        .addComponent(Targeting, { potentialTargets: [] })
+        .addComponent(Renderable, { type: 'firefly' })
+        .addComponent(FireflyTag);
+
+      // Create a dead monster within range
+      const deadMonster = world.createEntity();
+      deadMonster
+        .addComponent(Position, { x: 120, y: 100 })
+        .addComponent(Renderable, { type: 'monster' })
+        .addComponent(Health, { currentHealth: 0, maxHealth: 100, isDead: true })
+        .addComponent(MonsterTag);
+
+      populateGridAndExecute();
+
+      const targeting = firefly.getComponent(Targeting)!;
+      expect(targeting.potentialTargets).toHaveLength(0);
+    });
+
+    it('should add living entities to potentialTargets', () => {
+      const firefly = world.createEntity();
+      firefly
+        .addComponent(Position, { x: 100, y: 100 })
+        .addComponent(Interaction, { interactionRadius: 50, interactsWith: ['monster'] })
+        .addComponent(Targeting, { potentialTargets: [] })
+        .addComponent(Renderable, { type: 'firefly' })
+        .addComponent(FireflyTag);
+
+      // Create a living monster within range
+      const livingMonster = world.createEntity();
+      livingMonster
+        .addComponent(Position, { x: 120, y: 100 })
+        .addComponent(Renderable, { type: 'monster' })
+        .addComponent(Health, { currentHealth: 50, maxHealth: 100, isDead: false })
+        .addComponent(MonsterTag);
+
+      populateGridAndExecute();
+
+      const targeting = firefly.getComponent(Targeting)!;
+      expect(targeting.potentialTargets).toHaveLength(1);
+      expect(targeting.potentialTargets[0]).toBe(livingMonster);
+    });
+
+    it('should filter out dead entities from mixed group', () => {
+      const firefly = world.createEntity();
+      firefly
+        .addComponent(Position, { x: 100, y: 100 })
+        .addComponent(Interaction, { interactionRadius: 50, interactsWith: ['monster'] })
+        .addComponent(Targeting, { potentialTargets: [] })
+        .addComponent(Renderable, { type: 'firefly' })
+        .addComponent(FireflyTag);
+
+      // Create a living monster
+      const livingMonster = world.createEntity();
+      livingMonster
+        .addComponent(Position, { x: 110, y: 100 })
+        .addComponent(Renderable, { type: 'monster' })
+        .addComponent(Health, { currentHealth: 50, maxHealth: 100, isDead: false })
+        .addComponent(MonsterTag);
+
+      // Create a dead monster
+      const deadMonster = world.createEntity();
+      deadMonster
+        .addComponent(Position, { x: 120, y: 100 })
+        .addComponent(Renderable, { type: 'monster' })
+        .addComponent(Health, { currentHealth: 0, maxHealth: 100, isDead: true })
+        .addComponent(MonsterTag);
+
+      populateGridAndExecute();
+
+      const targeting = firefly.getComponent(Targeting)!;
+      expect(targeting.potentialTargets).toHaveLength(1);
+      expect(targeting.potentialTargets[0]).toBe(livingMonster);
+      expect(targeting.potentialTargets).not.toContain(deadMonster);
+    });
+
+    it('should still add entities without Health component', () => {
+      const firefly = world.createEntity();
+      firefly
+        .addComponent(Position, { x: 100, y: 100 })
+        .addComponent(Interaction, { interactionRadius: 50, interactsWith: ['wisp'] })
+        .addComponent(Targeting, { potentialTargets: [] })
+        .addComponent(Renderable, { type: 'firefly' })
+        .addComponent(FireflyTag);
+
+      // Create a wisp without Health component (wisps are static/non-combatant)
+      const wisp = world.createEntity();
+      wisp
+        .addComponent(Position, { x: 120, y: 100 })
+        .addComponent(Renderable, { type: 'wisp' })
+        .addComponent(WispTag);
+
+      populateGridAndExecute();
+
+      const targeting = firefly.getComponent(Targeting)!;
+      expect(targeting.potentialTargets).toHaveLength(1);
+      expect(targeting.potentialTargets[0]).toBe(wisp);
     });
   });
 });

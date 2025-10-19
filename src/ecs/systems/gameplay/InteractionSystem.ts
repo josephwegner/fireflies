@@ -1,5 +1,5 @@
 import { System } from 'ecsy';
-import { Interaction, Position, Targeting, Renderable } from '@/ecs/components';
+import { Interaction, Position, Targeting, Renderable, Health } from '@/ecs/components';
 import { ECSEntity } from '@/types';
 import { Vector, SpatialGrid } from '@/utils';
 
@@ -43,6 +43,9 @@ export class InteractionSystem extends System {
       nearbyEntities.forEach(otherEntity => {
         // Skip self
         if (entity === otherEntity) return;
+
+        const health = otherEntity.getComponent(Health);
+        if (health && health.isDead) return;
 
         // Check if other entity is in the interactsWith list
         if (!this.canInteractWith(otherEntity, interaction.interactsWith)) return;

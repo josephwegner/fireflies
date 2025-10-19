@@ -20,22 +20,18 @@ export class DamageSystem extends System {
 
   execute(delta?: number): void {
     const dt = delta || 16;
-
-    // Process death animations
     this.processDyingEntities(dt);
   }
 
   handleDamage(data: { attacker: ECSEntity; target: ECSEntity; damage: number; knockbackForce?: number }): void {
     const { attacker, target, damage, knockbackForce } = data;
 
-    // Check if target has health component
     if (!target.hasComponent(Health)) {
       return;
     }
 
     const health = target.getMutableComponent(Health)!;
 
-    // Don't damage already dead entities
     if (health.isDead) {
       return;
     }
@@ -45,12 +41,11 @@ export class DamageSystem extends System {
       health.currentHealth = Math.max(0, health.currentHealth - damage);
     }
 
-    // Check for death
     if (health.currentHealth <= 0) {
       this.handleDeath(target);
+      return; // Don't apply knockback to dead entities
     }
 
-    // Apply knockback if specified
     if (knockbackForce && knockbackForce > 0) {
       this.applyKnockback(attacker, target, knockbackForce);
     }
