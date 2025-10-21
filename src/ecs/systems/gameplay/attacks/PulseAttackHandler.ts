@@ -9,10 +9,48 @@ import Phaser from 'phaser';
 export class PulseAttackHandler implements AttackHandler {
 
   onCharging(context: AttackContext): void {
-    const { combat, renderable, scene, spriteContainer, position } = context;
+    const { combat, scene, spriteContainer, target, position, velocity } = context;
 
     const progress = combat.chargeTime / combat.attackPattern.chargeTime;
     const clampedProgress = Math.min(Math.max(progress, 0), 1);
+
+    // Move towards target while maintaining optimal distance
+    if (target && position && velocity) {
+      const targetPos = target.getComponent(Position);
+      if (targetPos) {
+        const dx = targetPos.x - position.x;
+        const dy = targetPos.y - position.y;
+        const distanceToTarget = Vector.length(dx, dy);
+        
+        // Optimal distance is half the attack radius
+        const attackRadius = combat.attackPattern.radius || 40;
+        const optimalDistance = attackRadius * 0.5;
+        const tolerance = 2; // Small buffer to avoid jittering
+        
+        // Only move if we're not at optimal distance
+        if (Math.abs(distanceToTarget - optimalDistance) > tolerance) {
+          const direction = Vector.normalize(dx, dy);
+          
+          // Speed increases as charge progresses (start slow, end at 80% normal speed)
+          const moveSpeed = 16 * (0.2 + clampedProgress * 0.6);
+          
+          // If too close, move away (negative direction)
+          // If too far, move closer (positive direction)
+          const shouldMoveCloser = distanceToTarget > optimalDistance;
+          const directionMultiplier = shouldMoveCloser ? 1 : -1;
+          
+          velocity.vx = direction.x * moveSpeed * directionMultiplier;
+          velocity.vy = direction.y * moveSpeed * directionMultiplier;
+        } else {
+          // At optimal distance, slow down to a stop
+          velocity.vx *= 0.8;
+          velocity.vy *= 0.8;
+        }
+      }
+    }
+
+    // Visual: expanding pulse circle
+    if (!scene || !spriteContainer) return;
 
     // Find or create pulse circle in the container
     let pulseCircle = spriteContainer.list.find((c: any) => c.name === 'pulseCircle') as Phaser.GameObjects.Graphics | undefined;
@@ -152,5 +190,19 @@ export class PulseAttackHandler implements AttackHandler {
       renderable.scale = 1.0;
       renderable.tint = 0xFFFFFF;
     }
+  }
+
+  private isValidTarget(
+    entity: ECSEntity,
+    targetTags: string[] = []
+  ): boolean {
+    if (targetTags.length === 0) return true;
+
+    return Object.values(entity.getComponents())
+      .some(
+        c =>
+          c instanceof TagComponent &&
+          targetTags.includes(c.constructor.name.replace(/Tag$/, '').toLowerCase())
+      );
   }
 }

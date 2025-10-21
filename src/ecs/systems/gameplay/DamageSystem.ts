@@ -1,5 +1,5 @@
 import { System } from 'ecsy';
-import { Health, Position, Renderable, Knockback } from '@/ecs/components';
+import { Health, Position, Renderable, Velocity } from '@/ecs/components';
 import { gameEvents, GameEvents } from '@/events';
 import { PHYSICS_CONFIG } from '@/config';
 import { ECSEntity } from '@/types';
@@ -76,8 +76,9 @@ export class DamageSystem extends System {
   applyKnockback(attacker: ECSEntity, target: ECSEntity, knockbackForce: number): void {
     const attackerPos = attacker.getComponent(Position);
     const targetPos = target.getComponent(Position);
+    const targetVelocity = target.getMutableComponent(Velocity);
 
-    if (!attackerPos || !targetPos) {
+    if (!attackerPos || !targetPos || !targetVelocity) {
       return;
     }
 
@@ -90,25 +91,15 @@ export class DamageSystem extends System {
       return;
     }
 
-    // Normalize and apply force
+    // Normalize and apply as velocity impulse
     const direction = Vector.normalize(dx, dy);
-    const force = Vector.scale(direction, knockbackForce);
+    const impulse = Vector.scale(direction, knockbackForce);
+    
+    // Add knockback impulse to existing velocity
+    targetVelocity.vx += impulse.x;
+    targetVelocity.vy += impulse.y;
 
-    // Add knockback component
-    if (target.hasComponent(Knockback)) {
-      const knockback = target.getMutableComponent(Knockback)!;
-      knockback.force = force;
-      knockback.duration = 200; // Fixed duration for knockback
-      knockback.elapsed = 0;
-    } else {
-      target.addComponent(Knockback, {
-        force,
-        duration: 200,
-        elapsed: 0
-      });
-    }
-
-    gameEvents.emit(GameEvents.KNOCKBACK_APPLIED, { entity: target, force });
+    gameEvents.emit(GameEvents.KNOCKBACK_APPLIED, { entity: target, force: impulse });
   }
 
   processDyingEntities(dt: number): void {

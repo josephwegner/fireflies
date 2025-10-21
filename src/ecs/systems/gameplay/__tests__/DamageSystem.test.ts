@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { World } from 'ecsy';
 import { DamageSystem } from '../DamageSystem';
-import { Health, Combat, Position, Renderable, PhysicsBody, Knockback } from '@/ecs/components';
+import { Health, Combat, Position, Renderable, PhysicsBody } from '@/ecs/components';
 import { gameEvents, GameEvents } from '@/events';
 import { PHYSICS_CONFIG } from '@/config';
 
@@ -16,7 +16,6 @@ describe('DamageSystem', () => {
     world.registerComponent(Position);
     world.registerComponent(Renderable);
     world.registerComponent(PhysicsBody);
-    world.registerComponent(Knockback);
 
     world.registerSystem(DamageSystem);
     

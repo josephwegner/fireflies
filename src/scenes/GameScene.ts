@@ -12,7 +12,6 @@ import {
   Interaction,
   Health,
   Combat,
-  Knockback,
   Wall,
   FireflyTag,
   WispTag,
@@ -29,7 +28,6 @@ import {
   DestinationSystem,
   WallGenerationSystem,
   DamageSystem,
-  KnockbackSystem,
   CombatSystem
 } from '@/ecs/systems';
 import {
@@ -91,7 +89,6 @@ export class GameScene extends Phaser.Scene {
       .registerComponent(Interaction)
       .registerComponent(Health)
       .registerComponent(Combat)
-      .registerComponent(Knockback)
       .registerComponent(Wall)
       .registerComponent(FireflyTag)
       .registerComponent(WispTag)
@@ -112,7 +109,6 @@ export class GameScene extends Phaser.Scene {
         renderingSystem: this.world.getSystem(RenderingSystem)
       })
       .registerSystem(DamageSystem)
-      .registerSystem(KnockbackSystem)
       .registerSystem(MovementSystem)
       .registerSystem(DestinationSystem, { worker: this.pathfindingWorker })
       .registerSystem(WallRenderingSystem, { scene: this });

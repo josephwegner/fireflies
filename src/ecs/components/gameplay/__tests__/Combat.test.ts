@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { World } from 'ecsy';
-import { Health, Combat, Knockback, CombatState } from '@/ecs/components';
+import { Health, Combat, CombatState } from '@/ecs/components';
 
 describe('Combat Components', () => {
   let world: World;
@@ -9,7 +9,6 @@ describe('Combat Components', () => {
     world = new World();
     world.registerComponent(Health);
     world.registerComponent(Combat);
-    world.registerComponent(Knockback);
   });
 
   describe('Health Component', () => {

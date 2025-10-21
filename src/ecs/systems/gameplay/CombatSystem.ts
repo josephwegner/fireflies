@@ -68,10 +68,19 @@ export class CombatSystem extends System {
         // Only validate target when idle or charging - let attacks/recovery complete
         if (combat.state === CombatState.IDLE || combat.state === CombatState.CHARGING) {
           if (!this.isValidTarget(entity, targetEntity, combat)) {
-            this.cleanupCombat(entity, combat);
             entity.removeComponent(Target);
-            combat.state = CombatState.IDLE;
-            combat.chargeTime = 0;
+            
+            // Check if entity has other potential targets available
+            const targeting = entity.getComponent(Targeting);
+            const hasOtherTargets = targeting && targeting.potentialTargets && targeting.potentialTargets.length > 0;
+            
+            // If charging and other targets are available, preserve charge momentum
+            // Otherwise, reset to idle
+            if (combat.state !== CombatState.CHARGING || !hasOtherTargets) {
+              this.cleanupCombat(entity, combat);
+              combat.state = CombatState.IDLE;
+              combat.chargeTime = 0;
+            }
             return;
           }
         }
