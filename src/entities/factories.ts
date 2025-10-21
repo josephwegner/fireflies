@@ -1,11 +1,12 @@
 import { World } from 'ecsy';
 import {
+  ActivationConfig,
   Position,
   Velocity,
   Renderable,
   PhysicsBody,
   Path,
-  Target,
+  Lodge,
   Targeting,
   Destination,
   Interaction,
@@ -78,7 +79,7 @@ export function createWisp(world: World, x: number, y: number): ECSEntity {
     .addComponent(Renderable, {
       type: config.type,
       sprite: config.type, // Use type as sprite key
-      color: config.color,
+      tint: config.color,
       radius: config.radius
     })
     .addComponent(PhysicsBody, {
@@ -86,7 +87,65 @@ export function createWisp(world: World, x: number, y: number): ECSEntity {
       isStatic: config.isStatic,
       collisionRadius: config.radius
     })
-    .addComponent(WispTag);
+    .addComponent(Health, {
+      maxHealth: 500,
+    })
+    .addComponent(WispTag)
+    .addComponent(Lodge, {
+      allowedTenants: ['firefly'],
+      maxTenants: 1
+    })
+    .addComponent(ActivationConfig, {
+      onActivate: [
+        {
+          component: Renderable,
+          config: { 
+            tint: config.activeColor
+          }
+        },
+        {
+          component: Interaction,
+          config: {
+            interactsWith: ['monster'],
+            interactionRadius: 100,
+            onInteract: () => {}
+          }
+        },
+        {
+          component: Targeting,
+          config: {
+            potentialTargets: []
+          }
+        },
+        {
+          component: Combat,
+          config: {
+            state: CombatState.IDLE,
+            chargeTime: 0,
+            attackElapsed: 0,
+            recoveryElapsed: 0,
+            attackPattern: {
+              handlerType: 'pulse',
+              chargeTime: 800,
+              attackDuration: 100,
+              recoveryTime: 200,
+              damage: 100,
+              radius: 100,
+              targetTags: ['monster']
+            },
+            hasHit: false
+          }
+        }
+      ],
+      onDeactivate: [
+        {
+          component: Renderable,
+          config: { 
+            tint: config.color
+          }
+        }
+      ]
+    });
 }
 
 export function createMonster(world: World, x: number, y: number): ECSEntity {

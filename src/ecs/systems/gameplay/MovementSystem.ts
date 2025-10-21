@@ -18,15 +18,12 @@ export class MovementSystem extends System {
         const inCombat = entity.hasComponent(Target);
 
         // Determine desired velocity based on state
-        console.log('pathComp', `entity: ${entity.id}`, pathComp.currentPath.length, pathComp);
         if (!inCombat && pathComp && pathComp.currentPath && pathComp.currentPath.length > 0) {
           // Following a path - steer toward next waypoint
           const target = pathComp.currentPath[0];
           const dx = target.x - position.x;
           const dy = target.y - position.y;
           const dist = Vector.length(dx, dy);
-
-          console.log('pathComp', `entity: ${entity.id}`, pathComp.currentPath.length, dist, pathComp);
 
           // Check if we've arrived at current waypoint
           if ((dist <= PHYSICS_CONFIG.PATH_ARRIVAL_THRESHOLD && pathComp.currentPath.length > 1) || dist < PHYSICS_CONFIG.PATH_ARRIVAL_MIN) {

@@ -1,5 +1,5 @@
 import { System, World } from 'ecsy';
-import { Combat, CombatState, Health, Target, Position, Velocity, PhysicsBody, FireflyTag, MonsterTag, Renderable } from '@/ecs/components';
+import { Combat, CombatState, Health, Target, Targeting, Position, Velocity, PhysicsBody, FireflyTag, MonsterTag, Renderable } from '@/ecs/components';
 import { gameEvents, GameEvents } from '@/events';
 import { ECSEntity } from '@/types';
 import { Vector } from '@/utils';
@@ -38,7 +38,7 @@ export class CombatSystem extends System {
         const combat = entity.getMutableComponent(Combat)!;
         const health = entity.getComponent(Health)!;
         const position = entity.getComponent(Position)!;
-        const velocity = entity.getMutableComponent(Velocity)!;
+        const velocity = entity.getMutableComponent(Velocity);
         const target = entity.getComponent(Target);
 
         // Dead entities can't attack
@@ -145,7 +145,7 @@ export class CombatSystem extends System {
     combat: Combat,
     target: ECSEntity,
     position: Position,
-    velocity: Velocity,
+    velocity: Velocity | undefined,
     dt: number
   ): void {
     const handler = AttackHandlerRegistry.get(combat.attackPattern.handlerType);
@@ -278,7 +278,7 @@ export class CombatSystem extends System {
 
   static queries = {
     combatants: {
-      components: [Combat, Health, Position, Velocity]
+      components: [Combat, Health, Position]
     }
   };
 }

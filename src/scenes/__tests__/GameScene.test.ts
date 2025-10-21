@@ -229,7 +229,7 @@ describe('GameScene', () => {
       const world = scene.getWorld()!;
       const systemCount = world.systemManager._systems.length;
 
-      // 10 systems: WallGeneration, Interaction, Targeting, Combat, Damage, Knockback, Movement, Destination, WallRendering, Rendering
+      // 10 systems: WallGeneration, Interaction, Targeting, Lodging,Combat, Damage, Movement, Destination, WallRendering, Rendering
       expect(systemCount).toBe(10);
     });
 

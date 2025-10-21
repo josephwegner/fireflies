@@ -13,6 +13,8 @@ export interface GameEventPayloads {
   [GameEvents.ATTACK_HIT]: { attacker: ECSEntity; target: ECSEntity; damage: number; knockbackForce?: number };
   [GameEvents.ATTACK_COMPLETED]: { entity: ECSEntity };
   [GameEvents.KNOCKBACK_APPLIED]: { entity: ECSEntity; force: { x: number; y: number } };
+  [GameEvents.TENANT_ADDED_TO_LODGE]: { lodgeEntity: ECSEntity; tenantEntity: ECSEntity };
+  [GameEvents.TENANT_REMOVED_FROM_LODGE]: { lodgeEntity: ECSEntity; tenantEntity: ECSEntity };
 }
 
 type EventCallback<T = any> = (data: T) => void;
@@ -32,7 +34,8 @@ export class GameEvents {
   static readonly ATTACK_HIT = 'combat:attackHit';
   static readonly ATTACK_COMPLETED = 'combat:attackCompleted';
   static readonly KNOCKBACK_APPLIED = 'combat:knockbackApplied';
-
+  static readonly TENANT_ADDED_TO_LODGE = 'tenant:addedToLodge';
+  static readonly TENANT_REMOVED_FROM_LODGE = 'tenant:removedFromLodge';
   /**
    * Subscribe to an event with type-safe payload
    */

@@ -1,12 +1,14 @@
 import Phaser from 'phaser';
 import { World } from 'ecsy';
 import {
+  ActivationConfig,
   Position,
   Velocity,
   Path,
   Renderable,
   PhysicsBody,
   Destination,
+  Lodge,
   Targeting,
   Target,
   Interaction,
@@ -24,6 +26,7 @@ import {
   WallRenderingSystem,
   MovementSystem,
   InteractionSystem,
+  LodgingSystem,
   TargetingSystem,
   DestinationSystem,
   WallGenerationSystem,
@@ -40,6 +43,7 @@ import { GAME_CONFIG, PHYSICS_CONFIG } from '@/config';
 import { AssetLoader } from '@/assets';
 import { AttackHandlerRegistry } from '@/ecs/systems/gameplay/attacks/AttackHandlerRegistry';
 import { SpatialGrid } from '@/utils';
+import { Lodge } from '@/ecs/components/gameplay/Lodge';
 
 export class GameScene extends Phaser.Scene {
   private world!: World;
@@ -78,6 +82,7 @@ export class GameScene extends Phaser.Scene {
 
   private registerComponents(): void {
     this.world
+      .registerComponent(ActivationConfig)
       .registerComponent(Position)
       .registerComponent(Velocity)
       .registerComponent(Path)
@@ -86,6 +91,7 @@ export class GameScene extends Phaser.Scene {
       .registerComponent(Destination)
       .registerComponent(Targeting)
       .registerComponent(Target)
+      .registerComponent(Lodge)
       .registerComponent(Interaction)
       .registerComponent(Health)
       .registerComponent(Combat)
@@ -108,6 +114,7 @@ export class GameScene extends Phaser.Scene {
         scene: this,
         renderingSystem: this.world.getSystem(RenderingSystem)
       })
+      .registerSystem(LodgingSystem, { spatialGrid: this.spatialGrid })
       .registerSystem(DamageSystem)
       .registerSystem(MovementSystem)
       .registerSystem(DestinationSystem, { worker: this.pathfindingWorker })

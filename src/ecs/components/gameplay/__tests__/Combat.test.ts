@@ -95,46 +95,6 @@ describe('Combat Components', () => {
     });
   });
 
-  describe('Knockback Component', () => {
-    it('should have correct default values', () => {
-      const entity = world.createEntity();
-      entity.addComponent(Knockback);
-      
-      const knockback = entity.getComponent(Knockback)!;
-      expect(knockback.force).toEqual({ x: 0, y: 0 });
-      expect(knockback.duration).toBe(0);
-      expect(knockback.elapsed).toBe(0);
-    });
-
-    it('should allow setting knockback force', () => {
-      const entity = world.createEntity();
-      entity.addComponent(Knockback, {
-        force: { x: 50, y: 30 },
-        duration: 200,
-        elapsed: 0
-      });
-      
-      const knockback = entity.getComponent(Knockback)!;
-      expect(knockback.force.x).toBe(50);
-      expect(knockback.force.y).toBe(30);
-      expect(knockback.duration).toBe(200);
-    });
-
-    it('should be mutable for time tracking', () => {
-      const entity = world.createEntity();
-      entity.addComponent(Knockback, {
-        force: { x: 50, y: 30 },
-        duration: 200,
-        elapsed: 0
-      });
-      
-      const knockback = entity.getMutableComponent(Knockback)!;
-      knockback.elapsed += 16;
-      
-      expect(knockback.elapsed).toBe(16);
-    });
-  });
-
   describe('Component integration', () => {
     it('should allow entity to have all combat-related components', () => {
       const entity = world.createEntity();
@@ -152,11 +112,9 @@ describe('Combat Components', () => {
           knockbackForce: 50
         }
       });
-      entity.addComponent(Knockback, { force: { x: 0, y: 0 }, duration: 0, elapsed: 0 });
       
       expect(entity.hasComponent(Health)).toBe(true);
       expect(entity.hasComponent(Combat)).toBe(true);
-      expect(entity.hasComponent(Knockback)).toBe(true);
     });
   });
 });

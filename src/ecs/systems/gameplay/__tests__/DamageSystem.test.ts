@@ -163,87 +163,6 @@ describe('DamageSystem', () => {
     });
   });
 
-  describe('knockback application', () => {
-    it('should apply knockback force when included in attack', () => {
-      const attacker = world.createEntity();
-      attacker.addComponent(Position, { x: 100, y: 100 });
-      
-      const target = world.createEntity();
-      target.addComponent(Health, { currentHealth: 100, maxHealth: 100 });
-      target.addComponent(Position, { x: 150, y: 100 });
-      
-      let knockbackEventFired = false;
-      let capturedForce: { x: number; y: number } | null = null;
-      gameEvents.once(GameEvents.KNOCKBACK_APPLIED, ({ entity, force }) => {
-        knockbackEventFired = true;
-        capturedForce = force;
-        expect(entity).toBe(target);
-      });
-      
-      gameEvents.emit(GameEvents.ATTACK_HIT, {
-        attacker,
-        target,
-        damage: 10,
-        knockbackForce: 50
-      });
-      
-      expect(knockbackEventFired).toBe(true);
-      expect(capturedForce).not.toBeNull();
-      expect(capturedForce!.x).toBeGreaterThan(0); // Should be pushed away
-      expect(typeof capturedForce!.y).toBe('number');
-      expect(target.hasComponent(Knockback)).toBe(true);
-    });
-
-    it('should calculate knockback direction from attacker to target', () => {
-      const attacker = world.createEntity();
-      attacker.addComponent(Position, { x: 100, y: 100 });
-      
-      const target = world.createEntity();
-      target.addComponent(Health, { currentHealth: 100, maxHealth: 100 });
-      target.addComponent(Position, { x: 100, y: 150 });
-      
-      let capturedForce: { x: number; y: number } | null = null;
-      gameEvents.once(GameEvents.KNOCKBACK_APPLIED, ({ force }) => {
-        capturedForce = force;
-      });
-      
-      gameEvents.emit(GameEvents.ATTACK_HIT, {
-        attacker,
-        target,
-        damage: 10,
-        knockbackForce: 50
-      });
-      
-      expect(capturedForce).not.toBeNull();
-      // Target is directly below attacker, so knockback should be mostly in Y direction
-      expect(Math.abs(capturedForce!.y)).toBeGreaterThan(Math.abs(capturedForce!.x));
-      expect(capturedForce!.y).toBeGreaterThan(0); // Positive Y direction
-    });
-
-    it('should not apply knockback if force is not provided', () => {
-      const attacker = world.createEntity();
-      attacker.addComponent(Position, { x: 100, y: 100 });
-      
-      const target = world.createEntity();
-      target.addComponent(Health, { currentHealth: 100, maxHealth: 100 });
-      target.addComponent(Position, { x: 150, y: 100 });
-      
-      let knockbackApplied = false;
-      gameEvents.on(GameEvents.KNOCKBACK_APPLIED, () => {
-        knockbackApplied = true;
-      });
-      
-      gameEvents.emit(GameEvents.ATTACK_HIT, {
-        attacker,
-        target,
-        damage: 10
-      });
-      
-      expect(knockbackApplied).toBe(false);
-      expect(target.hasComponent(Knockback)).toBe(false);
-    });
-  });
-
   describe('death animation lifecycle', () => {
     it('should remove entity after death animation duration', async () => {
       const attacker = world.createEntity();
@@ -336,9 +255,6 @@ describe('DamageSystem', () => {
         damage: 10,
         knockbackForce: 0
       });
-      
-      // Should not add knockback component for zero force
-      expect(target.hasComponent(Knockback)).toBe(false);
     });
 
     it('should handle knockback when attacker has no position', () => {
@@ -357,8 +273,6 @@ describe('DamageSystem', () => {
           knockbackForce: 50
         });
       }).not.toThrow();
-      
-      expect(target.hasComponent(Knockback)).toBe(false);
     });
   });
 });

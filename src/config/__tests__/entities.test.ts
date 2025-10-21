@@ -26,3 +26,20 @@ describe('Entity Configuration', () => {
     });
   });
 });
+
+describe('Wisp Configuration', () => {
+  it('should have activeColor defined for wisp', () => {
+    expect(ENTITY_CONFIG.wisp.activeColor).toBeDefined();
+    expect(typeof ENTITY_CONFIG.wisp.activeColor).toBe('number');
+  });
+
+  it('wisp activeColor should be different from regular color', () => {
+    expect(ENTITY_CONFIG.wisp.activeColor).not.toBe(ENTITY_CONFIG.wisp.color);
+  });
+
+  it('wisp activeColor should be valid hex color', () => {
+    // Valid hex colors are between 0x000000 and 0xFFFFFF
+    expect(ENTITY_CONFIG.wisp.activeColor!).toBeGreaterThanOrEqual(0x000000);
+    expect(ENTITY_CONFIG.wisp.activeColor!).toBeLessThanOrEqual(0xFFFFFF);
+  });
+});

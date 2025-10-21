@@ -13,6 +13,7 @@ import {
   Renderable,
   PhysicsBody,
   Destination,
+  Lodge,
   Targeting,
   Target,
   Interaction,
@@ -37,6 +38,7 @@ describe('Entity Factories', () => {
       .registerComponent(Renderable)
       .registerComponent(PhysicsBody)
       .registerComponent(Destination)
+      .registerComponent(Lodge)
       .registerComponent(Targeting)
       .registerComponent(Target)
       .registerComponent(Interaction)
@@ -184,6 +186,16 @@ describe('Entity Factories', () => {
       const physics = entity.getComponent(PhysicsBody)!;
 
       expect(physics.isStatic).toBe(true);
+    });
+
+    it('should have Lodge component with correct configuration', () => {
+      const wisp = createWisp(world, 100, 100);
+  
+      expect(wisp.hasComponent(Lodge)).toBe(true);
+      const lodge = wisp.getComponent(Lodge)!;
+      expect(lodge.allowedTenants).toEqual(['firefly']);
+      expect(lodge.maxTenants).toBe(1);
+      expect(lodge.tenants).toEqual([]);
     });
   });
 

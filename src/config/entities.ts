@@ -46,6 +46,7 @@ export const ENTITY_CONFIG: Readonly<Record<string, Readonly<EntityConfig>>> = O
   wisp: Object.freeze({
     type: 'wisp',
     color: 0xffffff,
+    activeColor: 0x00ff00,
     radius: 12,
     mass: 1,
     isStatic: true
