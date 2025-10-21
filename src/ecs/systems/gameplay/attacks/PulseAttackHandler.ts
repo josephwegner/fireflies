@@ -153,18 +153,4 @@ export class PulseAttackHandler implements AttackHandler {
       renderable.tint = 0xFFFFFF;
     }
   }
-
-  private isValidTarget(
-    entity: ECSEntity,
-    targetTags: string[] = []
-  ): boolean {
-    if (targetTags.length === 0) return true;
-
-    return Object.values(entity.getComponents())
-      .some(
-        c =>
-          c instanceof TagComponent &&
-          targetTags.includes(c.constructor.name.replace(/Tag$/, '').toLowerCase())
-      );
-  }
 }

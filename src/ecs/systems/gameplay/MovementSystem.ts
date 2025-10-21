@@ -1,5 +1,5 @@
 import { System } from 'ecsy';
-import { Position, Velocity, Path, Target } from '@/ecs/components';
+import { Position, Velocity, Path, Target, Knockback } from '@/ecs/components';
 import { PHYSICS_CONFIG } from '@/config';
 import { gameEvents, GameEvents } from '@/events';
 import { Vector } from '@/utils';
@@ -65,7 +65,8 @@ export class MovementSystem extends System {
 
   static queries = {
     moving: {
-      components: [Position, Velocity]
+      components: [Position, Velocity],
+      not: [Knockback]
     }
   };
 }

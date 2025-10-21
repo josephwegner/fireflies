@@ -60,7 +60,7 @@ export const ENTITY_CONFIG: Readonly<Record<string, Readonly<EntityConfig>>> = O
     direction: 'l',
     interactionRadius: 30,
     interactsWith: Object.freeze(['firefly']),
-    health: 100,
+    health: 50,
     combat: Object.freeze({
       chargeTime: 2200,      // Increased from 1500ms for slow, menacing charge
       attackDuration: 400,   // Increased from 100ms for visible pulse expansion

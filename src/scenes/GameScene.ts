@@ -155,6 +155,12 @@ export class GameScene extends Phaser.Scene {
       2 * TILE + TILE / 2
     )
 
+    createFirefly(
+      this.world,
+      4 * TILE + TILE / 2,
+      2 * TILE + TILE / 2
+    )
+
     const wispPositions = [
       [10, 3],
       [2, 4],
