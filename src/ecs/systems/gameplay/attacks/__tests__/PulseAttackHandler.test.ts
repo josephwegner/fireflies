@@ -143,6 +143,45 @@ describe('PulseAttackHandler', () => {
 
       expect(mockCombat.hasHit).toBe(true);
     });
+
+    it('should only hit targets once even when execute is called multiple times', () => {
+      const target = world.createEntity();
+      target.addComponent(Position, { x: 10, y: 0 });
+      target.addComponent(PhysicsBody, { mass: 1, isStatic: false, collisionRadius: 5 });
+      target.addComponent(FireflyTag);
+
+      spatialGrid.insert(attacker, 0, 0);
+      spatialGrid.insert(target, 10, 0);
+
+      vi.spyOn(gameEvents, 'emit');
+
+      const context: AttackContext = {
+        attacker,
+        combat: mockCombat,
+        world,
+        spatialGrid
+      };
+
+      // Execute the first time - should hit
+      handler.execute(context);
+      
+      expect(gameEvents.emit).toHaveBeenCalledTimes(1);
+      expect(gameEvents.emit).toHaveBeenCalledWith(GameEvents.ATTACK_HIT, {
+        attacker,
+        target,
+        damage: 25,
+        knockbackForce: 30
+      });
+      expect(mockCombat.hasHit).toBe(true);
+
+      // Execute again - should NOT hit again
+      handler.execute(context);
+      handler.execute(context);
+      handler.execute(context);
+
+      // Still only called once total
+      expect(gameEvents.emit).toHaveBeenCalledTimes(1);
+    });
   });
 
   describe('target tag filtering', () => {

@@ -10,20 +10,9 @@ export class PulseAttackHandler implements AttackHandler {
 
   onCharging(context: AttackContext): void {
     const { combat, renderable, scene, spriteContainer, position } = context;
-    if (!renderable || !scene || !spriteContainer || !position) return;
 
     const progress = combat.chargeTime / combat.attackPattern.chargeTime;
     const clampedProgress = Math.min(Math.max(progress, 0), 1);
-
-    // Oscillating scale between 0.9 and 1.1
-    const scaleOscillation = Math.sin(progress * Math.PI * 6) * 0.1;
-    renderable.scale = 1.0 + scaleOscillation;
-
-    // Red glow pulse - intensifies as charge progresses
-    const pulseIntensity = Math.sin(progress * Math.PI * 4) * 0.5 + 0.5;
-    const redValue = Math.floor(255);
-    const otherValue = Math.floor(255 * (1 - clampedProgress * 0.5) * (0.8 + pulseIntensity * 0.2));
-    renderable.tint = (redValue << 16) | (otherValue << 8) | otherValue;
 
     // Find or create pulse circle in the container
     let pulseCircle = spriteContainer.list.find((c: any) => c.name === 'pulseCircle') as Phaser.GameObjects.Graphics | undefined;
@@ -37,11 +26,13 @@ export class PulseAttackHandler implements AttackHandler {
     // Draw expanding circle
     pulseCircle.clear();
     const maxRadius = combat.attackPattern.radius || 40;
-    const currentRadius = maxRadius * clampedProgress * 0.8; // Expand to 80% during charge
+    const currentRadius = maxRadius * clampedProgress;
     const alpha = 0.3 * (1 - clampedProgress * 0.5); // Fade as it expands
     
     pulseCircle.lineStyle(2, 0xff0000, alpha);
-    pulseCircle.strokeCircle(position.x, position.y, currentRadius);
+    pulseCircle.fillStyle(0xff0000, 0.2);
+    pulseCircle.fillCircle(0, 0, currentRadius);
+    pulseCircle.strokeCircle(0, 0, currentRadius);
   }
 
   onAttackStart(context: AttackContext): void {
@@ -50,6 +41,9 @@ export class PulseAttackHandler implements AttackHandler {
   }
 
   execute({ attacker, combat, world, spatialGrid, scene, spriteContainer, position }: AttackContext): void {
+    // Only hit once per attack
+    if (combat.hasHit) return;
+    
     const attackerPos = attacker.getComponent(Position);
     if (!attackerPos) return;
 
@@ -62,10 +56,10 @@ export class PulseAttackHandler implements AttackHandler {
         const maxRadius = combat.attackPattern.radius || 40;
         
         // Full size, bright flash
-        pulseCircle.lineStyle(3, 0xff0000, 0.8);
-        pulseCircle.strokeCircle(position.x, position.y, maxRadius);
-        pulseCircle.fillStyle(0xff0000, 0.2);
-        pulseCircle.fillCircle(position.x, position.y, maxRadius);
+        pulseCircle.lineStyle(3, 0xff0000, 0.3);
+        pulseCircle.strokeCircle(0, 0, maxRadius);
+        pulseCircle.fillStyle(0xff0000, 0.3);
+        pulseCircle.fillCircle(0, 0, maxRadius);
       }
     }
 

@@ -17,13 +17,15 @@ export class MovementSystem extends System {
         // Check if entity is in combat (has Target component)
         const inCombat = entity.hasComponent(Target);
 
-        // Only follow path if NOT in combat
+        // Determine desired velocity based on state
         if (!inCombat && pathComp && pathComp.currentPath && pathComp.currentPath.length > 0) {
+          // Following a path - steer toward next waypoint
           const target = pathComp.currentPath[0];
           const dx = target.x - position.x;
           const dy = target.y - position.y;
           const dist = Vector.length(dx, dy);
 
+          // Check if we've arrived at current waypoint
           if ((dist <= PHYSICS_CONFIG.PATH_ARRIVAL_THRESHOLD && pathComp.currentPath.length > 1) || dist < PHYSICS_CONFIG.PATH_ARRIVAL_MIN) {
             pathComp.currentPath.shift();
 
@@ -36,20 +38,15 @@ export class MovementSystem extends System {
               }
             }
           } else {
+            // Set velocity toward waypoint (steering)
             const direction = Vector.normalize(dx, dy);
-            const pathMovement = Vector.scale(direction, PHYSICS_CONFIG.DEFAULT_SPEED * dt);
-            const velocityMovement = { x: velocity.vx * dt, y: velocity.vy * dt };
-
-            const totalMovement = Vector.add(pathMovement, velocityMovement);
-
-            position.x += totalMovement.x;
-            position.y += totalMovement.y;
+            velocity.vx = direction.x * PHYSICS_CONFIG.DEFAULT_SPEED;
+            velocity.vy = direction.y * PHYSICS_CONFIG.DEFAULT_SPEED;
           }
-        } else {
-          // In combat or no path: only apply velocity (for dash attacks, knockback, etc.)
-          position.x += velocity.vx * dt;
-          position.y += velocity.vy * dt;
         }
+
+        position.x += velocity.vx * dt;
+        position.y += velocity.vy * dt;
 
         this.applyFriction(velocity);
       } catch (error) {

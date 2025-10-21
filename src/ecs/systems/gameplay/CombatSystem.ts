@@ -65,13 +65,15 @@ export class CombatSystem extends System {
 
         const targetEntity = target.target;
 
-        // Validate target
-        if (!this.isValidTarget(entity, targetEntity, combat)) {
-          this.cleanupCombat(entity, combat);
-          entity.removeComponent(Target);
-          combat.state = CombatState.IDLE;
-          combat.chargeTime = 0;
-          return;
+        // Only validate target when idle or charging - let attacks/recovery complete
+        if (combat.state === CombatState.IDLE || combat.state === CombatState.CHARGING) {
+          if (!this.isValidTarget(entity, targetEntity, combat)) {
+            this.cleanupCombat(entity, combat);
+            entity.removeComponent(Target);
+            combat.state = CombatState.IDLE;
+            combat.chargeTime = 0;
+            return;
+          }
         }
 
         this.updateCombatState(entity, combat, targetEntity, position, velocity, dt);

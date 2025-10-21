@@ -139,9 +139,21 @@ export class GameScene extends Phaser.Scene {
 
     createFirefly(
       this.world,
-      1 * TILE + TILE / 2,
+      7 * TILE + TILE / 2,
       3 * TILE + TILE / 2
     );
+
+    createFirefly(
+      this.world,
+      8 * TILE + TILE / 2,
+      4 * TILE + TILE / 2
+    );
+
+    createFirefly(
+      this.world,
+      6 * TILE + TILE / 2,
+      2 * TILE + TILE / 2
+    )
 
     const wispPositions = [
       [10, 3],
@@ -161,7 +173,7 @@ export class GameScene extends Phaser.Scene {
 
     createMonster(
       this.world,
-      17 * TILE + TILE / 2,
+      9 * TILE + TILE / 2,
       4 * TILE + TILE / 2
     );
 

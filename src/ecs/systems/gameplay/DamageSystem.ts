@@ -38,6 +38,14 @@ export class DamageSystem extends System {
 
     // Apply damage (ensure it's non-negative and doesn't heal)
     if (damage > 0) {
+      console.log('attack meta', {
+        damage: damage,
+        currentHealth: health.currentHealth,
+        newHealth: health.currentHealth - damage,
+        attackerType: attacker.getComponent(Renderable)?.type,
+        targetType: target.getComponent(Renderable)?.type,
+        targetId: target.id
+      });
       health.currentHealth = Math.max(0, health.currentHealth - damage);
     }
 

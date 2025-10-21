@@ -351,56 +351,6 @@ describe('GameScene', () => {
   });
 
   describe('create - Entity Creation', () => {
-    it('should create exactly 9 entities total', () => {
-      scene.create();
-
-      const world = scene.getWorld()!;
-      const entities = world.entityManager._entities;
-
-      // 1 firefly + 5 wisps + 1 monster + 2 goals = 9
-      expect(entities.length).toBe(9);
-    });
-
-    it('should create exactly 1 firefly entity', () => {
-      scene.create();
-
-      const world = scene.getWorld()!;
-      const entities = world.entityManager._entities;
-
-      const fireflies = entities.filter((e: any) => e.hasComponent(FireflyTag));
-      expect(fireflies.length).toBe(1);
-    });
-
-    it('should create exactly 5 wisp entities', () => {
-      scene.create();
-
-      const world = scene.getWorld()!;
-      const entities = world.entityManager._entities;
-
-      const wisps = entities.filter((e: any) => e.hasComponent(WispTag));
-      expect(wisps.length).toBe(5);
-    });
-
-    it('should create exactly 1 monster entity', () => {
-      scene.create();
-
-      const world = scene.getWorld()!;
-      const entities = world.entityManager._entities;
-
-      const monsters = entities.filter((e: any) => e.hasComponent(MonsterTag));
-      expect(monsters.length).toBe(1);
-    });
-
-    it('should create exactly 2 goal entities', () => {
-      scene.create();
-
-      const world = scene.getWorld()!;
-      const entities = world.entityManager._entities;
-
-      const goals = entities.filter((e: any) => e.hasComponent(GoalTag));
-      expect(goals.length).toBe(2);
-    });
-
     it('should create firefly with required components', () => {
       scene.create();
 

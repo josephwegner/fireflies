@@ -25,7 +25,7 @@ export const ENTITY_CONFIG: Readonly<Record<string, Readonly<EntityConfig>>> = O
   firefly: Object.freeze({
     type: 'firefly',
     color: 0xffffff,
-    radius: 5,
+    radius: 4,
     mass: 1,
     isStatic: false,
     speed: 20,
@@ -39,8 +39,8 @@ export const ENTITY_CONFIG: Readonly<Record<string, Readonly<EntityConfig>>> = O
       recoveryTime: 600,     // Increased from 400ms for recovery drift
       damage: 10,
       handlerType: 'dash',
-      dashSpeed: 100,
-      knockbackForce: 50
+      dashSpeed: 150,
+      knockbackForce: 20
     })
   }),
   wisp: Object.freeze({
@@ -58,7 +58,7 @@ export const ENTITY_CONFIG: Readonly<Record<string, Readonly<EntityConfig>>> = O
     isStatic: false,
     speed: 20,
     direction: 'l',
-    interactionRadius: 40,
+    interactionRadius: 30,
     interactsWith: Object.freeze(['firefly']),
     health: 100,
     combat: Object.freeze({
@@ -67,8 +67,8 @@ export const ENTITY_CONFIG: Readonly<Record<string, Readonly<EntityConfig>>> = O
       recoveryTime: 500,     // Increased from 0ms for brief pause after attack
       damage: 25,
       handlerType: 'pulse',
-      radius: 40,
-      knockbackForce: 30
+      radius: 30,
+      knockbackForce: 0
     })
   }),
   goal: Object.freeze({

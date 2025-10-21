@@ -1,8 +1,8 @@
 export const PHYSICS_CONFIG = Object.freeze({
   // Movement
   DEFAULT_SPEED: 20,
-  FRICTION: 0.01,
-  MIN_VELOCITY: 0.001,
+  FRICTION: 0.975,
+  MIN_VELOCITY: 0.01,
 
   // Pathfinding
   PATH_ARRIVAL_THRESHOLD: 0.5,

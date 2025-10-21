@@ -91,6 +91,12 @@ export class DashAttackHandler implements AttackHandler {
         knockbackForce: combat.attackPattern.knockbackForce
       });
       combat.hasHit = true;
+      
+      // Bounce back after we hit the target
+      if (context.velocity) {
+        context.velocity.vx = -context.velocity.vx * 0.5;
+        context.velocity.vy = -context.velocity.vy * 0.5;
+      }
     }
   }
 
@@ -162,7 +168,7 @@ export class DashAttackHandler implements AttackHandler {
   ): void {
     const graphic = scene.add.graphics();
     graphic.fillStyle(renderable.color, 0.5);
-    graphic.fillCircle(position.x, position.y, renderable.radius * 0.8);
+    graphic.fillCircle(0, 0, renderable.radius * 0.8);
     
     // Store metadata on the graphic itself
     (graphic as any).createdAt = 0;
