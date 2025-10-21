@@ -242,11 +242,7 @@ export class DestinationSystem extends System {
       const pathProximityFactor = 1 / (distanceFromPath + 0.5);
 
       let score = (progressPercent * PHYSICS_CONFIG.PROGRESS_WEIGHT) + (pathProximityFactor * PHYSICS_CONFIG.PATH_PROXIMITY_WEIGHT);
-
-      if (typeComp === 'goal') {
-        score = Math.max(score, minScoreThreshold);
-      }
-
+      
       if (score >= minScoreThreshold) {
         candidates.push({
           entity: entity,
