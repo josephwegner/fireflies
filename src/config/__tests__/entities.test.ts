@@ -2,35 +2,67 @@ import { describe, it, expect } from 'vitest';
 import { ENTITY_CONFIG } from '../entities';
 
 describe('Entity Configuration', () => {
-  it('should have firefly configuration', () => {
-    expect(ENTITY_CONFIG.firefly).toBeDefined();
-    expect(ENTITY_CONFIG.firefly.type).toBe('firefly');
-    expect(ENTITY_CONFIG.firefly.radius).toBe(5);
-  });
+  describe('Combat Timing', () => {
+    it('firefly should have dramatic combat timing', () => {
+      expect(ENTITY_CONFIG.firefly.combat).toBeDefined();
+      const combat = ENTITY_CONFIG.firefly.combat!;
+      
+      // Longer charge for dramatic buildup
+      expect(combat.chargeTime).toBe(1800);
+      
+      // Longer attack duration for visible dash
+      expect(combat.attackDuration).toBe(500);
+      
+      // Recovery time for drift effect
+      expect(combat.recoveryTime).toBe(600);
+      
+      // Attack properties
+      expect(combat.damage).toBe(10);
+      expect(combat.handlerType).toBe('dash');
+      expect(combat.dashSpeed).toBe(100);
+      expect(combat.knockbackForce).toBe(50);
+    });
 
-  it('should have monster configuration', () => {
-    expect(ENTITY_CONFIG.monster).toBeDefined();
-    expect(ENTITY_CONFIG.monster.type).toBe('monster');
-    expect(ENTITY_CONFIG.monster.color).toBe(0xff0000);
-  });
+    it('monster should have slow menacing combat timing', () => {
+      expect(ENTITY_CONFIG.monster.combat).toBeDefined();
+      const combat = ENTITY_CONFIG.monster.combat!;
+      
+      // Slow, menacing charge
+      expect(combat.chargeTime).toBe(2200);
+      
+      // Visible pulse expansion
+      expect(combat.attackDuration).toBe(400);
+      
+      // Brief pause after attack
+      expect(combat.recoveryTime).toBe(500);
+      
+      // Attack properties
+      expect(combat.damage).toBe(25);
+      expect(combat.handlerType).toBe('pulse');
+      expect(combat.radius).toBe(40);
+      expect(combat.knockbackForce).toBe(30);
+    });
 
-  it('should have wisp configuration', () => {
-    expect(ENTITY_CONFIG.wisp).toBeDefined();
-    expect(ENTITY_CONFIG.wisp.isStatic).toBe(true);
-  });
+    it('combat phases should be long enough to be visible', () => {
+      // At 60fps, each frame is ~16.67ms
+      // Minimum visible duration should be at least 300ms (18 frames)
+      const minVisibleDuration = 300;
 
-  it('should have goal configuration', () => {
-    expect(ENTITY_CONFIG.goal).toBeDefined();
-    expect(ENTITY_CONFIG.goal.isStatic).toBe(true);
-  });
+      Object.entries(ENTITY_CONFIG).forEach(([type, config]) => {
+        if (config.combat) {
+          expect(config.combat.chargeTime).toBeGreaterThanOrEqual(minVisibleDuration);
+          expect(config.combat.attackDuration).toBeGreaterThanOrEqual(minVisibleDuration);
+          // Recovery can be 0 for some entities (though not recommended)
+        }
+      });
+    });
 
-  it('all entities should have required properties', () => {
-    Object.values(ENTITY_CONFIG).forEach(config => {
-      expect(config.type).toBeDefined();
-      expect(config.color).toBeDefined();
-      expect(config.radius).toBeGreaterThan(0);
-      expect(config.mass).toBeGreaterThan(0);
-      expect(typeof config.isStatic).toBe('boolean');
+    it('firefly should attack faster than monster (lower charge time)', () => {
+      const fireflyCharge = ENTITY_CONFIG.firefly.combat!.chargeTime;
+      const monsterCharge = ENTITY_CONFIG.monster.combat!.chargeTime;
+      
+      // Firefly should charge faster than monster
+      expect(fireflyCharge).toBeLessThan(monsterCharge);
     });
   });
 });

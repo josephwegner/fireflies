@@ -1,5 +1,5 @@
 import { System, World } from 'ecsy';
-import { Combat, CombatState, Health, Target, Position, Velocity, PhysicsBody, FireflyTag, MonsterTag } from '@/ecs/components';
+import { Combat, CombatState, Health, Target, Position, Velocity, PhysicsBody, FireflyTag, MonsterTag, Renderable } from '@/ecs/components';
 import { gameEvents, GameEvents } from '@/events';
 import { ECSEntity } from '@/types';
 import { Vector } from '@/utils';
@@ -8,15 +8,25 @@ import { AttackContext } from './attacks/AttackHandler';
 import { AttackHandlerRegistry } from './attacks/AttackHandlerRegistry';
 import { TagComponent } from 'ecsy';
 import { SpatialGrid } from '@/utils';
+import { RenderingSystem } from '../rendering/RenderingSystem';
+import Phaser from 'phaser';
 
 export class CombatSystem extends System {
   private spatialGrid?: SpatialGrid;
+  private scene?: Phaser.Scene;
+  private renderingSystem?: RenderingSystem;
 
   constructor(world: World, attributes?: any) {
     super(world, attributes);
     AttackHandlerRegistry.initialize();
     if (attributes?.spatialGrid) {
       this.spatialGrid = attributes.spatialGrid;
+    }
+    if (attributes?.scene) {
+      this.scene = attributes.scene;
+    }
+    if (attributes?.renderingSystem) {
+      this.renderingSystem = attributes.renderingSystem;
     }
   }
 
@@ -28,12 +38,14 @@ export class CombatSystem extends System {
         const combat = entity.getMutableComponent(Combat)!;
         const health = entity.getComponent(Health)!;
         const position = entity.getComponent(Position)!;
-        const velocity = entity.getMutableComponent(Velocity)!; // Required by query
+        const velocity = entity.getMutableComponent(Velocity)!;
         const target = entity.getComponent(Target);
 
         // Dead entities can't attack
         if (health.isDead) {
           if (target) {
+            // Cleanup visual effects before removing target
+            this.cleanupCombat(entity, combat);
             entity.removeComponent(Target);
           }
           return;
@@ -42,6 +54,7 @@ export class CombatSystem extends System {
         if (!target) {
           // No target, remain idle
           if (combat.state !== CombatState.IDLE) {
+            this.cleanupCombat(entity, combat);
             combat.state = CombatState.IDLE;
             combat.chargeTime = 0;
             combat.attackElapsed = 0;
@@ -54,6 +67,7 @@ export class CombatSystem extends System {
 
         // Validate target
         if (!this.isValidTarget(entity, targetEntity, combat)) {
+          this.cleanupCombat(entity, combat);
           entity.removeComponent(Target);
           combat.state = CombatState.IDLE;
           combat.chargeTime = 0;
@@ -103,7 +117,6 @@ export class CombatSystem extends System {
     const distance = Vector.length(dx, dy);
 
     // Get interaction radius based on entity type
-    // Use tag value (lowercased, like "firefly", "wisp") to determine interaction radius
     const tagComp = Object.values(attacker.getComponents()).find(
       c => c instanceof TagComponent
     );
@@ -124,6 +137,8 @@ export class CombatSystem extends System {
     velocity: Velocity,
     dt: number
   ): void {
+    const handler = AttackHandlerRegistry.get(combat.attackPattern.handlerType);
+    
     switch (combat.state) {
       case CombatState.IDLE:
         // Start charging
@@ -132,6 +147,12 @@ export class CombatSystem extends System {
         break;
 
       case CombatState.CHARGING:
+        // Call visual lifecycle method
+        if (handler?.onCharging) {
+          const context = this.createAttackContext(entity, combat, target, position, velocity, dt);
+          handler.onCharging(context);
+        }
+        
         combat.chargeTime += dt;
         if (combat.chargeTime >= combat.attackPattern.chargeTime) {
           combat.state = CombatState.ATTACKING;
@@ -142,37 +163,19 @@ export class CombatSystem extends System {
         break;
 
       case CombatState.ATTACKING:
-        // Call onAttackStart on first frame of attacking (for dash attacks, etc.)
+        // Call onAttackStart on first frame of attacking
         if (combat.attackElapsed === 0) {
-          const handler = AttackHandlerRegistry.get(combat.attackPattern.handlerType);
           if (handler?.onAttackStart) {
-            const context: AttackContext = {
-              attacker: entity,
-              combat,
-              world: this.world,
-              spatialGrid: this.spatialGrid,
-              target: target,
-              position,
-              velocity
-            };
+            const context = this.createAttackContext(entity, combat, target, position, velocity, dt);
             handler.onAttackStart(context);
           }
         }
 
         combat.attackElapsed += dt;
 
-        // Get and execute attack handler
-        const handler = AttackHandlerRegistry.get(combat.attackPattern.handlerType);
+        // Execute attack handler
         if (handler) {
-          const context: AttackContext = {
-            attacker: entity,
-            combat,
-            world: this.world,
-            spatialGrid: this.spatialGrid,
-            target: target,
-            position,
-            velocity
-          };
+          const context = this.createAttackContext(entity, combat, target, position, velocity, dt);
           handler.execute(context);
         }
 
@@ -185,9 +188,20 @@ export class CombatSystem extends System {
         break;
 
       case CombatState.RECOVERING:
+        // Call visual lifecycle method
+        if (handler?.onRecovering) {
+          const context = this.createAttackContext(entity, combat, target, position, velocity, dt);
+          handler.onRecovering(context);
+        }
+        
         combat.recoveryElapsed += dt;
         if (combat.recoveryElapsed >= combat.attackPattern.recoveryTime) {
-          // Recovery complete, back to idle
+          // Recovery complete, cleanup and back to idle
+          if (handler?.cleanup) {
+            const context = this.createAttackContext(entity, combat, target, position, velocity, dt);
+            handler.cleanup(context);
+          }
+          
           combat.state = CombatState.IDLE;
           combat.chargeTime = 0;
           combat.attackElapsed = 0;
@@ -195,6 +209,59 @@ export class CombatSystem extends System {
           combat.hasHit = false;
         }
         break;
+    }
+  }
+
+  private createAttackContext(
+    entity: ECSEntity,
+    combat: Combat,
+    target: ECSEntity,
+    position: Position,
+    velocity: Velocity,
+    dt: number
+  ): AttackContext {
+    const context: AttackContext = {
+      attacker: entity,
+      combat,
+      world: this.world,
+      spatialGrid: this.spatialGrid,
+      target,
+      position,
+      velocity,
+      dt
+    };
+
+    // Add visual context if available
+    if (this.scene) {
+      context.scene = this.scene;
+    }
+    if (this.renderingSystem && entity.hasComponent(Renderable)) {
+      context.spriteContainer = this.renderingSystem.getSpriteForEntity(entity);
+      context.renderable = entity.getMutableComponent(Renderable)!;
+    }
+
+    return context;
+  }
+
+  private cleanupCombat(entity: ECSEntity, combat: Combat): void {
+    const handler = AttackHandlerRegistry.get(combat.attackPattern.handlerType);
+    if (handler?.cleanup) {
+      const context: AttackContext = {
+        attacker: entity,
+        combat,
+        world: this.world,
+        spatialGrid: this.spatialGrid
+      };
+
+      if (this.scene) {
+        context.scene = this.scene;
+      }
+      if (this.renderingSystem && entity.hasComponent(Renderable)) {
+        context.spriteContainer = this.renderingSystem.getSpriteForEntity(entity);
+        context.renderable = entity.getMutableComponent(Renderable)!;
+      }
+
+      handler.cleanup(context);
     }
   }
 

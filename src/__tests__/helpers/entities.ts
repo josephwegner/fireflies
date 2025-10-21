@@ -5,11 +5,16 @@ import {
   Path,
   Destination,
   Renderable,
+  Health,
+  PhysicsBody,
+  Combat,
+  Target,
   FireflyTag,
   MonsterTag,
   WispTag,
   GoalTag
 } from '@/ecs/components';
+import { ENTITY_CONFIG } from '@/config';
 import { ECSEntity } from '@/types';
 import { TEST_POSITIONS, TEST_ENTITY_DEFAULTS } from './constants';
 
@@ -174,4 +179,100 @@ export function createIntermediateTestSetup(
   const goal = createTestGoal(world, goalOptions);
 
   return { entity, wisp, goal };
+}
+
+// Combat-specific entity factories
+
+export interface CombatEntityOptions extends TestEntityOptions {
+  health?: number;
+  maxHealth?: number;
+  isDead?: boolean;
+  mass?: number;
+  collisionRadius?: number;
+}
+
+/**
+ * Create a combat-ready firefly for testing
+ */
+export function createCombatFirefly(
+  world: World,
+  options: CombatEntityOptions = {}
+): ECSEntity {
+  const {
+    x = 100,
+    y = 100,
+    vx = 0,
+    vy = 0,
+    radius = 5,
+    health = 50,
+    maxHealth = 50,
+    isDead = false,
+    mass = 1,
+    collisionRadius = 5
+  } = options;
+
+  const entity = world.createEntity();
+  entity.addComponent(Position, { x, y });
+  entity.addComponent(Velocity, { vx, vy });
+  entity.addComponent(Health, { currentHealth: health, maxHealth, isDead });
+  entity.addComponent(PhysicsBody, { mass, isStatic: false, collisionRadius });
+  entity.addComponent(FireflyTag);
+
+  return entity;
+}
+
+/**
+ * Create a combat-ready monster for testing
+ */
+export function createCombatMonster(
+  world: World,
+  options: CombatEntityOptions = {}
+): ECSEntity {
+  const {
+    x = 100,
+    y = 100,
+    vx = 0,
+    vy = 0,
+    radius = 8,
+    health = 100,
+    maxHealth = 100,
+    isDead = false,
+    mass = 1,
+    collisionRadius = 8
+  } = options;
+
+  const entity = world.createEntity();
+  entity.addComponent(Position, { x, y });
+  entity.addComponent(Velocity, { vx, vy });
+  entity.addComponent(Health, { currentHealth: health, maxHealth, isDead });
+  entity.addComponent(PhysicsBody, { mass, isStatic: false, collisionRadius });
+  entity.addComponent(MonsterTag);
+
+  return entity;
+}
+
+/**
+ * Create a combat-ready attacker with all necessary components
+ */
+export function createCombatAttacker(
+  world: World,
+  entityType: 'firefly' | 'monster',
+  target: ECSEntity,
+  options: CombatEntityOptions = {}
+): ECSEntity {
+  const entity = entityType === 'firefly' 
+    ? createCombatFirefly(world, options)
+    : createCombatMonster(world, options);
+
+  entity.addComponent(Target, { target });
+  entity.addComponent(Combat, {
+    state: options.state ?? CombatState.IDLE,
+    chargeTime: 0,
+    attackElapsed: 0,
+    recoveryElapsed: 0,
+    attackPattern: ENTITY_CONFIG[entityType].combat!,
+    hasHit: false
+  });
+
+  return entity;
 }

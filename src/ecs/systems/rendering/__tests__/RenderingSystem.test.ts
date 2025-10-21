@@ -392,4 +392,192 @@ describe('RenderingSystem', () => {
       expect(system.spriteMap.has(entity2)).toBe(true);
     });
   });
+
+  describe('Scale and Tint Effects', () => {
+    it('should apply scale to container when renderable scale changes', () => {
+      const mockContainer = createMockContainer();
+      mockScene.add.container.mockReturnValue(mockContainer);
+
+      const entity = world.createEntity();
+      entity.addComponent(Position, { x: 100, y: 200 });
+      entity.addComponent(Renderable, {
+        type: 'firefly',
+        sprite: 'firefly',
+        color: 0xffff00,
+        radius: 10,
+        scale: 1.5
+      });
+
+      world.execute(16, 16);
+
+      expect(mockContainer.setScale).toHaveBeenCalledWith(1.5);
+    });
+
+    it('should default scale to 1.0 when not specified', () => {
+      const mockContainer = createMockContainer();
+      mockScene.add.container.mockReturnValue(mockContainer);
+
+      const entity = world.createEntity();
+      entity.addComponent(Position, { x: 100, y: 200 });
+      entity.addComponent(Renderable, {
+        type: 'firefly',
+        sprite: 'firefly',
+        color: 0xffff00,
+        radius: 10
+      });
+
+      world.execute(16, 16);
+
+      expect(mockContainer.setScale).toHaveBeenCalledWith(1.0);
+    });
+
+    it('should update scale when renderable scale changes', () => {
+      const mockContainer = createMockContainer();
+      mockScene.add.container.mockReturnValue(mockContainer);
+
+      const entity = world.createEntity();
+      entity.addComponent(Position, { x: 100, y: 200 });
+      entity.addComponent(Renderable, {
+        type: 'firefly',
+        sprite: 'firefly',
+        color: 0xffff00,
+        radius: 10,
+        scale: 1.0
+      });
+
+      world.execute(16, 16);
+      expect(mockContainer.setScale).toHaveBeenCalledWith(1.0);
+
+      // Change scale
+      const renderable = entity.getMutableComponent(Renderable)!;
+      renderable.scale = 1.5;
+
+      world.execute(16, 16);
+      expect(mockContainer.setScale).toHaveBeenCalledWith(1.5);
+    });
+
+    it('should apply tint to sprite children when using sprite graphics', () => {
+      const mockSprite = createMockSprite(100, 100);
+      const mockContainer = createMockContainer();
+      mockContainer.list = [mockSprite]; // Mock children list
+      
+      const sceneWithCustomSprite = createMockScene({
+        textureExists: () => true,
+        spriteFactory: () => mockSprite,
+        containerFactory: () => mockContainer
+      });
+
+      const customWorld = new World();
+      customWorld
+        .registerComponent(Position)
+        .registerComponent(Renderable);
+      customWorld.registerSystem(RenderingSystem, { scene: sceneWithCustomSprite });
+
+      const entity = customWorld.createEntity();
+      entity.addComponent(Position, { x: 100, y: 200 });
+      entity.addComponent(Renderable, {
+        type: 'firefly',
+        sprite: 'firefly',
+        color: 0xffff00,
+        radius: 10,
+        tint: 0xff0000
+      });
+
+      customWorld.execute(16, 16);
+
+      expect(mockSprite.setTint).toHaveBeenCalledWith(0xff0000);
+    });
+
+    it('should default tint to 0xFFFFFF when not specified', () => {
+      const mockSprite = createMockSprite(100, 100);
+      const mockContainer = createMockContainer();
+      mockContainer.list = [mockSprite];
+      
+      const sceneWithCustomSprite = createMockScene({
+        textureExists: () => true,
+        spriteFactory: () => mockSprite,
+        containerFactory: () => mockContainer
+      });
+
+      const customWorld = new World();
+      customWorld
+        .registerComponent(Position)
+        .registerComponent(Renderable);
+      customWorld.registerSystem(RenderingSystem, { scene: sceneWithCustomSprite });
+
+      const entity = customWorld.createEntity();
+      entity.addComponent(Position, { x: 100, y: 200 });
+      entity.addComponent(Renderable, {
+        type: 'firefly',
+        sprite: 'firefly',
+        color: 0xffff00,
+        radius: 10
+      });
+
+      customWorld.execute(16, 16);
+
+      expect(mockSprite.setTint).toHaveBeenCalledWith(0xFFFFFF);
+    });
+
+    it('should update tint when renderable tint changes', () => {
+      const mockSprite = createMockSprite(100, 100);
+      const mockContainer = createMockContainer();
+      mockContainer.list = [mockSprite];
+      
+      const sceneWithCustomSprite = createMockScene({
+        textureExists: () => true,
+        spriteFactory: () => mockSprite,
+        containerFactory: () => mockContainer
+      });
+
+      const customWorld = new World();
+      customWorld
+        .registerComponent(Position)
+        .registerComponent(Renderable);
+      customWorld.registerSystem(RenderingSystem, { scene: sceneWithCustomSprite });
+
+      const entity = customWorld.createEntity();
+      entity.addComponent(Position, { x: 100, y: 200 });
+      entity.addComponent(Renderable, {
+        type: 'firefly',
+        sprite: 'firefly',
+        color: 0xffff00,
+        radius: 10,
+        tint: 0xFFFFFF
+      });
+
+      customWorld.execute(16, 16);
+      expect(mockSprite.setTint).toHaveBeenCalledWith(0xFFFFFF);
+
+      // Change tint
+      const renderable = entity.getMutableComponent(Renderable)!;
+      renderable.tint = 0xff0000;
+
+      customWorld.execute(16, 16);
+      expect(mockSprite.setTint).toHaveBeenCalledWith(0xff0000);
+    });
+
+    it('should apply tint to circle graphics when not using sprite', () => {
+      const mockCircle = {
+        setFillStyle: vi.fn()
+      };
+      const mockContainer = createMockContainer();
+      mockScene.add.circle.mockReturnValue(mockCircle);
+      mockScene.add.container.mockReturnValue(mockContainer);
+
+      const entity = world.createEntity();
+      entity.addComponent(Position, { x: 100, y: 200 });
+      entity.addComponent(Renderable, {
+        type: 'firefly',
+        color: 0xffff00,
+        radius: 10,
+        tint: 0xff0000
+      });
+
+      world.execute(16, 16);
+
+      // For circles, we apply tint by modifying the fillStyle color
+      expect(mockCircle.setFillStyle).toHaveBeenCalled();
+    });
+  });
 });

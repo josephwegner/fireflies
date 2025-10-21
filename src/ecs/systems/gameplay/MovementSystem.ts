@@ -1,5 +1,5 @@
 import { System } from 'ecsy';
-import { Position, Velocity, Path } from '@/ecs/components';
+import { Position, Velocity, Path, Target } from '@/ecs/components';
 import { PHYSICS_CONFIG } from '@/config';
 import { gameEvents, GameEvents } from '@/events';
 import { Vector } from '@/utils';
@@ -14,38 +14,42 @@ export class MovementSystem extends System {
         const velocity = entity.getMutableComponent(Velocity)!;
         const pathComp = entity.getComponent(Path);
 
-      if (pathComp && pathComp.currentPath && pathComp.currentPath.length > 0) {
-        const target = pathComp.currentPath[0];
-        const dx = target.x - position.x;
-        const dy = target.y - position.y;
-        const dist = Vector.length(dx, dy);
+        // Check if entity is in combat (has Target component)
+        const inCombat = entity.hasComponent(Target);
 
-        if ((dist <= PHYSICS_CONFIG.PATH_ARRIVAL_THRESHOLD && pathComp.currentPath.length > 1) || dist < PHYSICS_CONFIG.PATH_ARRIVAL_MIN) {
-          pathComp.currentPath.shift();
+        // Only follow path if NOT in combat
+        if (!inCombat && pathComp && pathComp.currentPath && pathComp.currentPath.length > 0) {
+          const target = pathComp.currentPath[0];
+          const dx = target.x - position.x;
+          const dy = target.y - position.y;
+          const dist = Vector.length(dx, dy);
 
-          if (pathComp.currentPath.length === 0) {
-            pathComp.currentPath = pathComp.nextPath;
-            pathComp.nextPath = [];
+          if ((dist <= PHYSICS_CONFIG.PATH_ARRIVAL_THRESHOLD && pathComp.currentPath.length > 1) || dist < PHYSICS_CONFIG.PATH_ARRIVAL_MIN) {
+            pathComp.currentPath.shift();
 
-            // Emit path completed event
             if (pathComp.currentPath.length === 0) {
-              gameEvents.emit(GameEvents.PATH_COMPLETED, { entity, position: { x: position.x, y: position.y } });
+              pathComp.currentPath = pathComp.nextPath;
+              pathComp.nextPath = [];
+
+              if (pathComp.currentPath.length === 0) {
+                gameEvents.emit(GameEvents.PATH_COMPLETED, { entity, position: { x: position.x, y: position.y } });
+              }
             }
+          } else {
+            const direction = Vector.normalize(dx, dy);
+            const pathMovement = Vector.scale(direction, PHYSICS_CONFIG.DEFAULT_SPEED * dt);
+            const velocityMovement = { x: velocity.vx * dt, y: velocity.vy * dt };
+
+            const totalMovement = Vector.add(pathMovement, velocityMovement);
+
+            position.x += totalMovement.x;
+            position.y += totalMovement.y;
           }
         } else {
-          const direction = Vector.normalize(dx, dy);
-          const pathMovement = Vector.scale(direction, PHYSICS_CONFIG.DEFAULT_SPEED * dt);
-          const velocityMovement = { x: velocity.vx * dt, y: velocity.vy * dt };
-
-          const totalMovement = Vector.add(pathMovement, velocityMovement);
-
-          position.x += totalMovement.x;
-          position.y += totalMovement.y;
+          // In combat or no path: only apply velocity (for dash attacks, knockback, etc.)
+          position.x += velocity.vx * dt;
+          position.y += velocity.vy * dt;
         }
-      } else {
-        position.x += velocity.vx * dt;
-        position.y += velocity.vy * dt;
-      }
 
         this.applyFriction(velocity);
       } catch (error) {

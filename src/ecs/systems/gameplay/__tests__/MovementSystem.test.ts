@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { World } from 'ecsy';
 import { MovementSystem } from '../MovementSystem';
-import { Position, Velocity, Path } from '@/ecs/components';
+import { Position, Velocity, Path, Target } from '@/ecs/components';
 import { PHYSICS_CONFIG } from '@/config';
 
 describe('MovementSystem', () => {
@@ -12,6 +12,7 @@ describe('MovementSystem', () => {
     world.registerComponent(Position);
     world.registerComponent(Velocity);
     world.registerComponent(Path);
+    world.registerComponent(Target);
     world.registerSystem(MovementSystem);
   });
 
@@ -207,5 +208,107 @@ describe('MovementSystem', () => {
     // Position should reflect both path movement and velocity
     expect(position.x).toBeGreaterThan(0);
     expect(position.y).toBeGreaterThan(0);
+  });
+
+  describe('Combat Movement Behavior', () => {
+    it('should not follow path when entity has Target component', () => {
+      const entity = world.createEntity();
+      const targetEntity = world.createEntity();
+      
+      entity.addComponent(Position, { x: 0, y: 0 });
+      entity.addComponent(Velocity, { vx: 0, vy: 0 });
+      entity.addComponent(Path, {
+        currentPath: [{ x: 100, y: 100 }],
+        nextPath: [],
+        direction: 'r'
+      });
+      entity.addComponent(Target, { target: targetEntity });
+
+      world.execute(16, 16);
+
+      const position = entity.getComponent(Position)!;
+
+      // Entity should NOT have moved towards path waypoint
+      expect(position.x).toBe(0);
+      expect(position.y).toBe(0);
+    });
+
+    it('should still apply velocity from dash attacks when entity has Target', () => {
+      const entity = world.createEntity();
+      const targetEntity = world.createEntity();
+      
+      entity.addComponent(Position, { x: 0, y: 0 });
+      entity.addComponent(Velocity, { vx: 50, vy: 50 }); // Dash velocity
+      entity.addComponent(Path, {
+        currentPath: [{ x: 100, y: 100 }],
+        nextPath: [],
+        direction: 'r'
+      });
+      entity.addComponent(Target, { target: targetEntity });
+
+      world.execute(16, 16);
+
+      const position = entity.getComponent(Position)!;
+
+      // Entity SHOULD have moved from velocity (dash attack)
+      expect(position.x).toBeGreaterThan(0);
+      expect(position.y).toBeGreaterThan(0);
+      
+      // But not as much as if following path too
+      expect(position.x).toBeLessThan(1.0); // Only velocity * dt movement
+      expect(position.y).toBeLessThan(1.0);
+    });
+
+    it('should still apply friction when entity has Target', () => {
+      const entity = world.createEntity();
+      const targetEntity = world.createEntity();
+      
+      entity.addComponent(Position, { x: 0, y: 0 });
+      entity.addComponent(Velocity, { vx: 10, vy: 10 });
+      entity.addComponent(Path, {
+        currentPath: [{ x: 100, y: 100 }],
+        nextPath: [],
+        direction: 'r'
+      });
+      entity.addComponent(Target, { target: targetEntity });
+
+      world.execute(16, 16);
+
+      const velocity = entity.getComponent(Velocity)!;
+
+      // Friction should still be applied
+      expect(velocity.vx).toBeLessThan(10);
+      expect(velocity.vy).toBeLessThan(10);
+      expect(velocity.vx).toBeCloseTo(10 * PHYSICS_CONFIG.FRICTION, 5);
+    });
+
+    it('should resume path-following after Target component is removed', () => {
+      const entity = world.createEntity();
+      const targetEntity = world.createEntity();
+      
+      entity.addComponent(Position, { x: 0, y: 0 });
+      entity.addComponent(Velocity, { vx: 0, vy: 0 });
+      entity.addComponent(Path, {
+        currentPath: [{ x: 100, y: 100 }],
+        nextPath: [],
+        direction: 'r'
+      });
+      entity.addComponent(Target, { target: targetEntity });
+
+      // First execution: should not move
+      world.execute(16, 16);
+      let position = entity.getComponent(Position)!;
+      expect(position.x).toBe(0);
+      expect(position.y).toBe(0);
+
+      // Remove Target component
+      entity.removeComponent(Target);
+
+      // Second execution: should resume path-following
+      world.execute(16, 16);
+      position = entity.getComponent(Position)!;
+      expect(position.x).toBeGreaterThan(0);
+      expect(position.y).toBeGreaterThan(0);
+    });
   });
 });

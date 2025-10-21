@@ -77,6 +77,10 @@ export class RenderingSystem extends System {
       container.add(circle);
     }
 
+    // Apply initial scale and tint
+    container.setScale(renderable.scale);
+    this.applyTintToChildren(container, renderable.tint);
+
     this.spriteMap.set(entity, container);
   }
 
@@ -85,7 +89,11 @@ export class RenderingSystem extends System {
     if (!sprite) return;
 
     const position = entity.getComponent(Position)!;
+    const renderable = entity.getComponent(Renderable)!;
+    
     sprite.setPosition(position.x, position.y);
+    sprite.setScale(renderable.scale);
+    this.applyTintToChildren(sprite, renderable.tint);
   }
 
   private destroySprite(entity: ECSEntity): void {
@@ -94,6 +102,23 @@ export class RenderingSystem extends System {
       sprite.destroy();
       this.spriteMap.delete(entity);
     }
+  }
+
+  private applyTintToChildren(container: Phaser.GameObjects.Container, tint: number): void {
+    // Apply tint to all children in the container
+    container.list.forEach((child: any) => {
+      if (child.setTint) {
+        child.setTint(tint);
+      } else if (child.setFillStyle) {
+        // For circles, we need to update fillStyle
+        // Convert hex tint to RGB components
+        const r = ((tint >> 16) & 0xFF);
+        const g = ((tint >> 8) & 0xFF);
+        const b = (tint & 0xFF);
+        const hexColor = (r << 16) | (g << 8) | b;
+        child.setFillStyle(hexColor);
+      }
+    });
   }
 
   getSpriteForEntity(entity: ECSEntity): Phaser.GameObjects.Container | undefined {

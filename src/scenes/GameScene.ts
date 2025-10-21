@@ -102,16 +102,20 @@ export class GameScene extends Phaser.Scene {
 
   private registerSystems(): void {
     this.world
+      .registerSystem(RenderingSystem, { scene: this })
       .registerSystem(WallGenerationSystem, { worker: this.pathfindingWorker, map: this.map })
       .registerSystem(InteractionSystem, { spatialGrid: this.spatialGrid })
       .registerSystem(TargetingSystem)
-      .registerSystem(CombatSystem, { spatialGrid: this.spatialGrid })
+      .registerSystem(CombatSystem, { 
+        spatialGrid: this.spatialGrid,
+        scene: this,
+        renderingSystem: this.world.getSystem(RenderingSystem)
+      })
       .registerSystem(DamageSystem)
       .registerSystem(KnockbackSystem)
       .registerSystem(MovementSystem)
       .registerSystem(DestinationSystem, { worker: this.pathfindingWorker })
-      .registerSystem(WallRenderingSystem, { scene: this })
-      .registerSystem(RenderingSystem, { scene: this });
+      .registerSystem(WallRenderingSystem, { scene: this });
   }
 
   private createMap(): void {

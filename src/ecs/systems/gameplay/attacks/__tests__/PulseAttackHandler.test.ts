@@ -2,10 +2,11 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { World } from 'ecsy';
 import { PulseAttackHandler } from '../PulseAttackHandler';
 import { AttackContext } from '../AttackHandler';
-import { Combat, CombatState, Position, PhysicsBody, FireflyTag, MonsterTag, WispTag } from '@/ecs/components';
+import { Combat, CombatState, Position, PhysicsBody, FireflyTag, MonsterTag, WispTag, Renderable } from '@/ecs/components';
 import { gameEvents, GameEvents } from '@/events';
 import { SpatialGrid } from '@/utils';
 import { ECSEntity } from '@/types';
+import { createMockScene, createMockGraphics, createMockContainer } from '@/__tests__/helpers/phaser-mocks';
 
 describe('PulseAttackHandler', () => {
   let handler: PulseAttackHandler;
@@ -445,6 +446,260 @@ describe('PulseAttackHandler', () => {
         GameEvents.ATTACK_HIT,
         expect.anything()
       );
+    });
+  });
+
+  describe('Visual Lifecycle', () => {
+    let mockScene: any;
+    let mockContainer: any;
+
+    beforeEach(() => {
+      mockScene = createMockScene();
+      mockContainer = createMockContainer(); // This will hold our graphics
+      world.registerComponent(Renderable);
+    });
+
+    it('should handle onCharging without errors', () => {
+      attacker.addComponent(Renderable, {
+        type: 'monster',
+        radius: 8,
+        color: 0xff0000,
+        scale: 1.0,
+        tint: 0xFFFFFF
+      });
+
+      const mockGraphics = createMockGraphics();
+      mockScene.add.graphics.mockReturnValue(mockGraphics);
+
+      expect(() => {
+        handler.onCharging({
+          attacker,
+          combat: mockCombat,
+          world,
+          scene: mockScene,
+          spriteContainer: mockContainer,
+          position: attacker.getComponent(Position)!,
+          renderable: attacker.getMutableComponent(Renderable)!,
+          dt: 16
+        });
+      }).not.toThrow();
+    });
+
+    it('should add pulse circle to sprite container during charging', () => {
+      attacker.addComponent(Renderable, {
+        type: 'monster',
+        radius: 8,
+        color: 0xff0000,
+        scale: 1.0,
+        tint: 0xFFFFFF
+      });
+
+      const mockGraphics = createMockGraphics();
+      mockScene.add.graphics.mockReturnValue(mockGraphics);
+
+      handler.onCharging({
+        attacker,
+        combat: mockCombat,
+        world,
+        scene: mockScene,
+        spriteContainer: mockContainer,
+        position: attacker.getComponent(Position)!,
+        renderable: attacker.getMutableComponent(Renderable)!,
+        dt: 16
+      });
+
+      // Graphics should be added to container
+      expect(mockContainer.add).toHaveBeenCalledWith(mockGraphics);
+      
+      // Graphics should be findable in container by name
+      const circle = mockContainer.list.find((c: any) => c.name === 'pulseCircle');
+      expect(circle).toBeDefined();
+    });
+
+    it('should reuse existing pulse circle on subsequent charging calls', () => {
+      attacker.addComponent(Renderable, {
+        type: 'monster',
+        radius: 8,
+        color: 0xff0000,
+        scale: 1.0,
+        tint: 0xFFFFFF
+      });
+
+      const mockGraphics = createMockGraphics();
+      mockGraphics.name = 'pulseCircle';
+      mockScene.add.graphics.mockReturnValue(mockGraphics);
+
+      // First call - creates graphics
+      handler.onCharging({
+        attacker,
+        combat: mockCombat,
+        world,
+        scene: mockScene,
+        spriteContainer: mockContainer,
+        position: attacker.getComponent(Position)!,
+        renderable: attacker.getMutableComponent(Renderable)!,
+        dt: 16
+      });
+
+      expect(mockScene.add.graphics).toHaveBeenCalledTimes(1);
+
+      // Second call - should reuse
+      handler.onCharging({
+        attacker,
+        combat: mockCombat,
+        world,
+        scene: mockScene,
+        spriteContainer: mockContainer,
+        position: attacker.getComponent(Position)!,
+        renderable: attacker.getMutableComponent(Renderable)!,
+        dt: 16
+      });
+
+      // Should not create a second graphics object
+      expect(mockScene.add.graphics).toHaveBeenCalledTimes(1);
+    });
+
+    it('should handle onRecovering without errors', () => {
+      attacker.addComponent(Renderable, {
+        type: 'monster',
+        radius: 8,
+        color: 0xff0000,
+        scale: 1.0,
+        tint: 0xFFFFFF
+      });
+
+      expect(() => {
+        handler.onRecovering({
+          attacker,
+          combat: mockCombat,
+          world,
+          scene: mockScene,
+          spriteContainer: mockContainer,
+          position: attacker.getComponent(Position)!,
+          renderable: attacker.getMutableComponent(Renderable)!,
+          dt: 16
+        });
+      }).not.toThrow();
+    });
+
+    it('should destroy graphics from container on cleanup', () => {
+      attacker.addComponent(Renderable, {
+        type: 'monster',
+        radius: 8,
+        color: 0xff0000,
+        scale: 1.0,
+        tint: 0xFFFFFF
+      });
+
+      const mockGraphics = createMockGraphics();
+      mockGraphics.name = 'pulseCircle';
+      mockScene.add.graphics.mockReturnValue(mockGraphics);
+
+      // Create graphics during charging
+      handler.onCharging({
+        attacker,
+        combat: mockCombat,
+        world,
+        scene: mockScene,
+        spriteContainer: mockContainer,
+        position: attacker.getComponent(Position)!,
+        renderable: attacker.getMutableComponent(Renderable)!,
+        dt: 16
+      });
+
+      // Cleanup should destroy them
+      handler.cleanup({
+        attacker,
+        combat: mockCombat,
+        world,
+        scene: mockScene,
+        spriteContainer: mockContainer,
+        renderable: attacker.getMutableComponent(Renderable)!
+      });
+
+      // Graphics should be destroyed
+      expect(mockGraphics.destroy).toHaveBeenCalled();
+    });
+
+    it('should handle cleanup when no graphics exist', () => {
+      attacker.addComponent(Renderable, {
+        type: 'monster',
+        radius: 8,
+        color: 0xff0000,
+        scale: 1.0,
+        tint: 0xFFFFFF
+      });
+
+      expect(() => {
+        handler.cleanup({
+          attacker,
+          combat: mockCombat,
+          world,
+          scene: mockScene,
+          spriteContainer: mockContainer,
+          renderable: attacker.getMutableComponent(Renderable)!
+        });
+      }).not.toThrow();
+    });
+
+    it('should handle multiple entities with separate graphics', () => {
+      attacker.addComponent(Renderable, {
+        type: 'monster',
+        radius: 8,
+        color: 0xff0000,
+        scale: 1.0,
+        tint: 0xFFFFFF
+      });
+
+      const attacker2 = world.createEntity();
+      attacker2.addComponent(Position, { x: 50, y: 50 });
+      attacker2.addComponent(MonsterTag);
+      attacker2.addComponent(Renderable, {
+        type: 'monster',
+        radius: 8,
+        color: 0xff0000,
+        scale: 1.0,
+        tint: 0xFFFFFF
+      });
+
+      const mockContainer2 = createMockContainer();
+      
+      const mockGraphics1 = createMockGraphics();
+      const mockGraphics2 = createMockGraphics();
+      mockScene.add.graphics
+        .mockReturnValueOnce(mockGraphics1)
+        .mockReturnValueOnce(mockGraphics2);
+
+      // Both entities charge simultaneously
+      handler.onCharging({
+        attacker,
+        combat: mockCombat,
+        world,
+        scene: mockScene,
+        spriteContainer: mockContainer,
+        position: attacker.getComponent(Position)!,
+        renderable: attacker.getMutableComponent(Renderable)!,
+        dt: 16
+      });
+
+      // Verify add was called
+      expect(mockContainer.add).toHaveBeenCalledWith(mockGraphics1);
+      expect(mockContainer.list).toContain(mockGraphics1);
+
+      handler.onCharging({
+        attacker: attacker2,
+        combat: mockCombat,
+        world,
+        scene: mockScene,
+        spriteContainer: mockContainer2,
+        position: attacker2.getComponent(Position)!,
+        renderable: attacker2.getMutableComponent(Renderable)!,
+        dt: 16
+      });
+
+      expect(mockContainer2.add).toHaveBeenCalledWith(mockGraphics2);
+      expect(mockContainer2.list).toContain(mockGraphics2);
+      expect(mockGraphics1).not.toBe(mockGraphics2);
     });
   });
 });

@@ -4,11 +4,21 @@ import { vi } from 'vitest';
  * Create a mock Phaser container with common methods
  */
 export function createMockContainer() {
-  return {
+  const container = {
+    list: [] as any[],
     setPosition: vi.fn().mockReturnThis(),
+    setScale: vi.fn().mockReturnThis(),
     destroy: vi.fn(),
-    add: vi.fn().mockReturnThis()
+    add: vi.fn()
   };
+  
+  // Manually implement add to ensure it works correctly
+  container.add.mockImplementation((child: any) => {
+    container.list.push(child);
+    return container;
+  });
+  
+  return container;
 }
 
 /**
@@ -18,7 +28,8 @@ export function createMockSprite(width = 100, height = 100) {
   return {
     width,
     height,
-    setScale: vi.fn().mockReturnThis()
+    setScale: vi.fn().mockReturnThis(),
+    setTint: vi.fn().mockReturnThis()
   };
 }
 
@@ -26,12 +37,11 @@ export function createMockSprite(width = 100, height = 100) {
  * Create a mock Phaser circle
  */
 export function createMockCircle() {
-  return {};
+  return {
+    setFillStyle: vi.fn().mockReturnThis()
+  };
 }
 
-/**
- * Create a mock Phaser graphics object
- */
 export function createMockGraphics() {
   return {
     lineStyle: vi.fn().mockReturnThis(),
@@ -39,13 +49,17 @@ export function createMockGraphics() {
     moveTo: vi.fn().mockReturnThis(),
     lineTo: vi.fn().mockReturnThis(),
     strokePath: vi.fn().mockReturnThis(),
-    clear: vi.fn().mockReturnThis()
+    clear: vi.fn().mockReturnThis(),
+    fillStyle: vi.fn().mockReturnThis(),
+    fillCircle: vi.fn().mockReturnThis(),
+    strokeCircle: vi.fn().mockReturnThis(),
+    setAlpha: vi.fn().mockReturnThis(),
+    destroy: vi.fn(),
+    scene: {},
+    name: ''
   };
 }
 
-/**
- * Create a mock Phaser scene with configurable behavior
- */
 export function createMockScene(options: {
   textureExists?: (key: string) => boolean;
   containerFactory?: () => any;

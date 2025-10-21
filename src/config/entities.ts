@@ -34,11 +34,11 @@ export const ENTITY_CONFIG: Readonly<Record<string, Readonly<EntityConfig>>> = O
     direction: 'r',
     health: 50,
     combat: Object.freeze({
-      chargeTime: 1000,
-      attackDuration: 300,
-      recoveryTime: 400,
+      chargeTime: 1800,      // Increased from 1000ms for dramatic charge-up
+      attackDuration: 500,   // Increased from 300ms for more visible dash
+      recoveryTime: 600,     // Increased from 400ms for recovery drift
       damage: 10,
-      handlerType: 'dash', // Instead of attackType
+      handlerType: 'dash',
       dashSpeed: 100,
       knockbackForce: 50
     })
@@ -62,12 +62,12 @@ export const ENTITY_CONFIG: Readonly<Record<string, Readonly<EntityConfig>>> = O
     interactsWith: Object.freeze(['firefly']),
     health: 100,
     combat: Object.freeze({
-      chargeTime: 1500,
-      attackDuration: 100,
-      recoveryTime: 0,
+      chargeTime: 2200,      // Increased from 1500ms for slow, menacing charge
+      attackDuration: 400,   // Increased from 100ms for visible pulse expansion
+      recoveryTime: 500,     // Increased from 0ms for brief pause after attack
       damage: 25,
       handlerType: 'pulse',
-      radius: 40, // Changed from pulseRadius to radius
+      radius: 40,
       knockbackForce: 30
     })
   }),
