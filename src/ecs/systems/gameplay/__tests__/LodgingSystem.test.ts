@@ -8,7 +8,8 @@ import {
   Lodge,
   Renderable,
   FireflyTag,
-  WispTag
+  WispTag,
+  ActivationConfig
 } from '@/ecs/components';
 import { SpatialGrid } from '@/utils';
 import { gameEvents, GameEvents } from '@/events';
@@ -27,6 +28,7 @@ describe('LodgingSystem', () => {
       .registerComponent(Path)
       .registerComponent(Lodge)
       .registerComponent(Renderable)
+      .registerComponent(ActivationConfig)
       .registerComponent(FireflyTag)
       .registerComponent(WispTag);
 
@@ -285,6 +287,20 @@ describe('LodgingSystem', () => {
         .addComponent(Lodge, {
           allowedTenants: ['firefly'],
           maxTenants: 1
+        })
+        .addComponent(ActivationConfig, {
+          onActivate: [
+            {
+              component: Renderable,
+              config: { tint: ENTITY_CONFIG.wisp.activeColor }
+            }
+          ],
+          onDeactivate: [
+            {
+              component: Renderable,
+              config: { tint: ENTITY_CONFIG.wisp.color }
+            }
+          ]
         })
         .addComponent(WispTag)
         .getMutableComponent(Renderable)!;

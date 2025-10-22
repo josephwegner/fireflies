@@ -22,7 +22,8 @@ import {
   FireflyTag,
   WispTag,
   MonsterTag,
-  GoalTag
+  GoalTag,
+  ActivationConfig
 } from '@/ecs/components';
 import { ENTITY_CONFIG, PHYSICS_CONFIG } from '@/config';
 
@@ -44,6 +45,7 @@ describe('Entity Factories', () => {
       .registerComponent(Interaction)
       .registerComponent(Health)
       .registerComponent(Combat)
+      .registerComponent(ActivationConfig)
       .registerComponent(FireflyTag)
       .registerComponent(WispTag)
       .registerComponent(MonsterTag)

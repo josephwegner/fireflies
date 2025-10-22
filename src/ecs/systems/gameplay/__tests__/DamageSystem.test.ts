@@ -32,6 +32,7 @@ describe('DamageSystem', () => {
       const attacker = world.createEntity();
       const target = world.createEntity();
       target.addComponent(Health, { currentHealth: 100, maxHealth: 100 });
+      target.addComponent(Position, { x: 100, y: 100 });
       
       // Emit the event to trigger damage
       gameEvents.emit(GameEvents.ATTACK_HIT, {
@@ -67,6 +68,7 @@ describe('DamageSystem', () => {
       const attacker = world.createEntity();
       const target = world.createEntity();
       target.addComponent(Health, { currentHealth: 100, maxHealth: 100 });
+      target.addComponent(Position, { x: 100, y: 100 });
       
       // First hit
       gameEvents.emit(GameEvents.ATTACK_HIT, {
