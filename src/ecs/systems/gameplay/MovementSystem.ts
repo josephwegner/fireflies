@@ -1,5 +1,5 @@
 import { System } from 'ecsy';
-import { Position, Velocity, Path, Target } from '@/ecs/components';
+import { Position, Velocity, Path, Target, Health } from '@/ecs/components';
 import { PHYSICS_CONFIG } from '@/config';
 import { gameEvents, GameEvents } from '@/events';
 import { Vector } from '@/utils';
@@ -13,6 +13,15 @@ export class MovementSystem extends System {
         const position = entity.getMutableComponent(Position)!;
         const velocity = entity.getMutableComponent(Velocity)!;
         const pathComp = entity.getComponent(Path);
+
+        // Skip movement for dead entities
+        const health = entity.getComponent(Health);
+        if (health && health.isDead) {
+          // Zero out velocity so dead entities don't drift
+          velocity.vx = 0;
+          velocity.vy = 0;
+          return;
+        }
 
         // Check if entity is in combat (has Target component)
         const inCombat = entity.hasComponent(Target);
