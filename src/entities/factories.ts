@@ -80,7 +80,8 @@ export function createWisp(world: World, x: number, y: number): ECSEntity {
       type: config.type,
       sprite: config.type, // Use type as sprite key
       tint: config.color,
-      radius: config.radius
+      radius: config.radius,
+      rotationSpeed: Math.PI * 0.5 // Rotate 90 degrees per second (adjust to taste)
     })
     .addComponent(PhysicsBody, {
       mass: config.mass,
@@ -131,7 +132,8 @@ export function createWisp(world: World, x: number, y: number): ECSEntity {
               recoveryTime: 200,
               damage: 100,
               radius: 75,
-              targetTags: ['monster']
+              targetTags: ['monster'],
+              color: 0x00ff00 // Green pulse
             },
             hasHit: false
           }

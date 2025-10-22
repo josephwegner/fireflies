@@ -72,8 +72,11 @@ export class PulseAttackHandler implements AttackHandler {
     const currentRadius = maxRadius * clampedProgress;
     const alpha = 0.3 * (1 - clampedProgress * 0.5); // Fade as it expands
     
-    pulseCircle.lineStyle(2, 0xff0000, alpha);
-    pulseCircle.fillStyle(0xff0000, 0.2);
+    // Use configured color, default to red if not specified
+    const attackColor = combat.attackPattern.color ?? 0xff0000;
+    
+    pulseCircle.lineStyle(2, attackColor, alpha);
+    pulseCircle.fillStyle(attackColor, alpha * 0.5); // Inner charge at half alpha
     pulseCircle.fillCircle(0, 0, currentRadius);
     pulseCircle.strokeCircle(0, 0, currentRadius);
   }
@@ -98,10 +101,14 @@ export class PulseAttackHandler implements AttackHandler {
         pulseCircle.clear();
         const maxRadius = combat.attackPattern.radius || 40;
         
-        // Full size, bright flash
-        pulseCircle.lineStyle(3, 0xff0000, 0.3);
+        // Use configured color, default to red if not specified
+        const attackColor = combat.attackPattern.color ?? 0xff0000;
+        
+        // Full size, bright flash - outer border at full color
+        pulseCircle.lineStyle(3, attackColor, 1.0);
         pulseCircle.strokeCircle(0, 0, maxRadius);
-        pulseCircle.fillStyle(0xff0000, 0.3);
+        // Inner fill at 0.5 alpha
+        pulseCircle.fillStyle(attackColor, 0.5);
         pulseCircle.fillCircle(0, 0, maxRadius);
       }
     }

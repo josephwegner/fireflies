@@ -8,6 +8,8 @@ export class Renderable extends Component<Renderable> {
   alpha!: number;
   scale!: number;
   tint!: number;
+  rotation!: number;
+  rotationSpeed!: number; // radians per second
 
   static schema = {
     type: { type: Types.String, default: 'default' },
@@ -16,6 +18,8 @@ export class Renderable extends Component<Renderable> {
     radius: { type: Types.Number, default: 5 },
     alpha: { type: Types.Number, default: 1 },
     scale: { type: Types.Number, default: 1.0 },
-    tint: { type: Types.Number, default: 0xFFFFFF }
+    tint: { type: Types.Number, default: 0xFFFFFF },
+    rotation: { type: Types.Number, default: 0 },
+    rotationSpeed: { type: Types.Number, default: 0 }
   };
 }

@@ -17,6 +17,7 @@ export interface AttackPattern {
   dashSpeed?: number;
   radius?: number;
   targetTags?: string[];
+  color?: number; // Color for visual effects (pulse attacks)
 }
 
 export class Combat extends Component<Combat> {

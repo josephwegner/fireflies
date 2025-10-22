@@ -18,6 +18,7 @@ export interface EntityConfig {
     dashSpeed?: number;
     radius?: number;
     knockbackForce?: number;
+    color?: number; // Color for visual effects
   };
 }
 
@@ -69,7 +70,8 @@ export const ENTITY_CONFIG: Readonly<Record<string, Readonly<EntityConfig>>> = O
       damage: 25,
       handlerType: 'pulse',
       radius: 30,
-      knockbackForce: 0
+      knockbackForce: 0,
+      color: 0xff0000 // Red pulse
     })
   }),
   goal: Object.freeze({

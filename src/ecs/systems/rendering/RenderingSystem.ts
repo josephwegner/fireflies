@@ -28,8 +28,9 @@ export class RenderingSystem extends System {
     }
   };
 
-  execute() {
+  execute(delta: number, time: number) {
     const { renderables } = this.queries;
+    const deltaInSeconds = delta / 1000;
 
     renderables.added?.forEach((entity) => {
       try {
@@ -49,7 +50,7 @@ export class RenderingSystem extends System {
 
     renderables.results.forEach((entity) => {
       try {
-        this.updateSprite(entity);
+        this.updateSprite(entity, deltaInSeconds);
       } catch (error) {
         console.error('[RenderingSystem] Error updating sprite for entity:', entity.id, error);
       }
@@ -84,15 +85,24 @@ export class RenderingSystem extends System {
     this.spriteMap.set(entity, container);
   }
 
-  private updateSprite(entity: ECSEntity): void {
+  private updateSprite(entity: ECSEntity, deltaInSeconds: number): void {
     const sprite = this.spriteMap.get(entity);
     if (!sprite) return;
 
     const position = entity.getComponent(Position)!;
-    const renderable = entity.getComponent(Renderable)!;
+    const renderable = entity.getMutableComponent(Renderable)!;
     
     sprite.setPosition(position.x, position.y);
     sprite.setScale(renderable.scale);
+
+    // Update rotation if there's a rotation speed
+    if (renderable.rotationSpeed !== 0) {
+      renderable.rotation += renderable.rotationSpeed * deltaInSeconds;
+      // Keep rotation in 0-2π range to avoid floating point drift
+      renderable.rotation = renderable.rotation % (Math.PI * 2);
+    }
+    
+    sprite.setRotation(renderable.rotation);
 
     // Get tint of the first child sprite or circle, if present
     let childTint = undefined;
