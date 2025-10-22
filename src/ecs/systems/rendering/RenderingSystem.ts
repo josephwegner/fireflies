@@ -93,6 +93,23 @@ export class RenderingSystem extends System {
     
     sprite.setPosition(position.x, position.y);
     sprite.setScale(renderable.scale);
+
+    // Get tint of the first child sprite or circle, if present
+    let childTint = undefined;
+    const mainChild = (sprite.list && sprite.list.length > 0) ? sprite.list[0] : undefined;
+    if (mainChild && typeof mainChild.tintTopLeft !== 'undefined') {
+      // Phaser v3 Sprite, use tintTopLeft (or tint for v2/older plugins)
+      childTint = mainChild.tintTopLeft;
+    } else if (mainChild && mainChild.fillColor) {
+      childTint = mainChild.fillColor;
+    }
+
+    // check if sprite is currently green and turning white
+    if (renderable.tint === 16777215 && childTint === 65280) {
+      debugger;
+      console.log('Sprite is currently green and turning white');
+    }
+
     this.applyTintToChildren(sprite, renderable.tint);
   }
 

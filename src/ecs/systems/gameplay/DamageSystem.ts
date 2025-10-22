@@ -30,6 +30,11 @@ export class DamageSystem extends System {
       return;
     }
 
+    // Skip damage for entities without Position (they're lodged and protected)
+    if (!target.hasComponent(Position)) {
+      return;
+    }
+
     const health = target.getMutableComponent(Health)!;
 
     if (health.isDead) {
@@ -49,6 +54,8 @@ export class DamageSystem extends System {
     if (knockbackForce && knockbackForce > 0) {
       this.applyKnockback(attacker, target, knockbackForce);
     }
+
+    gameEvents.emit(GameEvents.ENTITY_DAMAGED, { entity: target, damage });
   }
 
   handleDeath(entity: ECSEntity): void {

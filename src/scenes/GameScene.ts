@@ -192,6 +192,18 @@ export class GameScene extends Phaser.Scene {
       7 * TILE + TILE / 2
     );
 
+    createMonster(
+      this.world,
+      11 * TILE + TILE / 2,
+      3 * TILE + TILE / 2
+    );
+
+    createMonster(
+      this.world,
+      17 * TILE + TILE / 2,
+      4 * TILE + TILE / 2
+    );
+
     createGoal(
       this.world,
       16 * TILE + TILE / 2,

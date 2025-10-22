@@ -20,6 +20,23 @@ export class LodgingSystem extends System {
 
   execute(delta?: number): void {
     this.queries.lodges.results.forEach(lodgeEntity => {
+      const lodge = lodgeEntity.getComponent(Lodge);
+      const renderable = lodgeEntity.getComponent(Renderable);
+      
+      // Debug: check if any tenants have become invalid
+      if (lodge && lodge.tenants.length > 0) {
+        const aliveTenants = lodge.tenants.filter(t => t.alive);
+        if (aliveTenants.length !== lodge.tenants.length) {
+          console.log('🔴 DEAD TENANTS DETECTED!', {
+            lodgeId: lodgeEntity.id,
+            lodgeType: renderable?.type,
+            totalTenants: lodge.tenants.length,
+            aliveTenants: aliveTenants.length,
+            deadCount: lodge.tenants.length - aliveTenants.length
+          });
+        }
+      }
+      
       this.addNewTenants(lodgeEntity);
     });
   }
@@ -80,6 +97,12 @@ export class LodgingSystem extends System {
   handleTenantRemoved(event: GameEventPayloads[GameEvents.TENANT_REMOVED_FROM_LODGE]): void {
     const { lodgeEntity, tenantEntity } = event;
 
+    console.log('🔴 TENANT_REMOVED_FROM_LODGE event received', {
+      lodgeId: lodgeEntity.id,
+      tenantId: tenantEntity.id,
+      tenantAlive: tenantEntity.alive
+    });
+
     const tenantRenderable = tenantEntity.getMutableComponent(Renderable);
     const lodgePos = lodgeEntity.getComponent(Position)!;
     // Move it 1px to the right so that we don't path to the same lodge
@@ -115,6 +138,12 @@ export class LodgingSystem extends System {
   }
 
   private deactivate(entity: ECSEntity): void {
+    console.log('🔴 DEACTIVATE CALLED', {
+      entityId: entity.id,
+      entityType: entity.getComponent(Renderable)?.type,
+      stackTrace: new Error().stack
+    });
+    
     const activationConfig = entity.getComponent(ActivationConfig);
     if (!activationConfig) return;
 
@@ -124,7 +153,6 @@ export class LodgingSystem extends System {
   }
 
   private addOrUpdateComponent(entity: ECSEntity, ComponentClass: any, config: any) {
-    console.log('Adding or updating component', ComponentClass, config);
     if (entity.hasComponent(ComponentClass)) {
       const component = entity.getMutableComponent(ComponentClass)!;
       Object.assign(component, config);

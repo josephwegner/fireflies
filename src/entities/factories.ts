@@ -107,7 +107,7 @@ export function createWisp(world: World, x: number, y: number): ECSEntity {
           component: Interaction,
           config: {
             interactsWith: ['monster'],
-            interactionRadius: 100,
+            interactionRadius: 75,
             onInteract: () => {}
           }
         },
@@ -130,7 +130,7 @@ export function createWisp(world: World, x: number, y: number): ECSEntity {
               attackDuration: 100,
               recoveryTime: 200,
               damage: 100,
-              radius: 100,
+              radius: 75,
               targetTags: ['monster']
             },
             hasHit: false

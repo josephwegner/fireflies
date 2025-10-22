@@ -10,6 +10,7 @@ import { TagComponent } from 'ecsy';
 import { SpatialGrid } from '@/utils';
 import { RenderingSystem } from '../rendering/RenderingSystem';
 import Phaser from 'phaser';
+import { Interaction } from '@/ecs/components';
 
 export class CombatSystem extends System {
   private spatialGrid?: SpatialGrid;
@@ -127,15 +128,22 @@ export class CombatSystem extends System {
     const dy = targetPos.y - attackerPos.y;
     const distance = Vector.length(dx, dy);
 
-    // Get interaction radius based on entity type
-    const tagComp = Object.values(attacker.getComponents()).find(
-      c => c instanceof TagComponent
-    );
-    const tag =
-      tagComp &&
-      tagComp.constructor.name.replace(/Tag$/, '').toLowerCase();
-
-    let interactionRadius = (tag && ENTITY_CONFIG[tag]?.interactionRadius) || 30;
+    // Get interaction radius from the Interaction component if present
+    let interactionRadius = 30; // default fallback
+    const interaction = attacker.getComponent(Interaction);
+    if (interaction) {
+      interactionRadius = interaction.interactionRadius;
+    } else {
+      // Fallback to entity config if no Interaction component
+      const tagComp = Object.values(attacker.getComponents()).find(
+        c => c instanceof TagComponent
+      );
+      const tag =
+        tagComp &&
+        tagComp.constructor.name.replace(/Tag$/, '').toLowerCase();
+      
+      interactionRadius = (tag && ENTITY_CONFIG[tag]?.interactionRadius) || 30;
+    }
 
     return distance <= interactionRadius;
   }

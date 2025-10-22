@@ -9,7 +9,12 @@ import Phaser from 'phaser';
 export class PulseAttackHandler implements AttackHandler {
 
   onCharging(context: AttackContext): void {
-    const { combat, scene, spriteContainer, target, position, velocity } = context;
+    const { combat, scene, spriteContainer, target, position, velocity, renderable } = context;
+
+    // Store original tint on first frame of charging
+    if (combat.chargeTime === 0 && spriteContainer && renderable) {
+      (spriteContainer as any).originalTint = renderable.tint;
+    }
 
     const progress = combat.chargeTime / combat.attackPattern.chargeTime;
     const clampedProgress = Math.min(Math.max(progress, 0), 1);
@@ -147,14 +152,15 @@ export class PulseAttackHandler implements AttackHandler {
     const currentScale = renderable.scale;
     renderable.scale = currentScale + (1.0 - currentScale) * clampedProgress * 0.1;
 
-    // Tint gradually returns to white
+    // Tint gradually returns to ORIGINAL tint
+    const originalTint = (spriteContainer as any)?.originalTint ?? 0xFFFFFF;
     const currentR = (renderable.tint >> 16) & 0xFF;
     const currentG = (renderable.tint >> 8) & 0xFF;
     const currentB = renderable.tint & 0xFF;
 
-    const targetR = 255;
-    const targetG = 255;
-    const targetB = 255;
+    const targetR = (originalTint >> 16) & 0xFF;
+    const targetG = (originalTint >> 8) & 0xFF;
+    const targetB = originalTint & 0xFF;
 
     const r = Math.floor(currentR + (targetR - currentR) * clampedProgress * 0.1);
     const g = Math.floor(currentG + (targetG - currentG) * clampedProgress * 0.1);
@@ -173,6 +179,16 @@ export class PulseAttackHandler implements AttackHandler {
 
   cleanup(context: AttackContext): void {
     const { renderable, spriteContainer } = context;
+    
+    if (renderable && spriteContainer) {
+      const container = spriteContainer as any;
+      
+      // Restore original tint
+      if (container.originalTint !== undefined) {
+        renderable.tint = container.originalTint;
+        delete container.originalTint;
+      }
+    }
 
     // Destroy pulse circle graphic from container
     if (spriteContainer) {
@@ -185,10 +201,9 @@ export class PulseAttackHandler implements AttackHandler {
       }
     }
 
-    // Reset visual properties
+    // Reset scale
     if (renderable) {
       renderable.scale = 1.0;
-      renderable.tint = 0xFFFFFF;
     }
   }
 
