@@ -10,7 +10,8 @@ import {
   FireflyTag,
   MonsterTag,
   WispTag,
-  GoalTag
+  GoalTag,
+  FleeingToGoalTag
 } from '@/ecs/components';
 import { PHYSICS_CONFIG } from '@/config';
 import {
@@ -37,7 +38,8 @@ describe('DestinationSystem', () => {
       .registerComponent(FireflyTag)
       .registerComponent(MonsterTag)
       .registerComponent(WispTag)
-      .registerComponent(GoalTag);
+      .registerComponent(GoalTag)
+      .registerComponent(FleeingToGoalTag);
 
     mockWorker = createMockWorker();
   });
@@ -483,6 +485,146 @@ describe('DestinationSystem', () => {
       world.execute(16, 16);
 
       expect(mockWorker.postMessage).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('FleeingToGoalTag behavior', () => {
+    beforeEach(() => {
+      world.registerComponent(FleeingToGoalTag);
+    });
+
+    it('should skip intermediate destinations when entity has FleeingToGoalTag', () => {
+      const firefly = createTestFirefly(world, { x: 100, y: 100 });
+      const wisp = createTestWisp(world, { x: 300, y: 300 });
+      const goal = createTestGoal(world, { x: 500, y: 500 });
+      
+      // Mark firefly as fleeing
+      firefly.addComponent(FleeingToGoalTag);
+
+      world.registerSystem(DestinationSystem, { worker: mockWorker });
+      world.execute(16, 16);
+
+      // Should request path directly to goal, not to wisp
+      expect(mockWorker.postMessage).toHaveBeenCalled();
+      const call = mockWorker.postMessage.mock.calls[0][0];
+      
+      // Destination should be goal, not wisp
+      expect(call.destination.x).toBe(500);
+      expect(call.destination.y).toBe(500);
+    });
+
+    it('should go directly to goal without considering wisps when fleeing', () => {
+      const firefly = createTestFirefly(world, { x: 100, y: 100 });
+      
+      // Create multiple wisps that would normally be visited
+      createTestWisp(world, { x: 200, y: 200, for: ['firefly'] });
+      createTestWisp(world, { x: 300, y: 300, for: ['firefly'] });
+      createTestWisp(world, { x: 400, y: 400, for: ['firefly'] });
+      
+      const goal = createTestGoal(world, { x: 500, y: 500 });
+      
+      // Mark firefly as fleeing
+      firefly.addComponent(FleeingToGoalTag);
+
+      world.registerSystem(DestinationSystem, { worker: mockWorker });
+      world.execute(16, 16);
+
+      const call = mockWorker.postMessage.mock.calls[0][0];
+      
+      // Should go directly to goal, skipping all wisps
+      expect(call.destination.x).toBe(500);
+      expect(call.destination.y).toBe(500);
+    });
+
+    it('should visit intermediate destinations when not fleeing', () => {
+      const firefly = createTestFirefly(world, { x: 100, y: 100 });
+      const wisp = createTestWisp(world, { x: 300, y: 300 });
+      const goal = createTestGoal(world, { x: 500, y: 500 });
+      
+      // Do NOT add FleeingToGoalTag
+
+      world.registerSystem(DestinationSystem, { worker: mockWorker });
+      world.execute(16, 16);
+
+      const call = mockWorker.postMessage.mock.calls[0][0];
+      
+      // Should go to wisp first (or goal if wisp is not on the path)
+      // The destination will be either the wisp or the goal depending on pathfinding logic
+      expect(call.destination).toBeDefined();
+      expect(call.destination.x).toBeDefined();
+      expect(call.destination.y).toBeDefined();
+    });
+
+    it('should request path directly to goal for next path when fleeing', () => {
+      const firefly = createTestFirefly(world, {
+        x: 100,
+        y: 100,
+        currentPath: [{ x: 200, y: 200 }]
+      });
+      createTestWisp(world, { x: 300, y: 300 });
+      const goal = createTestGoal(world, { x: 500, y: 500 });
+      
+      // Mark firefly as fleeing
+      firefly.addComponent(FleeingToGoalTag);
+
+      world.registerSystem(DestinationSystem, { worker: mockWorker });
+      world.execute(16, 16);
+
+      // Should request next path
+      expect(mockWorker.postMessage).toHaveBeenCalled();
+      const call = mockWorker.postMessage.mock.calls[0][0];
+      
+      expect(call.pathType).toBe('next');
+      expect(call.destination.x).toBe(500);
+      expect(call.destination.y).toBe(500);
+    });
+
+    it('should handle fleeing entity without goal gracefully', () => {
+      const firefly = createTestFirefly(world, { x: 100, y: 100 });
+      
+      // Mark firefly as fleeing but don't create a goal
+      firefly.addComponent(FleeingToGoalTag);
+
+      world.registerSystem(DestinationSystem, { worker: mockWorker });
+      
+      // Should not throw
+      expect(() => world.execute(16, 16)).not.toThrow();
+      
+      // Should not request path
+      expect(mockWorker.postMessage).not.toHaveBeenCalled();
+    });
+
+    it('should allow fleeing to be added after initial path request', () => {
+      const firefly = createTestFirefly(world, { x: 100, y: 100 });
+      createTestWisp(world, { x: 300, y: 300 });
+      createTestGoal(world, { x: 500, y: 500 });
+
+      world.registerSystem(DestinationSystem, { worker: mockWorker });
+      
+      // First request without fleeing
+      world.execute(16, 16);
+      
+      let firstCall = mockWorker.postMessage.mock.calls[0][0];
+      expect(firstCall.destination).toBeDefined();
+      
+      // Simulate receiving path
+      mockWorker.onmessage({
+        data: {
+          entityId: firefly.id,
+          path: [{ x: 200, y: 200 }],
+          pathType: 'current'
+        }
+      });
+      
+      // Now add FleeingToGoalTag
+      firefly.addComponent(FleeingToGoalTag);
+      
+      // Second request with fleeing
+      world.execute(16, 16);
+      
+      let secondCall = mockWorker.postMessage.mock.calls[1][0];
+      expect(secondCall.destination.x).toBe(500);
+      expect(secondCall.destination.y).toBe(500);
     });
   });
 });

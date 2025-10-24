@@ -1,7 +1,8 @@
 import { System } from 'ecsy';
-import { Health, Position, Renderable, Velocity } from '@/ecs/components';
+import { Health, Position, Renderable, Velocity, Lodge, Path } from '@/ecs/components';
+import { MonsterTag, FireflyTag, FleeingToGoalTag } from '@/ecs/components/tags';
 import { gameEvents, GameEvents } from '@/events';
-import { PHYSICS_CONFIG } from '@/config';
+import { PHYSICS_CONFIG, ENTITY_CONFIG } from '@/config';
 import { ECSEntity } from '@/types';
 import { Vector } from '@/utils';
 
@@ -12,6 +13,7 @@ interface DyingEntity {
 
 export class DamageSystem extends System {
   private dyingEntities: DyingEntity[] = [];
+  private victoryTriggered = false;
 
   init(): void {
     // Subscribe to damage events
@@ -48,6 +50,10 @@ export class DamageSystem extends System {
 
     if (health.currentHealth <= 0) {
       this.handleDeath(target);
+      
+      // Check victory condition after any death
+      this.checkVictoryCondition();
+      
       return; // Don't apply knockback to dead entities
     }
 
@@ -78,6 +84,87 @@ export class DamageSystem extends System {
       // Remove immediately if no animation
       entity.remove();
     }
+  }
+
+  private checkVictoryCondition(): void {
+    // Don't check again if already triggered
+    if (this.victoryTriggered) return;
+
+    // Count living monsters
+    const monsters = this.queries.monsters.results;
+    const livingMonsters = monsters.filter(monster => {
+      const health = monster.getComponent(Health);
+      return health && !health.isDead;
+    });
+
+    // Victory condition: all monsters are dead
+    if (monsters.length > 0 && livingMonsters.length === 0) {
+      this.triggerVictory();
+    }
+  }
+
+  private triggerVictory(): void {
+    this.victoryTriggered = true;
+    
+    gameEvents.emit(GameEvents.ALL_MONSTERS_DEFEATED, {});
+    
+    // Force all lodged fireflies to leave and flee to goal
+    this.evictAllFireflies();
+  }
+
+  private evictAllFireflies(): void {
+    const lodges = this.queries.lodges.results;
+    
+    lodges.forEach(lodgeEntity => {
+      const lodge = lodgeEntity.getMutableComponent(Lodge)!;
+      const lodgePos = lodgeEntity.getComponent(Position)!;
+      
+      // Make a copy of tenants array since we'll be modifying it
+      const tenantsToEvict = [...lodge.tenants];
+      
+      tenantsToEvict.forEach(tenantEntity => {
+        // Remove dead entities from tenants array without further processing
+        if (!tenantEntity.alive) {
+          const tenantIndex = lodge.tenants.indexOf(tenantEntity);
+          if (tenantIndex !== -1) {
+            lodge.tenants.splice(tenantIndex, 1);
+          }
+          return;
+        }
+        
+        // Only evict fireflies
+        if (!tenantEntity.hasComponent(FireflyTag)) return;
+        
+        // Remove from lodge
+        const tenantIndex = lodge.tenants.indexOf(tenantEntity);
+        if (tenantIndex !== -1) {
+          lodge.tenants.splice(tenantIndex, 1);
+        }
+        
+        // Restore movement components
+        const tenantRenderable = tenantEntity.getComponent(Renderable);
+        if (!tenantRenderable) return;
+        
+        tenantEntity.addComponent(Position, { 
+          x: lodgePos.x, 
+          y: lodgePos.y
+        });
+        tenantEntity.addComponent(Velocity, { vx: 0, vy: 0 });
+        
+        // Get the entity config for the direction
+        const config = ENTITY_CONFIG[tenantRenderable.type as keyof typeof ENTITY_CONFIG];
+        const direction = config.direction!;
+        
+        tenantEntity.addComponent(Path, {
+          currentPath: [],
+          nextPath: [],
+          direction: direction
+        });
+        
+        // Mark as fleeing - this will make them skip intermediate destinations
+        tenantEntity.addComponent(FleeingToGoalTag);
+      });
+    });
   }
 
   applyKnockback(attacker: ECSEntity, target: ECSEntity, knockbackForce: number): void {
@@ -145,6 +232,12 @@ export class DamageSystem extends System {
   static queries = {
     withHealth: {
       components: [Health]
+    },
+    monsters: {
+      components: [MonsterTag, Health]
+    },
+    lodges: {
+      components: [Lodge, Position]
     }
   };
 }

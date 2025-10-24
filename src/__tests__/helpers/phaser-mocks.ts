@@ -8,6 +8,7 @@ export function createMockContainer() {
     list: [] as any[],
     setPosition: vi.fn().mockReturnThis(),
     setScale: vi.fn().mockReturnThis(),
+    setRotation: vi.fn().mockReturnThis(),
     destroy: vi.fn(),
     add: vi.fn()
   };
@@ -25,12 +26,18 @@ export function createMockContainer() {
  * Create a mock Phaser sprite with common properties
  */
 export function createMockSprite(width = 100, height = 100) {
-  return {
+  const sprite = {
     width,
     height,
+    tintTopLeft: 0xFFFFFF, // Track the current tint
     setScale: vi.fn().mockReturnThis(),
-    setTint: vi.fn().mockReturnThis()
+    setTint: vi.fn().mockImplementation(function(this: any, tint: number) {
+      this.tintTopLeft = tint; // Update tint when setTint is called
+      return this;
+    })
   };
+  
+  return sprite;
 }
 
 /**

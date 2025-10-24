@@ -9,7 +9,8 @@ import {
   Renderable,
   FireflyTag,
   WispTag,
-  ActivationConfig
+  ActivationConfig,
+  FleeingToGoalTag
 } from '@/ecs/components';
 import { SpatialGrid } from '@/utils';
 import { gameEvents, GameEvents } from '@/events';
@@ -30,7 +31,8 @@ describe('LodgingSystem', () => {
       .registerComponent(Renderable)
       .registerComponent(ActivationConfig)
       .registerComponent(FireflyTag)
-      .registerComponent(WispTag);
+      .registerComponent(WispTag)
+      .registerComponent(FleeingToGoalTag);
 
     spatialGrid = new SpatialGrid(100);
     world.registerSystem(LodgingSystem, { spatialGrid });
@@ -218,6 +220,16 @@ describe('LodgingSystem', () => {
       firefly.addComponent(Renderable, { type: 'firefly' });
 
       expect(system.canLodge(firefly, [])).toBe(false);
+    });
+
+    it('should return false for entity with FleeingToGoalTag', () => {
+      world.registerComponent(FleeingToGoalTag);
+      
+      const firefly = world.createEntity();
+      firefly.addComponent(Renderable, { type: 'firefly' });
+      firefly.addComponent(FleeingToGoalTag);
+
+      expect(system.canLodge(firefly, ['firefly'])).toBe(false);
     });
   });
 
@@ -558,6 +570,75 @@ describe('LodgingSystem', () => {
       // Don't populate grid, leave it empty
       
       expect(() => system.execute()).not.toThrow();
+    });
+
+    it('should not allow lodging for entities fleeing to goal', () => {
+      world.registerComponent(FleeingToGoalTag);
+      
+      const wisp = world.createEntity();
+      wisp
+        .addComponent(Position, { x: 100, y: 100 })
+        .addComponent(Renderable, { type: 'wisp' })
+        .addComponent(Lodge, {
+          allowedTenants: ['firefly'],
+          maxTenants: 1
+        })
+        .addComponent(WispTag);
+
+      const firefly = world.createEntity();
+      firefly
+        .addComponent(Position, { x: 100, y: 100 })
+        .addComponent(Velocity, { vx: 0, vy: 0 })
+        .addComponent(Path, { currentPath: [], nextPath: [], direction: 'r' })
+        .addComponent(Renderable, { type: 'firefly' })
+        .addComponent(FireflyTag)
+        .addComponent(FleeingToGoalTag); // Fleeing to goal
+
+      populateGridAndExecute();
+
+      const lodge = wisp.getComponent(Lodge)!;
+      // Should not be lodged because it's fleeing
+      expect(lodge.tenants).toHaveLength(0);
+    });
+
+    it('should not lodge fleeing entities even if they are the right type and within range', () => {
+      world.registerComponent(FleeingToGoalTag);
+      
+      const wisp = world.createEntity();
+      wisp
+        .addComponent(Position, { x: 100, y: 100 })
+        .addComponent(Renderable, { type: 'wisp' })
+        .addComponent(Lodge, {
+          allowedTenants: ['firefly'],
+          maxTenants: 2
+        })
+        .addComponent(WispTag);
+
+      // Normal firefly that can lodge
+      const normalFirefly = world.createEntity();
+      normalFirefly
+        .addComponent(Position, { x: 100, y: 100 })
+        .addComponent(Velocity, { vx: 0, vy: 0 })
+        .addComponent(Path, { currentPath: [], nextPath: [], direction: 'r' })
+        .addComponent(Renderable, { type: 'firefly' })
+        .addComponent(FireflyTag);
+
+      // Fleeing firefly that should not lodge
+      const fleeingFirefly = world.createEntity();
+      fleeingFirefly
+        .addComponent(Position, { x: 100, y: 100 })
+        .addComponent(Velocity, { vx: 0, vy: 0 })
+        .addComponent(Path, { currentPath: [], nextPath: [], direction: 'r' })
+        .addComponent(Renderable, { type: 'firefly' })
+        .addComponent(FireflyTag)
+        .addComponent(FleeingToGoalTag);
+
+      populateGridAndExecute();
+
+      const lodge = wisp.getComponent(Lodge)!;
+      // Only normal firefly should be lodged
+      expect(lodge.tenants).toHaveLength(1);
+      expect(lodge.tenants[0]).toBe(normalFirefly);
     });
   });
 

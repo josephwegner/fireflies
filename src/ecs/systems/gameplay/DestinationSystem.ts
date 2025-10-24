@@ -1,6 +1,6 @@
 import { System } from 'ecsy';
 import { Position, Velocity, Path, Destination, Renderable } from '@/ecs/components';
-import { FireflyTag, MonsterTag, WispTag, GoalTag } from '@/ecs/components';
+import { FireflyTag, MonsterTag, WispTag, GoalTag, FleeingToGoalTag } from '@/ecs/components';
 import { ECSEntity } from '@/types';
 import { PHYSICS_CONFIG } from '@/config';
 
@@ -91,6 +91,9 @@ export class DestinationSystem extends System {
         return;
       }
 
+      // Check if this entity is fleeing to goal (skip intermediate destinations)
+      const isFleeing = entity.hasComponent(FleeingToGoalTag);
+
       // If we don't have a current path, we need to request one
       if (!pathComp.currentPath.length) {
         // Don't spam requests if we're already waiting for a response
@@ -99,7 +102,12 @@ export class DestinationSystem extends System {
         }
 
         const currentPos = { x: position.x, y: position.y };
-        const destinations = this.gatherDestinations(currentPos, finalDestination, entityType, pathComp.direction);
+        
+        // If fleeing, go directly to goal. Otherwise, use intermediate destinations.
+        let destinations: DestinationCandidate[] = [];
+        if (!isFleeing) {
+          destinations = this.gatherDestinations(currentPos, finalDestination, entityType, pathComp.direction);
+        }
 
         if (!destinations.length) {
           destinations.push(finalDestination);
@@ -121,7 +129,12 @@ export class DestinationSystem extends System {
       // If we have a current path, but no next path, we need to request one
       } else if (pathComp.nextPath && !pathComp.nextPath.length) {
         const lastPos = pathComp.currentPath[pathComp.currentPath.length - 1];
-        const destinations = this.gatherDestinations(lastPos, finalDestination, entityType, pathComp.direction);
+        
+        // If fleeing, go directly to goal. Otherwise, use intermediate destinations.
+        let destinations: DestinationCandidate[] = [];
+        if (!isFleeing) {
+          destinations = this.gatherDestinations(lastPos, finalDestination, entityType, pathComp.direction);
+        }
 
         if (!destinations.length) {
           destinations.push(finalDestination);

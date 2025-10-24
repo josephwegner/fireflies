@@ -4,6 +4,7 @@ import { ActivationConfig, Position, Velocity, Path, Lodge, Renderable } from '@
 import { ECSEntity } from '@/types';
 import { SpatialGrid, Vector } from '@/utils';
 import { gameEvents, GameEventPayloads, GameEvents } from '@/events';
+import { FleeingToGoalTag } from '@/ecs/components/tags';
 
 export class LodgingSystem extends System {
   private spatialGrid!: SpatialGrid;
@@ -76,6 +77,9 @@ export class LodgingSystem extends System {
   canLodge(entity: ECSEntity, allowedTenants: readonly string[]): boolean {
     const renderable = entity.getComponent(Renderable);
     if (!renderable) return false;
+    
+    // Don't allow lodging if entity is fleeing to goal
+    if (entity.hasComponent(FleeingToGoalTag)) return false;
     
     return allowedTenants.includes(renderable.type);
   }

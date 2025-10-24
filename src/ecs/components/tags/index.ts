@@ -1,5 +1,6 @@
 export { FireflyTag } from './FireflyTag';
-export { WispTag } from './WispTag';
 export { MonsterTag } from './MonsterTag';
-export { GoalTag } from './GoalTag';
 export { WallTag } from './WallTag';
+export { WispTag } from './WispTag';
+export { GoalTag } from './GoalTag';
+export { FleeingToGoalTag } from './FleeingToGoalTag';

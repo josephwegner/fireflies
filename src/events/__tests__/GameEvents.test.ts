@@ -98,5 +98,47 @@ describe('GameEvents', () => {
     expect(GameEvents.ENTITY_REACHED_GOAL).toBe('entity:reachedGoal');
     expect(GameEvents.TARGET_ACQUIRED).toBe('target:acquired');
     expect(GameEvents.PATH_COMPLETED).toBe('path:completed');
+    expect(GameEvents.ALL_MONSTERS_DEFEATED).toBe('victory:allMonstersDefeated');
+    expect(GameEvents.ENTITY_DAMAGED).toBe('entity:damaged');
+  });
+
+  it('should emit and receive ALL_MONSTERS_DEFEATED event', () => {
+    const callback = vi.fn();
+    events.on(GameEvents.ALL_MONSTERS_DEFEATED, callback);
+    events.emit(GameEvents.ALL_MONSTERS_DEFEATED, {});
+
+    expect(callback).toHaveBeenCalledWith({});
+  });
+
+  it('should emit and receive ENTITY_DAMAGED event', () => {
+    const callback = vi.fn();
+    const testEntity = { id: 1 } as any;
+    
+    events.on(GameEvents.ENTITY_DAMAGED, callback);
+    events.emit(GameEvents.ENTITY_DAMAGED, {
+      entity: testEntity,
+      damage: 25
+    });
+
+    expect(callback).toHaveBeenCalledWith({
+      entity: testEntity,
+      damage: 25
+    });
+  });
+
+  it('should handle multiple listeners for victory event', () => {
+    const callback1 = vi.fn();
+    const callback2 = vi.fn();
+    const callback3 = vi.fn();
+
+    events.on(GameEvents.ALL_MONSTERS_DEFEATED, callback1);
+    events.on(GameEvents.ALL_MONSTERS_DEFEATED, callback2);
+    events.on(GameEvents.ALL_MONSTERS_DEFEATED, callback3);
+    
+    events.emit(GameEvents.ALL_MONSTERS_DEFEATED, {});
+
+    expect(callback1).toHaveBeenCalledTimes(1);
+    expect(callback2).toHaveBeenCalledTimes(1);
+    expect(callback3).toHaveBeenCalledTimes(1);
   });
 });

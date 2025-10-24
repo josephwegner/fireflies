@@ -19,7 +19,8 @@ import {
   WispTag,
   MonsterTag,
   GoalTag,
-  WallTag
+  WallTag,
+  FleeingToGoalTag
 } from '@/ecs/components';
 import {
   RenderingSystem,
@@ -100,7 +101,8 @@ export class GameScene extends Phaser.Scene {
       .registerComponent(WispTag)
       .registerComponent(MonsterTag)
       .registerComponent(GoalTag)
-      .registerComponent(WallTag);
+      .registerComponent(WallTag)
+      .registerComponent(FleeingToGoalTag);
   }
 
   private registerSystems(): void {
