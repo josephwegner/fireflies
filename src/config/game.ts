@@ -8,9 +8,9 @@ export const GAME_CONFIG = Object.freeze({
   MAP_WIDTH: 20,
   MAP_HEIGHT: 11,
 
-  // Walls
+  // Walls (organic forest paths - lighter outline against dark ground)
   WALL_THICKNESS: 2,
-  WALL_COLOR: 0x888888,
+  WALL_COLOR: 0x174311, // Midnight blue for cohesive path edges
 
   // Wall Generation (Catmull-Rom smoothing)
   WALL_SMOOTHING_TENSION: 0.5,

@@ -25,6 +25,7 @@ import {
 import {
   RenderingSystem,
   WallRenderingSystem,
+  ForestDecorationSystem,
   MovementSystem,
   InteractionSystem,
   LodgingSystem,
@@ -61,6 +62,9 @@ export class GameScene extends Phaser.Scene {
   }
 
   create(): void {
+    // Create dark forest background
+    this.cameras.main.setBackgroundColor(0x0A1824); // Deep charcoal
+    
     this.world = new World();
     this.pathfindingWorker = this.createWorker();
     this.spatialGrid = new SpatialGrid(PHYSICS_CONFIG.SPATIAL_GRID_CELL_SIZE);
@@ -108,6 +112,8 @@ export class GameScene extends Phaser.Scene {
   private registerSystems(): void {
     this.world
       .registerSystem(RenderingSystem, { scene: this })
+      .registerSystem(WallRenderingSystem, { scene: this })
+      .registerSystem(ForestDecorationSystem, { scene: this, map: this.map })
       .registerSystem(WallGenerationSystem, { worker: this.pathfindingWorker, map: this.map })
       .registerSystem(InteractionSystem, { spatialGrid: this.spatialGrid })
       .registerSystem(TargetingSystem)
@@ -119,8 +125,7 @@ export class GameScene extends Phaser.Scene {
       .registerSystem(LodgingSystem, { spatialGrid: this.spatialGrid })
       .registerSystem(DamageSystem)
       .registerSystem(MovementSystem)
-      .registerSystem(DestinationSystem, { worker: this.pathfindingWorker })
-      .registerSystem(WallRenderingSystem, { scene: this });
+      .registerSystem(DestinationSystem, { worker: this.pathfindingWorker });
   }
 
   private createMap(): void {

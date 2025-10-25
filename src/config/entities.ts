@@ -25,7 +25,7 @@ export interface EntityConfig {
 export const ENTITY_CONFIG: Readonly<Record<string, Readonly<EntityConfig>>> = Object.freeze({
   firefly: Object.freeze({
     type: 'firefly',
-    color: 0xffffff,
+    color: 0xDEF4B4, // Firefly glow bright
     radius: 4,
     mass: 1,
     isStatic: false,
@@ -35,9 +35,9 @@ export const ENTITY_CONFIG: Readonly<Record<string, Readonly<EntityConfig>>> = O
     direction: 'r',
     health: 50,
     combat: Object.freeze({
-      chargeTime: 1800,      // Increased from 1000ms for dramatic charge-up
-      attackDuration: 500,   // Increased from 300ms for more visible dash
-      recoveryTime: 600,     // Increased from 400ms for recovery drift
+      chargeTime: 1800,
+      attackDuration: 500,
+      recoveryTime: 600,
       damage: 10,
       handlerType: 'dash',
       dashSpeed: 150,
@@ -46,15 +46,15 @@ export const ENTITY_CONFIG: Readonly<Record<string, Readonly<EntityConfig>>> = O
   }),
   wisp: Object.freeze({
     type: 'wisp',
-    color: 0xffffff,
-    activeColor: 0x00ff00,
+    color: 0xB0C4DE, // Tower illumination blue (inactive)
+    activeColor: 0xE8F4F8, // Tower illumination white (active)
     radius: 12,
     mass: 1,
     isStatic: true
   }),
   monster: Object.freeze({
     type: 'monster',
-    color: 0xff0000,
+    color: 0xC65D3B, // Monster presence red
     radius: 8,
     mass: 1,
     isStatic: false,
@@ -64,19 +64,19 @@ export const ENTITY_CONFIG: Readonly<Record<string, Readonly<EntityConfig>>> = O
     interactsWith: Object.freeze(['firefly']),
     health: 50,
     combat: Object.freeze({
-      chargeTime: 2200,      // Increased from 1500ms for slow, menacing charge
-      attackDuration: 400,   // Increased from 100ms for visible pulse expansion
-      recoveryTime: 500,     // Increased from 0ms for brief pause after attack
+      chargeTime: 2200,
+      attackDuration: 400,
+      recoveryTime: 500,
       damage: 25,
       handlerType: 'pulse',
       radius: 30,
       knockbackForce: 0,
-      color: 0xff0000 // Red pulse
+      color: 0xC65D3B // Monster presence red for pulse
     })
   }),
   goal: Object.freeze({
     type: 'goal',
-    color: 0x00ff00,
+    color: 0xC3D08B, // Firefly glow soft (subtle goal marker)
     radius: 10,
     mass: 1,
     isStatic: true
