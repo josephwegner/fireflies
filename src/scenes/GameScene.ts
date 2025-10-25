@@ -15,6 +15,7 @@ import {
   Health,
   Combat,
   Wall,
+  Trail,
   FireflyTag,
   WispTag,
   MonsterTag,
@@ -26,6 +27,7 @@ import {
   RenderingSystem,
   WallRenderingSystem,
   ForestDecorationSystem,
+  TrailSystem,
   MovementSystem,
   InteractionSystem,
   LodgingSystem,
@@ -101,6 +103,7 @@ export class GameScene extends Phaser.Scene {
       .registerComponent(Health)
       .registerComponent(Combat)
       .registerComponent(Wall)
+      .registerComponent(Trail)
       .registerComponent(FireflyTag)
       .registerComponent(WispTag)
       .registerComponent(MonsterTag)
@@ -114,6 +117,7 @@ export class GameScene extends Phaser.Scene {
       .registerSystem(RenderingSystem, { scene: this })
       .registerSystem(WallRenderingSystem, { scene: this })
       .registerSystem(ForestDecorationSystem, { scene: this, map: this.map })
+      .registerSystem(TrailSystem, { scene: this })
       .registerSystem(WallGenerationSystem, { worker: this.pathfindingWorker, map: this.map })
       .registerSystem(InteractionSystem, { spatialGrid: this.spatialGrid })
       .registerSystem(TargetingSystem)

@@ -10,7 +10,7 @@ export const GAME_CONFIG = Object.freeze({
 
   // Walls (organic forest paths - lighter outline against dark ground)
   WALL_THICKNESS: 2,
-  WALL_COLOR: 0x174311, // Midnight blue for cohesive path edges
+  WALL_COLOR: 0x0D270A, // Midnight blue for cohesive path edges
 
   // Wall Generation (Catmull-Rom smoothing)
   WALL_SMOOTHING_TENSION: 0.5,

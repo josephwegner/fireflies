@@ -13,6 +13,7 @@ import {
   Health,
   Combat,
   CombatState,
+  Trail,
   FireflyTag,
   WispTag,
   MonsterTag,
@@ -39,7 +40,19 @@ export function createFirefly(world: World, x: number, y: number): ECSEntity {
       type: config.type,
       sprite: config.type, // Use type as sprite key
       color: config.color,
-      radius: config.radius
+      radius: config.radius,
+      depth: 50, // Secondary - player units
+      glow: {
+        radius: 15,
+        color: 0xDEF4B4, // Soft yellow-green firefly glow
+        intensity: 0.4,
+        pulse: {
+          enabled: true,
+          speed: 0.6, // Slow, gentle pulse
+          minIntensity: 0.4,
+          maxIntensity: 0.7
+        }
+      }
     })
     .addComponent(PhysicsBody, {
       mass: config.mass,
@@ -67,6 +80,17 @@ export function createFirefly(world: World, x: number, y: number): ECSEntity {
       attackPattern: config.combat!,
       hasHit: false
     })
+    .addComponent(Trail, {
+      enabled: true,
+      config: {
+        length: 100,
+        fadeTime: 800,
+        color: 0xDEF4B4, // Soft yellow-green to match firefly glow
+        width: 3,
+        minAlpha: 0.05
+      },
+      points: []
+    })
     .addComponent(FireflyTag);
 }
 
@@ -81,7 +105,19 @@ export function createWisp(world: World, x: number, y: number): ECSEntity {
       sprite: config.type, // Use type as sprite key
       tint: config.color,
       radius: config.radius,
-      rotationSpeed: Math.PI * 0.5 // Rotate 90 degrees per second (adjust to taste)
+      depth: 40, // Secondary - towers/strategic structures
+      rotationSpeed: Math.PI * 0.5, // Rotate 90 degrees per second (adjust to taste)
+      glow: {
+        radius: 30,
+        color: 0xB0C4DE, // Pale blue tower illumination
+        intensity: 0.5,
+        pulse: {
+          enabled: true,
+          speed: 0.5, // Very slow, calm pulse
+          minIntensity: 0.3,
+          maxIntensity: 0.6
+        }
+      }
     })
     .addComponent(PhysicsBody, {
       mass: config.mass,
@@ -101,7 +137,18 @@ export function createWisp(world: World, x: number, y: number): ECSEntity {
         {
           component: Renderable,
           config: { 
-            tint: config.activeColor
+            tint: config.activeColor,
+            glow: {
+              radius: 40,
+              color: 0xE8F4F8, // Bright white tower illumination when active
+              intensity: 0.8,
+              pulse: {
+                enabled: true,
+                speed: 1.0, // Faster pulse when active
+                minIntensity: 0.6,
+                maxIntensity: 0.9
+              }
+            }
           }
         },
         {
@@ -143,7 +190,18 @@ export function createWisp(world: World, x: number, y: number): ECSEntity {
         {
           component: Renderable,
           config: { 
-            tint: config.color
+            tint: config.color,
+            glow: {
+              radius: 30,
+              color: 0xB0C4DE, // Back to pale blue when inactive
+              intensity: 0.5,
+              pulse: {
+                enabled: true,
+                speed: 0.5,
+                minIntensity: 0.3,
+                maxIntensity: 0.6
+              }
+            }
           }
         }
       ]
@@ -168,7 +226,8 @@ export function createMonster(world: World, x: number, y: number): ECSEntity {
       type: config.type,
       sprite: config.type, // Use type as sprite key
       color: config.color,
-      radius: config.radius
+      radius: config.radius,
+      depth: 100 // Primary - threats (highest priority)
     })
     .addComponent(PhysicsBody, {
       mass: config.mass,
@@ -214,7 +273,8 @@ export function createGoal(
       type: config.type,
       sprite: config.type, // Use type as sprite key
       color: config.color,
-      radius: config.radius
+      radius: config.radius,
+      depth: 10 // Tertiary - strategic markers
     })
     .addComponent(PhysicsBody, {
       mass: config.mass,

@@ -1,6 +1,7 @@
 export interface EntityConfig {
   type: string;
   color: number;
+  activeColor?: number; // Color when entity is activated (e.g., wisp with firefly)
   radius: number;
   mass: number;
   isStatic: boolean;

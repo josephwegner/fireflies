@@ -6,10 +6,12 @@ import { ECSEntity } from '@/types';
 export class RenderingSystem extends System {
   private scene!: Phaser.Scene;
   private spriteMap: Map<ECSEntity, Phaser.GameObjects.Container>;
+  private glowMap: Map<ECSEntity, Phaser.GameObjects.Graphics>;
 
   constructor(world: any, attributes?: any) {
     super(world, attributes);
     this.spriteMap = new Map();
+    this.glowMap = new Map();
   }
 
   init(attributes?: any): void {
@@ -31,6 +33,7 @@ export class RenderingSystem extends System {
   execute(delta: number, time: number) {
     const { renderables } = this.queries;
     const deltaInSeconds = delta / 1000;
+    this.lastTime = time;
 
     renderables.added?.forEach((entity) => {
       try {
@@ -63,6 +66,13 @@ export class RenderingSystem extends System {
 
     const container = this.scene.add.container(position.x, position.y);
 
+    // Create glow effect if configured (check for both null and undefined)
+    if (renderable.glow && renderable.glow !== null) {
+      const glowGraphics = this.createGlow(renderable);
+      container.add(glowGraphics);
+      this.glowMap.set(entity, glowGraphics);
+    }
+
     // Use sprite if available, otherwise fall back to circle
     if (renderable.sprite && this.scene.textures.exists(renderable.sprite)) {
       const sprite = this.scene.add.sprite(0, 0, renderable.sprite);
@@ -78,8 +88,9 @@ export class RenderingSystem extends System {
       container.add(circle);
     }
 
-    // Apply initial scale and tint
+    // Apply initial scale, tint, and depth
     container.setScale(renderable.scale);
+    container.setDepth(renderable.depth);
     this.applyTintToChildren(container, renderable.tint);
 
     this.spriteMap.set(entity, container);
@@ -103,6 +114,11 @@ export class RenderingSystem extends System {
     }
     
     sprite.setRotation(renderable.rotation);
+
+    // Update glow pulsing animation if enabled
+    if (renderable.glow?.pulse?.enabled) {
+      this.updateGlowPulse(entity, renderable, deltaInSeconds);
+    }
 
     // Get tint of the first child sprite or circle, if present
     let childTint = undefined;
@@ -129,6 +145,12 @@ export class RenderingSystem extends System {
       sprite.destroy();
       this.spriteMap.delete(entity);
     }
+    
+    // Clean up glow graphics if present
+    const glow = this.glowMap.get(entity);
+    if (glow) {
+      this.glowMap.delete(entity);
+    }
   }
 
   private applyTintToChildren(container: Phaser.GameObjects.Container, tint: number): void {
@@ -148,7 +170,55 @@ export class RenderingSystem extends System {
     });
   }
 
+  private createGlow(renderable: Renderable): Phaser.GameObjects.Graphics {
+    const glowGraphics = this.scene.add.graphics();
+    
+    if (!renderable.glow || renderable.glow === null) {
+      return glowGraphics;
+    }
+
+    const { radius, color, intensity } = renderable.glow;
+    
+    // Create radial gradient effect with multiple circles
+    // Draw from outside to inside with decreasing alpha for smooth fade
+    const steps = 10;
+    for (let i = steps; i >= 0; i--) {
+      const stepRadius = radius * (i / steps);
+      const stepAlpha = intensity * (1 - i / steps) * 0.3; // Fade out towards edges
+      
+      glowGraphics.fillStyle(color, stepAlpha);
+      glowGraphics.fillCircle(0, 0, stepRadius);
+    }
+    
+    // Use ADD blend mode for luminous effect
+    glowGraphics.setBlendMode(Phaser.BlendModes.ADD);
+    
+    return glowGraphics;
+  }
+
+  private updateGlowPulse(entity: ECSEntity, renderable: Renderable, deltaInSeconds: number): void {
+    const glow = this.glowMap.get(entity);
+    if (!glow || !renderable.glow || renderable.glow === null || !renderable.glow.pulse) return;
+
+    const pulse = renderable.glow.pulse;
+    const time = this.world.getSystem(RenderingSystem).lastTime || 0;
+    
+    // Calculate pulsing intensity using sine wave
+    const cyclePosition = (time / 1000) * pulse.speed;
+    const sineWave = Math.sin(cyclePosition * Math.PI * 2);
+    const normalizedSine = (sineWave + 1) / 2; // Convert from [-1,1] to [0,1]
+    
+    // Map to min/max intensity range
+    const currentIntensity = pulse.minIntensity + (normalizedSine * (pulse.maxIntensity - pulse.minIntensity));
+    
+    // Update the glow's alpha to reflect new intensity
+    glow.setAlpha(currentIntensity);
+  }
+
   getSpriteForEntity(entity: ECSEntity): Phaser.GameObjects.Container | undefined {
     return this.spriteMap.get(entity);
   }
+  
+  // Track last time for pulse calculations
+  private lastTime: number = 0;
 }

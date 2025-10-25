@@ -1,6 +1,7 @@
 export { RenderingSystem } from './rendering/RenderingSystem';
 export { WallRenderingSystem } from './rendering/WallRenderingSystem';
 export { ForestDecorationSystem } from './rendering/ForestDecorationSystem';
+export { TrailSystem } from './rendering/TrailSystem';
 export { MovementSystem } from './gameplay/MovementSystem';
 export { InteractionSystem } from './gameplay/InteractionSystem';
 export { LodgingSystem } from './gameplay/LodgingSystem';

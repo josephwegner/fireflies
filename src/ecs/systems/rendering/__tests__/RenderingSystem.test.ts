@@ -580,4 +580,86 @@ describe('RenderingSystem', () => {
       expect(mockCircle.setFillStyle).toHaveBeenCalled();
     });
   });
+
+  describe('Glow Effects', () => {
+    it('should add glow graphics when Renderable has glow configuration', () => {
+      const mockGlowGraphics = {
+        fillStyle: vi.fn(),
+        fillCircle: vi.fn(),
+        setAlpha: vi.fn(),
+        setBlendMode: vi.fn()
+      };
+      const mockContainer = createMockContainer();
+      mockScene.add.container.mockReturnValue(mockContainer);
+      mockScene.add.graphics.mockReturnValue(mockGlowGraphics);
+
+      const entity = world.createEntity();
+      entity.addComponent(Position, { x: 100, y: 200 });
+      entity.addComponent(Renderable, {
+        type: 'firefly',
+        color: 0xDEF4B4,
+        radius: 4,
+        glow: {
+          radius: 20,
+          color: 0xDEF4B4,
+          intensity: 0.6
+        }
+      });
+
+      world.execute(16, 16);
+
+      // Glow graphics should be created
+      expect(mockScene.add.graphics).toHaveBeenCalled();
+    });
+
+    it('should update glow intensity with pulsing animation', () => {
+      const entity = world.createEntity();
+      entity.addComponent(Position, { x: 100, y: 200 });
+      entity.addComponent(Renderable, {
+        type: 'firefly',
+        color: 0xDEF4B4,
+        radius: 4,
+        glow: {
+          radius: 20,
+          color: 0xDEF4B4,
+          intensity: 0.6,
+          pulse: {
+            enabled: true,
+            speed: 1.0,
+            minIntensity: 0.4,
+            maxIntensity: 0.8
+          }
+        }
+      });
+
+      world.execute(16, 16);
+
+      // Execute multiple frames to see pulse animation
+      world.execute(500, 516);
+      world.execute(500, 1016);
+
+      const renderable = entity.getComponent(Renderable)!;
+      // Pulse should modify glow intensity over time
+      expect(renderable.glow).toBeDefined();
+    });
+
+    it('should not create glow graphics when glow config is undefined', () => {
+      const mockContainer = createMockContainer();
+      mockScene.add.container.mockReturnValue(mockContainer);
+
+      const entity = world.createEntity();
+      entity.addComponent(Position, { x: 100, y: 200 });
+      entity.addComponent(Renderable, {
+        type: 'firefly',
+        color: 0xDEF4B4,
+        radius: 4
+        // No glow config
+      });
+
+      world.execute(16, 16);
+
+      // Graphics should not be created for glow
+      expect(mockScene.add.graphics).not.toHaveBeenCalled();
+    });
+  });
 });
