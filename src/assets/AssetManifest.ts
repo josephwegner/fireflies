@@ -47,8 +47,13 @@ export const ASSET_MANIFEST: AssetDefinition[] = [
     type: 'image'
   },
   {
-    key: 'goal',
-    path: 'assets/images/png/firefly.png', // Reusing firefly image for now
+    key: 'greattree',
+    path: 'assets/images/png/greattree.png', // Firefly goal sprite
+    type: 'image'
+  },
+  {
+    key: 'fireflywell',
+    path: 'assets/images/png/fireflywell.png', // Monster goal sprite
     type: 'image'
   },
   

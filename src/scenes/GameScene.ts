@@ -217,7 +217,7 @@ export class GameScene extends Phaser.Scene {
 
     createGoal(
       this.world,
-      16 * TILE + TILE / 2,
+      17 * TILE + TILE / 2,
       4 * TILE + TILE / 2,
       'firefly'
     );

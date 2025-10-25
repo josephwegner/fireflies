@@ -60,7 +60,7 @@ export const ENTITY_CONFIG: Readonly<Record<string, Readonly<EntityConfig>>> = O
       damage: 100,
       radius: 75,
       targetTags: ['monster'],
-      color: 0x00ff00 // Green pulse
+      color: 0xB0C4DE // Green pulse
     })
   }),
   monster: Object.freeze({

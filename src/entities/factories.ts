@@ -139,8 +139,8 @@ export function createWisp(world: World, x: number, y: number): ECSEntity {
           config: { 
             tint: config.activeColor,
             glow: {
-              radius: 40,
-              color: 0xFF0000, // Bright red tower illumination when active
+              radius: 20,
+              color: 0x5ED6FE, // Crisp blue glow when active
               intensity: 0.8,
               pulse: {
                 enabled: true,
@@ -252,15 +252,26 @@ export function createGoal(
 ): ECSEntity {
   const config = ENTITY_CONFIG.goal;
 
+  // Use different sprites based on what type of entity this goal attracts
+  const spriteKey = attractType === 'monster' ? 'fireflywell' : 'greattree';
+  const spriteRadius = attractType === 'monster' ? 20 : 40;
+  const glow = attractType === 'firefly' ? {
+    radius: 30,
+    color: 0xC65D3B,
+    intensity: 0.4
+  } : null;
+
   return world.createEntity()
     .addComponent(Position, { x, y })
     .addComponent(Destination, { for: [attractType] })
     .addComponent(Renderable, {
       type: config.type,
-      sprite: config.type, // Use type as sprite key
+      sprite: spriteKey, // Use conditional sprite based on attractType
       color: config.color,
-      radius: config.radius,
-      depth: 10 // Tertiary - strategic markers
+      radius: spriteRadius,
+      depth: 10, // Tertiary - strategic markers
+      glow: glow,
+      offsetY: -spriteRadius + 8
     })
     .addComponent(PhysicsBody, {
       mass: config.mass,

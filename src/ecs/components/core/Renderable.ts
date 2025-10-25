@@ -24,6 +24,7 @@ export class Renderable extends Component<Renderable> {
   rotationSpeed!: number; // radians per second
   glow?: GlowConfig;
   depth!: number; // Z-index for rendering order
+  offsetY!: number; // Vertical offset for sprite positioning (positive = up)
 
   static schema = {
     type: { type: Types.String, default: 'default' },
@@ -36,6 +37,7 @@ export class Renderable extends Component<Renderable> {
     rotation: { type: Types.Number, default: 0 },
     rotationSpeed: { type: Types.Number, default: 0 },
     glow: { type: Types.JSON, default: null },
-    depth: { type: Types.Number, default: 0 }
+    depth: { type: Types.Number, default: 0 },
+    offsetY: { type: Types.Number, default: 0 }
   };
 }

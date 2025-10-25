@@ -69,6 +69,7 @@ export class RenderingSystem extends System {
     // Create glow effect if configured (check for both null and undefined)
     if (renderable.glow && renderable.glow !== null) {
       const glowGraphics = this.createGlow(renderable);
+      glowGraphics.setData('color', renderable.glow.color);
       container.add(glowGraphics);
       this.glowMap.set(entity, glowGraphics);
     }
@@ -81,10 +82,16 @@ export class RenderingSystem extends System {
       const scale = (renderable.radius * 2) / Math.max(sprite.width, sprite.height);
       sprite.setScale(scale);
 
+      // Apply vertical offset
+      sprite.setPosition(0, renderable.offsetY || 0);
+
       container.add(sprite);
     } else {
       // Fallback to circle if no sprite or sprite not loaded
       const circle = this.scene.add.circle(0, 0, renderable.radius, renderable.color);
+      
+      circle.setPosition(0, renderable.offsetY || 0);
+      
       container.add(circle);
     }
 
@@ -114,6 +121,22 @@ export class RenderingSystem extends System {
     }
     
     sprite.setRotation(renderable.rotation);
+
+    // Check if glow properties have changed and recreate if needed
+    const existingGlow = this.glowMap.get(entity);
+    if (renderable.glow && existingGlow) {
+      // Store previous glow color to detect changes
+      if (!existingGlow.getData('color') || existingGlow.getData('color') !== renderable.glow.color) {
+        // Glow color has changed, recreate it
+        existingGlow.destroy();
+        sprite.remove(existingGlow);
+        
+        const newGlow = this.createGlow(renderable);
+        sprite.addAt(newGlow, 0); // Add at index 0 so it's behind the sprite
+        this.glowMap.set(entity, newGlow);
+        newGlow.setData('color', renderable.glow.color);
+      }
+    }
 
     // Update glow pulsing animation if enabled
     if (renderable.glow?.pulse?.enabled) {
