@@ -45,7 +45,36 @@ export function createMockSprite(width = 100, height = 100) {
  */
 export function createMockCircle() {
   return {
-    setFillStyle: vi.fn().mockReturnThis()
+    setFillStyle: vi.fn().mockReturnThis(),
+    setAlpha: vi.fn().mockReturnThis(),
+    setDepth: vi.fn().mockReturnThis(),
+    setBlendMode: vi.fn().mockReturnThis(),
+    destroy: vi.fn(),
+    scene: {}
+  };
+}
+
+export function createMockRectangle() {
+  return {
+    setAlpha: vi.fn().mockReturnThis(),
+    setDepth: vi.fn().mockReturnThis(),
+    setBlendMode: vi.fn().mockReturnThis(),
+    destroy: vi.fn(),
+    scene: {},
+    x: 0,
+    y: 0
+  };
+}
+
+export function createMockTriangle() {
+  return {
+    setAlpha: vi.fn().mockReturnThis(),
+    setDepth: vi.fn().mockReturnThis(),
+    setBlendMode: vi.fn().mockReturnThis(),
+    destroy: vi.fn(),
+    scene: {},
+    x: 0,
+    y: 0
   };
 }
 
@@ -72,6 +101,8 @@ export function createMockScene(options: {
   containerFactory?: () => any;
   spriteFactory?: (x: number, y: number, key: string) => any;
   circleFactory?: () => any;
+  rectangleFactory?: () => any;
+  triangleFactory?: () => any;
   graphicsFactory?: () => any;
 } = {}) {
   const {
@@ -79,6 +110,8 @@ export function createMockScene(options: {
     containerFactory = createMockContainer,
     spriteFactory = () => createMockSprite(),
     circleFactory = createMockCircle,
+    rectangleFactory = createMockRectangle,
+    triangleFactory = createMockTriangle,
     graphicsFactory = createMockGraphics
   } = options;
 
@@ -87,6 +120,8 @@ export function createMockScene(options: {
       container: vi.fn(() => containerFactory()),
       sprite: vi.fn((x, y, key) => spriteFactory(x, y, key)),
       circle: vi.fn(() => circleFactory()),
+      rectangle: vi.fn(() => rectangleFactory()),
+      triangle: vi.fn(() => triangleFactory()),
       graphics: vi.fn(() => graphicsFactory())
     },
     textures: {
@@ -96,6 +131,18 @@ export function createMockScene(options: {
       image: vi.fn(),
       audio: vi.fn(),
       spritesheet: vi.fn()
+    },
+    tweens: {
+      add: vi.fn((config: any) => {
+        // Immediately call onComplete if provided
+        if (config.onComplete) {
+          config.onComplete();
+        }
+        return {
+          stop: vi.fn(),
+          remove: vi.fn()
+        };
+      })
     }
   };
 }

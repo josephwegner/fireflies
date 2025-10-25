@@ -524,7 +524,7 @@ describe('PulseAttackHandler', () => {
       }).not.toThrow();
     });
 
-    it('should add pulse circle to sprite container during charging', () => {
+    it('should add converging rings to sprite container during charging', () => {
       attacker.addComponent(Renderable, {
         type: 'monster',
         radius: 8,
@@ -547,15 +547,16 @@ describe('PulseAttackHandler', () => {
         dt: 16
       });
 
-      // Graphics should be added to container
-      expect(mockContainer.add).toHaveBeenCalledWith(mockGraphics);
+      // Multiple rings should be created (4 converging rings)
+      expect(mockScene.add.graphics).toHaveBeenCalledTimes(4);
+      expect(mockContainer.add).toHaveBeenCalledTimes(4);
       
-      // Graphics should be findable in container by name
-      const circle = mockContainer.list.find((c: any) => c.name === 'pulseCircle');
-      expect(circle).toBeDefined();
+      // Rings should be findable in container by name pattern
+      const ring = mockContainer.list.find((c: any) => c.name && c.name.startsWith('chargingRing_'));
+      expect(ring).toBeDefined();
     });
 
-    it('should reuse existing pulse circle on subsequent charging calls', () => {
+    it('should recreate rings on subsequent charging calls for animation', () => {
       attacker.addComponent(Renderable, {
         type: 'monster',
         radius: 8,
@@ -565,10 +566,9 @@ describe('PulseAttackHandler', () => {
       });
 
       const mockGraphics = createMockGraphics();
-      mockGraphics.name = 'pulseCircle';
       mockScene.add.graphics.mockReturnValue(mockGraphics);
 
-      // First call - creates graphics
+      // First call - creates 4 rings
       handler.onCharging({
         attacker,
         combat: mockCombat,
@@ -580,9 +580,9 @@ describe('PulseAttackHandler', () => {
         dt: 16
       });
 
-      expect(mockScene.add.graphics).toHaveBeenCalledTimes(1);
+      expect(mockScene.add.graphics).toHaveBeenCalledTimes(4);
 
-      // Second call - should reuse
+      // Second call - recreates 4 rings for animation
       handler.onCharging({
         attacker,
         combat: mockCombat,
@@ -594,8 +594,8 @@ describe('PulseAttackHandler', () => {
         dt: 16
       });
 
-      // Should not create a second graphics object
-      expect(mockScene.add.graphics).toHaveBeenCalledTimes(1);
+      // Should create new graphics objects each frame for animation
+      expect(mockScene.add.graphics).toHaveBeenCalledTimes(8);
     });
 
     it('should handle onRecovering without errors', () => {

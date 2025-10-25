@@ -22,6 +22,7 @@
         "@types/node": "^24.8.1",
         "@vitest/ui": "^3.2.4",
         "jsdom": "^27.0.0",
+        "phaser3spectorjs": "^0.0.8",
         "terser": "^5.44.0",
         "typescript": "^5.9.3",
         "vite": "^7.1.10",

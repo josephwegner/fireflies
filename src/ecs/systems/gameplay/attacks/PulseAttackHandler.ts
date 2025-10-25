@@ -5,16 +5,13 @@ import { gameEvents, GameEvents } from '@/events/GameEvents';
 import { ECSEntity } from '@/types';
 import { TagComponent } from 'ecsy';
 import Phaser from 'phaser';
+import { PulseAttackVisuals } from './visuals/PulseAttackVisuals';
 
 export class PulseAttackHandler implements AttackHandler {
+  private visuals = new PulseAttackVisuals();
 
   onCharging(context: AttackContext): void {
-    const { combat, scene, spriteContainer, target, position, velocity, renderable } = context;
-
-    // Store original tint on first frame of charging
-    if (combat.chargeTime === 0 && spriteContainer && renderable) {
-      (spriteContainer as any).originalTint = renderable.tint;
-    }
+    const { combat, target, position, velocity } = context;
 
     const progress = combat.chargeTime / combat.attackPattern.chargeTime;
     const clampedProgress = Math.min(Math.max(progress, 0), 1);
@@ -54,31 +51,8 @@ export class PulseAttackHandler implements AttackHandler {
       }
     }
 
-    // Visual: expanding pulse circle
-    if (!scene || !spriteContainer) return;
-
-    // Find or create pulse circle in the container
-    let pulseCircle = spriteContainer.list.find((c: any) => c.name === 'pulseCircle') as Phaser.GameObjects.Graphics | undefined;
-    
-    if (!pulseCircle) {
-      pulseCircle = scene.add.graphics();
-      pulseCircle.name = 'pulseCircle';
-      spriteContainer.add(pulseCircle);
-    }
-
-    // Draw expanding circle
-    pulseCircle.clear();
-    const maxRadius = combat.attackPattern.radius || 40;
-    const currentRadius = maxRadius * clampedProgress;
-    const alpha = 0.3 * (1 - clampedProgress * 0.5); // Fade as it expands
-    
-    // Use configured color, default to red if not specified
-    const attackColor = combat.attackPattern.color ?? 0xff0000;
-    
-    pulseCircle.lineStyle(2, attackColor, alpha);
-    pulseCircle.fillStyle(attackColor, alpha * 0.5); // Inner charge at half alpha
-    pulseCircle.fillCircle(0, 0, currentRadius);
-    pulseCircle.strokeCircle(0, 0, currentRadius);
+    // Delegate visual effects to visuals class
+    this.visuals.charging(context, clampedProgress);
   }
 
   onAttackStart(context: AttackContext): void {
@@ -86,32 +60,17 @@ export class PulseAttackHandler implements AttackHandler {
     // No movement setup needed like dash attacks
   }
 
-  execute({ attacker, combat, world, spatialGrid, scene, spriteContainer, position }: AttackContext): void {
+  execute(context: AttackContext): void {
+    const { attacker, combat, world, spatialGrid } = context;
+    
     // Only hit once per attack
     if (combat.hasHit) return;
     
     const attackerPos = attacker.getComponent(Position);
     if (!attackerPos) return;
 
-    // Visual: Expand circle to full radius with bright flash
-    if (spriteContainer && scene && position) {
-      let pulseCircle = spriteContainer.list.find((c: any) => c.name === 'pulseCircle') as Phaser.GameObjects.Graphics | undefined;
-      
-      if (pulseCircle) {
-        pulseCircle.clear();
-        const maxRadius = combat.attackPattern.radius || 40;
-        
-        // Use configured color, default to red if not specified
-        const attackColor = combat.attackPattern.color ?? 0xff0000;
-        
-        // Full size, bright flash - outer border at full color
-        pulseCircle.lineStyle(3, attackColor, 1.0);
-        pulseCircle.strokeCircle(0, 0, maxRadius);
-        // Inner fill at 0.5 alpha
-        pulseCircle.fillStyle(attackColor, 0.5);
-        pulseCircle.fillCircle(0, 0, maxRadius);
-      }
-    }
+    // Delegate visual burst effect to visuals class
+    this.visuals.burst(context);
 
     // Use spatial grid if available, otherwise fall back to all entities
     const entitiesToCheck = spatialGrid
@@ -149,44 +108,19 @@ export class PulseAttackHandler implements AttackHandler {
   }
 
   onRecovering(context: AttackContext): void {
-    const { combat, renderable, spriteContainer, dt } = context;
-    if (!renderable || !dt) return;
+    const { combat } = context;
 
     const progress = combat.recoveryElapsed / combat.attackPattern.recoveryTime;
     const clampedProgress = Math.min(Math.max(progress, 0), 1);
 
-    // Scale gradually returns to 1.0
-    const currentScale = renderable.scale;
-    renderable.scale = currentScale + (1.0 - currentScale) * clampedProgress * 0.1;
-
-    // Tint gradually returns to ORIGINAL tint
-    const originalTint = (spriteContainer as any)?.originalTint ?? 0xFFFFFF;
-    const currentR = (renderable.tint >> 16) & 0xFF;
-    const currentG = (renderable.tint >> 8) & 0xFF;
-    const currentB = renderable.tint & 0xFF;
-
-    const targetR = (originalTint >> 16) & 0xFF;
-    const targetG = (originalTint >> 8) & 0xFF;
-    const targetB = originalTint & 0xFF;
-
-    const r = Math.floor(currentR + (targetR - currentR) * clampedProgress * 0.1);
-    const g = Math.floor(currentG + (targetG - currentG) * clampedProgress * 0.1);
-    const b = Math.floor(currentB + (targetB - currentB) * clampedProgress * 0.1);
-
-    renderable.tint = (r << 16) | (g << 8) | b;
-
-    // Fade out the pulse circle from container
-    if (spriteContainer) {
-      const pulseCircle = spriteContainer.list.find((c: any) => c.name === 'pulseCircle') as Phaser.GameObjects.Graphics | undefined;
-      if (pulseCircle) {
-        pulseCircle.setAlpha(1 - clampedProgress);
-      }
-    }
+    // Delegate visual recovery to visuals class
+    this.visuals.recovery(context, clampedProgress);
   }
 
   cleanup(context: AttackContext): void {
     const { renderable, spriteContainer } = context;
     
+    // Restore original tint and reset scale
     if (renderable && spriteContainer) {
       const container = spriteContainer as any;
       
@@ -195,23 +129,13 @@ export class PulseAttackHandler implements AttackHandler {
         renderable.tint = container.originalTint;
         delete container.originalTint;
       }
-    }
-
-    // Destroy pulse circle graphic from container
-    if (spriteContainer) {
-      const pulseCircle = spriteContainer.list.find((c: any) => c.name === 'pulseCircle') as Phaser.GameObjects.Graphics | undefined;
-      if (pulseCircle) {
-        // Check if it hasn't already been destroyed
-        if (pulseCircle.scene) {
-          pulseCircle.destroy();
-        }
-      }
-    }
-
-    // Reset scale
-    if (renderable) {
+      
+      // Reset scale
       renderable.scale = 1.0;
     }
+
+    // Delegate cleanup of all visual objects to visuals class
+    this.visuals.cleanup();
   }
 
   private isValidTarget(

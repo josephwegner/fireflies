@@ -9,6 +9,9 @@ declare module 'ecsy' {
     play(): void;
     getSystem<T extends System>(systemClass: new (...args: any[]) => T): T;
     entityRemoved(entity: Entity): void;
+    entityManager: {
+      _entities: Set<Entity>;
+    };
   }
 
   export class Entity {
@@ -28,6 +31,7 @@ declare module 'ecsy' {
     hasAnyComponents(components: Array<ComponentConstructor<any>>): boolean;
     getComponent<T extends Component>(component: ComponentConstructor<T>): T;
     getMutableComponent<T extends Component>(component: ComponentConstructor<T>): T;
+    getComponents(): Record<string, Component>;
     remove(forceRemove?: boolean): void;
   }
 

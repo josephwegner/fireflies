@@ -51,7 +51,17 @@ export const ENTITY_CONFIG: Readonly<Record<string, Readonly<EntityConfig>>> = O
     activeColor: 0xE8F4F8, // Tower illumination white (active)
     radius: 12,
     mass: 1,
-    isStatic: true
+    isStatic: true,
+    combat: Object.freeze({
+      handlerType: 'pulse',
+      chargeTime: 2200,
+      attackDuration: 400,
+      recoveryTime: 500,
+      damage: 100,
+      radius: 75,
+      targetTags: ['monster'],
+      color: 0x00ff00 // Green pulse
+    })
   }),
   monster: Object.freeze({
     type: 'monster',

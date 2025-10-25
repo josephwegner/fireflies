@@ -7,6 +7,19 @@ export default defineConfig({
     environment: 'jsdom',
     setupFiles: ['./src/__tests__/setup.ts'],
     watch: false,
+    server: {
+      deps: {
+        inline: ['phaser']
+      }
+    }
+  },
+  define: {
+    'typeof WEBGL_DEBUG': '"undefined"',
+    'typeof CANVAS_RENDERER': '"undefined"',
+    'typeof EXPERIMENTAL': '"undefined"',
+    'typeof PLUGIN_3D': '"undefined"',
+    'typeof PLUGIN_CAMERA3D': '"undefined"',
+    'typeof PLUGIN_FBINSTANT': '"undefined"'
   },
   resolve: {
     alias: {

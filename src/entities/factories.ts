@@ -140,13 +140,13 @@ export function createWisp(world: World, x: number, y: number): ECSEntity {
             tint: config.activeColor,
             glow: {
               radius: 40,
-              color: 0xE8F4F8, // Bright white tower illumination when active
+              color: 0xFF0000, // Bright red tower illumination when active
               intensity: 0.8,
               pulse: {
                 enabled: true,
                 speed: 1.0, // Faster pulse when active
-                minIntensity: 0.6,
-                maxIntensity: 0.9
+                minIntensity: 1,
+                maxIntensity: 1.5
               }
             }
           }
@@ -169,19 +169,7 @@ export function createWisp(world: World, x: number, y: number): ECSEntity {
           component: Combat,
           config: {
             state: CombatState.IDLE,
-            chargeTime: 0,
-            attackElapsed: 0,
-            recoveryElapsed: 0,
-            attackPattern: {
-              handlerType: 'pulse',
-              chargeTime: 800,
-              attackDuration: 100,
-              recoveryTime: 200,
-              damage: 100,
-              radius: 75,
-              targetTags: ['monster'],
-              color: 0x00ff00 // Green pulse
-            },
+            attackPattern: config.combat!,
             hasHit: false
           }
         }
@@ -250,9 +238,6 @@ export function createMonster(world: World, x: number, y: number): ECSEntity {
     })
     .addComponent(Combat, {
       state: CombatState.IDLE,
-      chargeTime: 0,
-      attackElapsed: 0,
-      recoveryElapsed: 0,
       attackPattern: config.combat!,
       hasHit: false
     })
