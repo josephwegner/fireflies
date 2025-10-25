@@ -224,9 +224,10 @@ export function createMonster(world: World, x: number, y: number): ECSEntity {
     })
     .addComponent(Renderable, {
       type: config.type,
-      sprite: config.type, // Use type as sprite key
+      sprite: 'monster1', // Use type as sprite key
       color: config.color,
       radius: config.radius,
+      rotationSpeed: Math.PI * 0.2, // Rotate 90 degrees per second (adjust to taste)
       depth: 100 // Primary - threats (highest priority)
     })
     .addComponent(PhysicsBody, {
