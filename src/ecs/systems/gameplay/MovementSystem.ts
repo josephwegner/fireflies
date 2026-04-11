@@ -43,6 +43,7 @@ export class MovementSystem extends System {
               pathComp.nextPath = [];
 
               if (pathComp.currentPath.length === 0) {
+                console.log(`[MovementSystem] PATH_COMPLETED for entity ${entity.id} at position (${position.x.toFixed(0)}, ${position.y.toFixed(0)})`);
                 gameEvents.emit(GameEvents.PATH_COMPLETED, { entity, position: { x: position.x, y: position.y } });
               }
             }

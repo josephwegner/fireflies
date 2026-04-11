@@ -10,3 +10,4 @@ export { DestinationSystem } from './gameplay/DestinationSystem';
 export { WallGenerationSystem } from './gameplay/WallGenerationSystem';
 export { DamageSystem } from './gameplay/DamageSystem';
 export { CombatSystem } from './gameplay/CombatSystem';
+export { FireflyGoalSystem } from './gameplay/FireflyGoalSystem';

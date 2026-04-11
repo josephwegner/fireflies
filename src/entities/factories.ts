@@ -14,6 +14,7 @@ import {
   Combat,
   CombatState,
   Trail,
+  FireflyGoal,
   FireflyTag,
   WispTag,
   MonsterTag,
@@ -255,28 +256,41 @@ export function createGoal(
   // Use different sprites based on what type of entity this goal attracts
   const spriteKey = attractType === 'monster' ? 'fireflywell' : 'greattree';
   const spriteRadius = attractType === 'monster' ? 20 : 40;
-  const glow = attractType === 'firefly' ? {
-    radius: 30,
-    color: 0xC65D3B,
-    intensity: 0.4
-  } : null;
+  
+  // Build renderable config based on attract type
+  const renderableConfig: any = {
+    type: config.type,
+    sprite: spriteKey,
+    color: config.color,
+    radius: spriteRadius,
+    depth: 10,
+    offsetY: -spriteRadius + 8
+  };
 
-  return world.createEntity()
+  // Only add glow for firefly goals
+  if (attractType === 'firefly') {
+    renderableConfig.glow = {
+      radius: 30,
+      color: 0xC65D3B,
+      intensity: 0.4
+    };
+  }
+
+  const entity = world.createEntity()
     .addComponent(Position, { x, y })
     .addComponent(Destination, { for: [attractType] })
-    .addComponent(Renderable, {
-      type: config.type,
-      sprite: spriteKey, // Use conditional sprite based on attractType
-      color: config.color,
-      radius: spriteRadius,
-      depth: 10, // Tertiary - strategic markers
-      glow: glow,
-      offsetY: -spriteRadius + 8
-    })
+    .addComponent(Renderable, renderableConfig)
     .addComponent(PhysicsBody, {
       mass: config.mass,
       isStatic: config.isStatic,
       collisionRadius: config.radius
     })
     .addComponent(GoalTag);
+
+  // Add FireflyGoal component for firefly goals to track progress
+  if (attractType === 'firefly') {
+    entity.addComponent(FireflyGoal, { currentCount: 0 });
+  }
+
+  return entity;
 }

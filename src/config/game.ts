@@ -14,5 +14,18 @@ export const GAME_CONFIG = Object.freeze({
 
   // Wall Generation (Catmull-Rom smoothing)
   WALL_SMOOTHING_TENSION: 0.5,
-  WALL_SMOOTHING_POINTS_PER_SEGMENT: 5
+  WALL_SMOOTHING_POINTS_PER_SEGMENT: 5,
+
+  // Victory condition
+  FIREFLIES_TO_WIN: 2,
+
+  // Firefly goal visual progression
+  FIREFLY_GOAL_GLOW: Object.freeze({
+    startColor: 0xC65D3B, // Red when empty
+    endColor: 0xFFFFFF,   // White when full
+    minRadius: 30,
+    maxRadius: 60,
+    minIntensity: 0.4,
+    maxIntensity: 0.8
+  })
 });

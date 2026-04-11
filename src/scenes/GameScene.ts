@@ -16,6 +16,7 @@ import {
   Combat,
   Wall,
   Trail,
+  FireflyGoal,
   FireflyTag,
   WispTag,
   MonsterTag,
@@ -35,7 +36,8 @@ import {
   DestinationSystem,
   WallGenerationSystem,
   DamageSystem,
-  CombatSystem
+  CombatSystem,
+  FireflyGoalSystem
 } from '@/ecs/systems';
 import {
   createFirefly,
@@ -47,7 +49,6 @@ import { GAME_CONFIG, PHYSICS_CONFIG } from '@/config';
 import { AssetLoader } from '@/assets';
 import { AttackHandlerRegistry } from '@/ecs/systems/gameplay/attacks/AttackHandlerRegistry';
 import { SpatialGrid } from '@/utils';
-import { Lodge } from '@/ecs/components/gameplay/Lodge';
 
 export class GameScene extends Phaser.Scene {
   private world!: World;
@@ -104,6 +105,7 @@ export class GameScene extends Phaser.Scene {
       .registerComponent(Combat)
       .registerComponent(Wall)
       .registerComponent(Trail)
+      .registerComponent(FireflyGoal)
       .registerComponent(FireflyTag)
       .registerComponent(WispTag)
       .registerComponent(MonsterTag)
@@ -129,7 +131,8 @@ export class GameScene extends Phaser.Scene {
       .registerSystem(LodgingSystem, { spatialGrid: this.spatialGrid })
       .registerSystem(DamageSystem)
       .registerSystem(MovementSystem)
-      .registerSystem(DestinationSystem, { worker: this.pathfindingWorker });
+      .registerSystem(DestinationSystem, { worker: this.pathfindingWorker })
+      .registerSystem(FireflyGoalSystem);
   }
 
   private createMap(): void {
@@ -166,6 +169,12 @@ export class GameScene extends Phaser.Scene {
     createFirefly(
       this.world,
       1 * TILE + TILE / 2,
+      6 * TILE + TILE / 2
+    );
+
+    createFirefly(
+      this.world,
+      1 * TILE + TILE / 2,
       5 * TILE + TILE / 2
     );
 
@@ -182,11 +191,8 @@ export class GameScene extends Phaser.Scene {
     )
 
     const wispPositions = [
-      [10, 3],
-      [2, 4],
+      [4, 3],
       [3, 5],
-      [11, 6],
-      [9, 5]
     ];
 
     wispPositions.forEach(([x, y]) => {

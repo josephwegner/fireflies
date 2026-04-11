@@ -70,6 +70,8 @@ export class RenderingSystem extends System {
     if (renderable.glow && renderable.glow !== null) {
       const glowGraphics = this.createGlow(renderable);
       glowGraphics.setData('color', renderable.glow.color);
+      glowGraphics.setData('radius', renderable.glow.radius);
+      glowGraphics.setData('intensity', renderable.glow.intensity);
       container.add(glowGraphics);
       this.glowMap.set(entity, glowGraphics);
     }
@@ -125,16 +127,25 @@ export class RenderingSystem extends System {
     // Check if glow properties have changed and recreate if needed
     const existingGlow = this.glowMap.get(entity);
     if (renderable.glow && existingGlow) {
+      const needsUpdate =
+        !existingGlow.getData('color') ||
+        existingGlow.getData('color') !== renderable.glow.color ||
+        existingGlow.getData('radius') !== renderable.glow.radius ||
+        existingGlow.getData('intensity') !== renderable.glow.intensity;
       // Store previous glow color to detect changes
-      if (!existingGlow.getData('color') || existingGlow.getData('color') !== renderable.glow.color) {
-        // Glow color has changed, recreate it
+      if (needsUpdate) {
+        // Glow property has changed, recreate it
         existingGlow.destroy();
         sprite.remove(existingGlow);
         
         const newGlow = this.createGlow(renderable);
         sprite.addAt(newGlow, 0); // Add at index 0 so it's behind the sprite
         this.glowMap.set(entity, newGlow);
+        
+        // Store current glow properties for future comparisons
         newGlow.setData('color', renderable.glow.color);
+        newGlow.setData('radius', renderable.glow.radius);
+        newGlow.setData('intensity', renderable.glow.intensity);
       }
     }
 
