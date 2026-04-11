@@ -7,6 +7,13 @@ import {
   createGoal
 } from '@/entities/factories';
 
+export const LEVEL_1_CONFIG = {
+  initialEnergy: 200,
+  store: {
+    wisp: { cost: 100 }
+  }
+};
+
 export const LEVEL_1_MAP: number[][] = [
   [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
   [0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0],

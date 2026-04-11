@@ -29,7 +29,7 @@ export function createFirefly(world: GameWorld, x: number, y: number): Entity {
       depth: 50,
       offsetY: 0,
       glow: {
-        radius: 15,
+        radius: 22,
         color: 0xDEF4B4,
         intensity: 0.4,
         pulse: {
@@ -71,7 +71,7 @@ export function createFirefly(world: GameWorld, x: number, y: number): Entity {
         length: 100,
         fadeTime: 800,
         color: 0xDEF4B4,
-        width: 3,
+        width: 4,
         minAlpha: 0.05
       },
       points: []
@@ -99,7 +99,7 @@ export function createWisp(world: GameWorld, x: number, y: number): Entity {
       depth: 40,
       offsetY: 0,
       glow: {
-        radius: 30,
+        radius: 45,
         color: 0xB0C4DE,
         intensity: 0.5,
         pulse: {
@@ -133,7 +133,7 @@ export function createWisp(world: GameWorld, x: number, y: number): Entity {
           config: {
             tint: config.activeColor,
             glow: {
-              radius: 20,
+              radius: 30,
               color: 0x5ED6FE,
               intensity: 0.8,
               pulse: {
@@ -149,7 +149,7 @@ export function createWisp(world: GameWorld, x: number, y: number): Entity {
           componentName: 'interaction',
           config: {
             interactsWith: ['monster'],
-            interactionRadius: 75
+            interactionRadius: 112
           }
         },
         {
@@ -173,7 +173,7 @@ export function createWisp(world: GameWorld, x: number, y: number): Entity {
           config: {
             tint: config.color,
             glow: {
-              radius: 30,
+              radius: 45,
               color: 0xB0C4DE,
               intensity: 0.5,
               pulse: {
@@ -255,7 +255,7 @@ export function createGoal(
   const config = ENTITY_CONFIG.goal;
 
   const spriteKey = attractType === 'monster' ? 'fireflywell' : 'greattree';
-  const spriteRadius = attractType === 'monster' ? 20 : 40;
+  const spriteRadius = attractType === 'monster' ? 30 : 60;
 
   const renderableConfig: any = {
     type: config.type,
@@ -268,12 +268,12 @@ export function createGoal(
     rotation: 0,
     rotationSpeed: 0,
     depth: 10,
-    offsetY: -spriteRadius + 8
+    offsetY: -spriteRadius + 12
   };
 
   if (attractType === 'firefly') {
     renderableConfig.glow = {
-      radius: 30,
+      radius: 45,
       color: 0xC65D3B,
       intensity: 0.4
     };

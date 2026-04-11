@@ -2,6 +2,7 @@ import { World } from 'miniplex';
 import Phaser from 'phaser';
 import type { Entity, GameWorld } from './Entity';
 import type { GameSystem } from './GameSystem';
+import type { EnergyManager } from '@/ui/EnergyManager';
 import { SpatialGrid } from '@/utils/SpatialGrid';
 import { PHYSICS_CONFIG } from '@/config';
 
@@ -26,8 +27,17 @@ import { WispVisualsSystem } from './systems/rendering/WispVisualsSystem';
 import { CombatVisualsSystem } from './systems/rendering/CombatVisualsSystem';
 import { ParticleEffectsSystem } from './systems/effects/ParticleEffectsSystem';
 
+// UI systems
+import { UISystem } from './systems/ui/UISystem';
+import { PlacementSystem } from './systems/ui/PlacementSystem';
+
 // Attack handlers
 import { AttackHandlerRegistry } from './systems/gameplay/attacks/AttackHandlerRegistry';
+
+interface WorldManagerConfig {
+  energyManager: EnergyManager;
+  levelConfig: { initialEnergy: number; store: Record<string, { cost: number }> };
+}
 
 export class WorldManager {
   readonly world: GameWorld;
@@ -38,7 +48,8 @@ export class WorldManager {
   constructor(
     private scene: Phaser.Scene,
     private pathfindingWorker: Worker,
-    private map: number[][]
+    private map: number[][],
+    private config: WorldManagerConfig
   ) {
     this.world = new World<Entity>();
     this.spatialGrid = new SpatialGrid(PHYSICS_CONFIG.SPATIAL_GRID_CELL_SIZE);
@@ -62,6 +73,19 @@ export class WorldManager {
       renderingSystem: this.renderingSystem
     }));
     this.systems.push(new ParticleEffectsSystem(this.world, { scene: this.scene }));
+
+    // ── UI systems ────────────────────────────────────────────────────
+    this.systems.push(new UISystem(this.world, {
+      scene: this.scene,
+      energyManager: this.config.energyManager,
+      levelConfig: this.config.levelConfig
+    }));
+    this.systems.push(new PlacementSystem(this.world, {
+      scene: this.scene,
+      energyManager: this.config.energyManager,
+      levelConfig: this.config.levelConfig,
+      map: this.map
+    }));
 
     // ── Gameplay systems ───────────────────────────────────────────────
     // Order matters here:

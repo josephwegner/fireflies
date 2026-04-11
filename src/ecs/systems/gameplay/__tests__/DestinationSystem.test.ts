@@ -4,6 +4,7 @@ import type { Entity, GameWorld } from '@/ecs/Entity';
 import { DestinationSystem } from '../DestinationSystem';
 import { getEntityType } from '@/utils';
 import { PHYSICS_CONFIG } from '@/config';
+import { gameEvents, GameEvents } from '@/events';
 import {
   createTestFirefly,
   createTestMonster,
@@ -21,6 +22,7 @@ describe('DestinationSystem', () => {
   beforeEach(() => {
     world = new World<Entity>();
     mockWorker = createMockWorker();
+    gameEvents.clear();
   });
 
   afterEach(() => {
@@ -331,6 +333,39 @@ describe('DestinationSystem', () => {
       });
     });
 
+    it('should exclude full wisps from intermediate destinations', () => {
+      createTestFirefly(world);
+
+      const fullWisp = world.add({
+        position: { x: 300, y: 300 },
+        destination: { for: ['firefly'] },
+        wispTag: true,
+        lodge: { tenants: [{} as Entity], allowedTenants: ['firefly'], maxTenants: 1 }
+      });
+
+      const emptyWisp = world.add({
+        position: { x: 350, y: 350 },
+        destination: { for: ['firefly'] },
+        wispTag: true,
+        lodge: { tenants: [], allowedTenants: ['firefly'], maxTenants: 1 }
+      });
+
+      createTestGoal(world);
+      system = new DestinationSystem(world, { worker: mockWorker });
+
+      const goalDest = (system as any).findGoalDestination('firefly');
+      const destinations = (system as any).gatherDestinations(
+        { x: 100, y: 100 },
+        goalDest,
+        'firefly',
+        'r',
+        0
+      );
+
+      expect(destinations.some((d: any) => d.entity === fullWisp)).toBe(false);
+      expect(destinations.some((d: any) => d.entity === emptyWisp)).toBe(true);
+    });
+
     it('should return empty array when at destination', () => {
       createTestFirefly(world, { x: 500, y: 500 });
       createTestGoal(world, { x: 500, y: 500 });
@@ -538,6 +573,141 @@ describe('DestinationSystem', () => {
       let secondCall = mockWorker.postMessage.mock.calls[1][0];
       expect(secondCall.destination.x).toBe(500);
       expect(secondCall.destination.y).toBe(500);
+    });
+  });
+
+  describe('Path Invalidation', () => {
+    it('should invalidate paths on PLACEMENT_COMPLETED', () => {
+      const firefly = createTestFirefly(world, {
+        x: 100, y: 100,
+        currentPath: [
+          { x: 150, y: 150 },
+          { x: 200, y: 200 },
+          { x: 250, y: 250 },
+          { x: 300, y: 300 }
+        ],
+        nextPath: [{ x: 400, y: 400 }]
+      });
+      createTestGoal(world, { x: 500, y: 500 });
+
+      system = new DestinationSystem(world, { worker: mockWorker });
+
+      gameEvents.emit(GameEvents.PLACEMENT_COMPLETED, {
+        itemType: 'wisp', x: 200, y: 200
+      });
+
+      expect(firefly.path!.currentPath).toEqual([]);
+      expect(firefly.path!.nextPath).toEqual([]);
+    });
+
+    it('should invalidate paths on TENANT_ADDED_TO_LODGE', () => {
+      const firefly = createTestFirefly(world, {
+        x: 100, y: 100,
+        currentPath: [{ x: 200, y: 200 }, { x: 300, y: 300 }],
+        nextPath: [{ x: 400, y: 400 }]
+      });
+      createTestGoal(world, { x: 500, y: 500 });
+
+      system = new DestinationSystem(world, { worker: mockWorker });
+
+      const wisp = createTestWisp(world);
+      gameEvents.emit(GameEvents.TENANT_ADDED_TO_LODGE, {
+        lodgeEntity: wisp,
+        tenantEntity: {} as Entity
+      });
+
+      expect(firefly.path!.nextPath).toEqual([]);
+    });
+
+    it('should trigger new path request after invalidation', () => {
+      createTestFirefly(world, {
+        x: 100, y: 100,
+        currentPath: [],
+        nextPath: []
+      });
+      createTestGoal(world, { x: 500, y: 500 });
+
+      system = new DestinationSystem(world, { worker: mockWorker });
+
+      system.update(16, 16);
+      expect(mockWorker.postMessage).toHaveBeenCalledTimes(1);
+
+      mockWorker.onmessage({
+        data: {
+          entityId: 0,
+          path: [{ x: 200, y: 200 }, { x: 300, y: 300 }],
+          pathType: 'current'
+        }
+      });
+
+      system.update(16, 16);
+      const callsBefore = mockWorker.postMessage.mock.calls.length;
+
+      gameEvents.emit(GameEvents.PLACEMENT_COMPLETED, {
+        itemType: 'wisp', x: 250, y: 250
+      });
+
+      system.update(16, 16);
+
+      expect(mockWorker.postMessage.mock.calls.length).toBeGreaterThan(callsBefore);
+    });
+
+    it('should not invalidate paths of fleeing entities', () => {
+      const firefly = createTestFirefly(world, {
+        x: 100, y: 100,
+        currentPath: [{ x: 200, y: 200 }, { x: 300, y: 300 }],
+        nextPath: [{ x: 400, y: 400 }]
+      });
+      createTestGoal(world, { x: 500, y: 500 });
+      world.addComponent(firefly, 'fleeingToGoalTag', true);
+
+      system = new DestinationSystem(world, { worker: mockWorker });
+
+      gameEvents.emit(GameEvents.PLACEMENT_COMPLETED, {
+        itemType: 'wisp', x: 250, y: 250
+      });
+
+      expect(firefly.path!.currentPath).toEqual([
+        { x: 200, y: 200 },
+        { x: 300, y: 300 }
+      ]);
+      expect(firefly.path!.nextPath).toEqual([{ x: 400, y: 400 }]);
+    });
+
+    it('should clear pending requests on invalidation', () => {
+      vi.useFakeTimers();
+
+      createBasicTestSetup(world);
+      system = new DestinationSystem(world, { worker: mockWorker });
+
+      system.update(16, 16);
+      expect((system as any).pendingRequests.size).toBe(1);
+
+      gameEvents.emit(GameEvents.PLACEMENT_COMPLETED, {
+        itemType: 'wisp', x: 250, y: 250
+      });
+
+      expect((system as any).pendingRequests.size).toBe(0);
+
+      vi.useRealTimers();
+    });
+
+    it('should unsubscribe from events on destroy', () => {
+      const firefly = createTestFirefly(world, {
+        x: 100, y: 100,
+        currentPath: [{ x: 200, y: 200 }],
+        nextPath: [{ x: 400, y: 400 }]
+      });
+      createTestGoal(world, { x: 500, y: 500 });
+
+      system = new DestinationSystem(world, { worker: mockWorker });
+      system.destroy!();
+
+      gameEvents.emit(GameEvents.PLACEMENT_COMPLETED, {
+        itemType: 'wisp', x: 250, y: 250
+      });
+
+      expect(firefly.path!.nextPath).toEqual([{ x: 400, y: 400 }]);
     });
   });
 });

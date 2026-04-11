@@ -24,5 +24,5 @@ export const PHYSICS_CONFIG = Object.freeze({
   DEATH_ANIMATION_DURATION: 500,
 
   // Spatial Partitioning
-  SPATIAL_GRID_CELL_SIZE: 100
+  SPATIAL_GRID_CELL_SIZE: 150
 });

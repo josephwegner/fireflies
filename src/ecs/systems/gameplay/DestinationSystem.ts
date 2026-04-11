@@ -3,6 +3,7 @@ import type { Entity, GameWorld } from '@/ecs/Entity';
 import type { GameSystem } from '@/ecs/GameSystem';
 import { PHYSICS_CONFIG } from '@/config';
 import { getEntityType } from '@/utils';
+import { gameEvents, GameEvents } from '@/events';
 
 interface DestinationCandidate {
   entity: Entity;
@@ -18,10 +19,18 @@ export class DestinationSystem implements GameSystem {
   private worker: Worker;
   private pendingRequests = new Map<number, ReturnType<typeof setTimeout>>();
 
+  private onPlacementCompleted: () => void;
+  private onTenantAdded: () => void;
+
   constructor(private world: GameWorld, config: Record<string, any>) {
     this.needsDestination = world.with('position', 'velocity', 'path');
     this.destinations = world.with('position', 'destination');
     this.worker = config.worker;
+
+    this.onPlacementCompleted = () => this.invalidatePaths();
+    this.onTenantAdded = () => this.invalidatePaths();
+    gameEvents.on(GameEvents.PLACEMENT_COMPLETED, this.onPlacementCompleted);
+    gameEvents.on(GameEvents.TENANT_ADDED_TO_LODGE, this.onTenantAdded);
 
     this.needsDestination.onEntityRemoved.subscribe((entity) => {
       const entityId = this.world.id(entity);
@@ -57,11 +66,28 @@ export class DestinationSystem implements GameSystem {
   }
 
   destroy(): void {
+    gameEvents.off(GameEvents.PLACEMENT_COMPLETED, this.onPlacementCompleted);
+    gameEvents.off(GameEvents.TENANT_ADDED_TO_LODGE, this.onTenantAdded);
     this.pendingRequests.forEach((timeout) => clearTimeout(timeout));
     this.pendingRequests.clear();
     if (this.worker) {
       this.worker.onmessage = null;
       this.worker.onerror = null;
+    }
+  }
+
+  private invalidatePaths(): void {
+    this.pendingRequests.forEach((timeout) => clearTimeout(timeout));
+    this.pendingRequests.clear();
+
+    for (const entity of this.needsDestination) {
+      if (entity.fleeingToGoalTag) continue;
+
+      const pathComp = entity.path;
+      if (!pathComp) continue;
+
+      pathComp.currentPath = [];
+      pathComp.nextPath = [];
     }
   }
 
@@ -167,6 +193,7 @@ export class DestinationSystem implements GameSystem {
     for (const entity of this.destinations) {
       if (entity.goalTag) continue;
       if (!entity.destination.for.includes(entityType)) continue;
+      if (entity.lodge && entity.lodge.tenants.length >= entity.lodge.maxTenants) continue;
 
       const destPos = entity.position;
       const distToDest = Math.hypot(destPos.x - current.x, destPos.y - current.y);

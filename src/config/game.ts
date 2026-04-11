@@ -1,12 +1,12 @@
 export const GAME_CONFIG = Object.freeze({
-  // Canvas
-  WIDTH: 800,
-  HEIGHT: 600,
-
   // Map
-  TILE_SIZE: 32,
+  TILE_SIZE: 48,
   MAP_WIDTH: 20,
   MAP_HEIGHT: 11,
+
+  // UI
+  STORE_DRAWER_WIDTH: 80,
+  STATUS_BAR_HEIGHT: 36,
 
   // Walls (organic forest paths - lighter outline against dark ground)
   WALL_THICKNESS: 2,
@@ -23,8 +23,8 @@ export const GAME_CONFIG = Object.freeze({
   FIREFLY_GOAL_GLOW: Object.freeze({
     startColor: 0xC65D3B, // Red when empty
     endColor: 0xFFFFFF,   // White when full
-    minRadius: 30,
-    maxRadius: 60,
+    minRadius: 45,
+    maxRadius: 90,
     minIntensity: 0.4,
     maxIntensity: 0.8
   })

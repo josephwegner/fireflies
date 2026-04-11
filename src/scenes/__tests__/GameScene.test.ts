@@ -47,6 +47,10 @@ vi.mock('@/levels/level1', () => ({
     [0, 1, 0],
     [0, 0, 0]
   ],
+  LEVEL_1_CONFIG: {
+    initialEnergy: 200,
+    store: { wisp: { cost: 100 } }
+  },
   loadLevel: vi.fn()
 }));
 
@@ -89,8 +93,16 @@ class TestableGameScene extends GameScene {
 
     (this as any).cameras = {
       main: {
-        setBackgroundColor: vi.fn()
+        setBackgroundColor: vi.fn(),
+        setViewport: vi.fn(),
+        centerOn: vi.fn()
       }
+    };
+
+    (this as any).scale = {
+      width: 1200,
+      height: 800,
+      on: vi.fn()
     };
 
     (this as any).load = {
@@ -136,7 +148,11 @@ describe('GameScene', () => {
       expect(WorldManager).toHaveBeenCalledWith(
         scene,
         expect.anything(),
-        expect.any(Array)
+        expect.any(Array),
+        expect.objectContaining({
+          energyManager: expect.anything(),
+          levelConfig: expect.anything()
+        })
       );
     });
 

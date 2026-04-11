@@ -23,6 +23,12 @@ export interface GameEventPayloads {
   [GameEvents.COMBAT_ATTACK_BURST]: { entity: Entity; attackPattern: AttackPattern; position: { x: number; y: number } };
   [GameEvents.COMBAT_RECOVERING]: { entity: Entity; attackPattern: AttackPattern; progress: number };
   [GameEvents.COMBAT_CLEANUP]: { entity: Entity; attackPattern: AttackPattern };
+
+  // Resource & placement events
+  [GameEvents.ENERGY_CHANGED]: { current: number };
+  [GameEvents.PLACEMENT_STARTED]: { itemType: string; cost: number };
+  [GameEvents.PLACEMENT_COMPLETED]: { itemType: string; x: number; y: number };
+  [GameEvents.PLACEMENT_CANCELLED]: { itemType: string };
 }
 
 type EventCallback<T = any> = (data: T) => void;
@@ -52,6 +58,12 @@ export class GameEvents {
   static readonly COMBAT_ATTACK_BURST = 'combat:visual:burst';
   static readonly COMBAT_RECOVERING = 'combat:visual:recovering';
   static readonly COMBAT_CLEANUP = 'combat:visual:cleanup';
+
+  // Resource & placement events
+  static readonly ENERGY_CHANGED = 'energy:changed';
+  static readonly PLACEMENT_STARTED = 'placement:started';
+  static readonly PLACEMENT_COMPLETED = 'placement:completed';
+  static readonly PLACEMENT_CANCELLED = 'placement:cancelled';
 
   on<K extends keyof GameEventPayloads>(
     event: K,
