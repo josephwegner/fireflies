@@ -1,121 +1,142 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { World } from 'ecsy';
-import { Health, Combat, CombatState } from '@/ecs/components';
+import { World } from 'miniplex';
+import type { Entity, GameWorld } from '@/ecs/Entity';
+import { CombatState } from '@/ecs/Entity';
 
 describe('Combat Components', () => {
-  let world: World;
+  let world: GameWorld;
 
   beforeEach(() => {
-    world = new World();
-    world.registerComponent(Health);
-    world.registerComponent(Combat);
+    world = new World<Entity>();
   });
 
   describe('Health Component', () => {
-    it('should have correct default values', () => {
-      const entity = world.createEntity();
-      entity.addComponent(Health);
-      
-      const health = entity.getComponent(Health)!;
-      expect(health.currentHealth).toBe(100);
-      expect(health.maxHealth).toBe(100);
-      expect(health.isDead).toBe(false);
+    it('should store health values', () => {
+      const entity = world.add({
+        health: { currentHealth: 100, maxHealth: 100, isDead: false }
+      });
+
+      expect(entity.health!.currentHealth).toBe(100);
+      expect(entity.health!.maxHealth).toBe(100);
+      expect(entity.health!.isDead).toBe(false);
     });
 
     it('should allow custom health values', () => {
-      const entity = world.createEntity();
-      entity.addComponent(Health, { currentHealth: 50, maxHealth: 50 });
-      
-      const health = entity.getComponent(Health)!;
-      expect(health.currentHealth).toBe(50);
-      expect(health.maxHealth).toBe(50);
+      const entity = world.add({
+        health: { currentHealth: 50, maxHealth: 50, isDead: false }
+      });
+
+      expect(entity.health!.currentHealth).toBe(50);
+      expect(entity.health!.maxHealth).toBe(50);
     });
 
     it('should be mutable for damage application', () => {
-      const entity = world.createEntity();
-      entity.addComponent(Health, { currentHealth: 100, maxHealth: 100 });
-      
-      const health = entity.getMutableComponent(Health)!;
-      health.currentHealth -= 25;
-      
-      expect(health.currentHealth).toBe(75);
+      const entity = world.add({
+        health: { currentHealth: 100, maxHealth: 100, isDead: false }
+      });
+
+      entity.health!.currentHealth -= 25;
+
+      expect(entity.health!.currentHealth).toBe(75);
     });
   });
 
   describe('Combat Component', () => {
-    it('should have correct default values', () => {
-      const entity = world.createEntity();
-      entity.addComponent(Combat);
-      
-      const combat = entity.getComponent(Combat)!;
-      expect(combat.state).toBe(CombatState.IDLE);
-      expect(combat.chargeTime).toBe(0);
-      expect(combat.attackElapsed).toBe(0);
-      expect(combat.recoveryElapsed).toBe(0);
-      expect(combat.hasHit).toBe(false);
+    const defaultAttackPattern = {
+      chargeTime: 1000,
+      attackDuration: 300,
+      recoveryTime: 400,
+      damage: 10,
+      handlerType: 'dash' as const,
+      dashSpeed: 100,
+      knockbackForce: 50
+    };
+
+    it('should store combat state values', () => {
+      const entity = world.add({
+        combat: {
+          state: CombatState.IDLE,
+          chargeTime: 0,
+          attackElapsed: 0,
+          recoveryElapsed: 0,
+          hasHit: false,
+          attackPattern: defaultAttackPattern
+        }
+      });
+
+      expect(entity.combat!.state).toBe(CombatState.IDLE);
+      expect(entity.combat!.chargeTime).toBe(0);
+      expect(entity.combat!.attackElapsed).toBe(0);
+      expect(entity.combat!.recoveryElapsed).toBe(0);
+      expect(entity.combat!.hasHit).toBe(false);
     });
 
     it('should allow setting attack pattern', () => {
-      const entity = world.createEntity();
-      const attackPattern = {
-        chargeTime: 1000,
-        attackDuration: 300,
-        recoveryTime: 400,
-        damage: 10,
-        attackType: 'dash' as const,
-        dashSpeed: 100,
-        knockbackForce: 50
-      };
-      
-      entity.addComponent(Combat, { attackPattern });
-      
-      const combat = entity.getComponent(Combat)!;
-      expect(combat.attackPattern).toEqual(attackPattern);
-      expect(combat.attackPattern.attackType).toBe('dash');
+      const entity = world.add({
+        combat: {
+          state: CombatState.IDLE,
+          chargeTime: 0,
+          attackElapsed: 0,
+          recoveryElapsed: 0,
+          hasHit: false,
+          attackPattern: defaultAttackPattern
+        }
+      });
+
+      expect(entity.combat!.attackPattern).toEqual(defaultAttackPattern);
+      expect(entity.combat!.attackPattern.handlerType).toBe('dash');
     });
 
     it('should support all combat states', () => {
-      const entity = world.createEntity();
-      entity.addComponent(Combat);
-      
-      const combat = entity.getMutableComponent(Combat)!;
-      
-      // Test each state
-      combat.state = CombatState.CHARGING;
-      expect(combat.state).toBe(CombatState.CHARGING);
-      
-      combat.state = CombatState.ATTACKING;
-      expect(combat.state).toBe(CombatState.ATTACKING);
-      
-      combat.state = CombatState.RECOVERING;
-      expect(combat.state).toBe(CombatState.RECOVERING);
-      
-      combat.state = CombatState.IDLE;
-      expect(combat.state).toBe(CombatState.IDLE);
+      const entity = world.add({
+        combat: {
+          state: CombatState.IDLE,
+          chargeTime: 0,
+          attackElapsed: 0,
+          recoveryElapsed: 0,
+          hasHit: false,
+          attackPattern: defaultAttackPattern
+        }
+      });
+
+      entity.combat!.state = CombatState.CHARGING;
+      expect(entity.combat!.state).toBe(CombatState.CHARGING);
+
+      entity.combat!.state = CombatState.ATTACKING;
+      expect(entity.combat!.state).toBe(CombatState.ATTACKING);
+
+      entity.combat!.state = CombatState.RECOVERING;
+      expect(entity.combat!.state).toBe(CombatState.RECOVERING);
+
+      entity.combat!.state = CombatState.IDLE;
+      expect(entity.combat!.state).toBe(CombatState.IDLE);
     });
   });
 
   describe('Component integration', () => {
     it('should allow entity to have all combat-related components', () => {
-      const entity = world.createEntity();
-      
-      entity.addComponent(Health, { currentHealth: 100, maxHealth: 100 });
-      entity.addComponent(Combat, {
-        state: CombatState.IDLE,
-        attackPattern: {
-          chargeTime: 1000,
-          attackDuration: 300,
-          recoveryTime: 400,
-          damage: 10,
-          attackType: 'dash',
-          dashSpeed: 100,
-          knockbackForce: 50
+      const entity = world.add({
+        health: { currentHealth: 100, maxHealth: 100, isDead: false },
+        combat: {
+          state: CombatState.IDLE,
+          chargeTime: 0,
+          attackElapsed: 0,
+          recoveryElapsed: 0,
+          hasHit: false,
+          attackPattern: {
+            chargeTime: 1000,
+            attackDuration: 300,
+            recoveryTime: 400,
+            damage: 10,
+            handlerType: 'dash' as const,
+            dashSpeed: 100,
+            knockbackForce: 50
+          }
         }
       });
-      
-      expect(entity.hasComponent(Health)).toBe(true);
-      expect(entity.hasComponent(Combat)).toBe(true);
+
+      expect(!!entity.health).toBe(true);
+      expect(!!entity.combat).toBe(true);
     });
   });
 });
-

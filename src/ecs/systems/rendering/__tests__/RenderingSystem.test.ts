@@ -1,102 +1,151 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { World } from 'ecsy';
+import { World } from 'miniplex';
 import { RenderingSystem } from '../RenderingSystem';
-import { Position, Renderable } from '@/ecs/components';
-import {
-  createMockScene,
-  createMockSceneWithTextures,
-  createMockSceneWithoutTextures,
-  createMockContainer,
-  createMockSprite
-} from '@/__tests__/helpers';
+import type { Entity, GameWorld } from '@/ecs/Entity';
+
+function createMockContainer() {
+  return {
+    add: vi.fn(),
+    setPosition: vi.fn(),
+    setScale: vi.fn(),
+    setDepth: vi.fn(),
+    setRotation: vi.fn(),
+    destroy: vi.fn(),
+    remove: vi.fn(),
+    addAt: vi.fn(),
+    list: [] as any[]
+  };
+}
+
+function createMockSprite(width = 100, height = 100) {
+  return {
+    width,
+    height,
+    setScale: vi.fn(),
+    setPosition: vi.fn(),
+    setTint: vi.fn(),
+    destroy: vi.fn()
+  };
+}
+
+function createMockCircle() {
+  return {
+    setPosition: vi.fn(),
+    setFillStyle: vi.fn(),
+    setTint: vi.fn(),
+    destroy: vi.fn()
+  };
+}
+
+function createMockGraphics() {
+  return {
+    fillStyle: vi.fn(),
+    fillCircle: vi.fn(),
+    setAlpha: vi.fn(),
+    setBlendMode: vi.fn(),
+    setData: vi.fn(),
+    getData: vi.fn(),
+    destroy: vi.fn()
+  };
+}
+
+function createMockScene(opts: {
+  textureExists?: (key: string) => boolean;
+  spriteFactory?: () => any;
+  containerFactory?: () => any;
+} = {}) {
+  const mockContainer = opts.containerFactory ?? createMockContainer;
+  const mockSprite = opts.spriteFactory ?? (() => createMockSprite());
+  const mockCircle = createMockCircle;
+
+  return {
+    add: {
+      container: vi.fn((_x: number, _y: number) => mockContainer()),
+      sprite: vi.fn((_x: number, _y: number, _key: string) => mockSprite()),
+      circle: vi.fn((_x: number, _y: number, _r: number, _c: number) => mockCircle()),
+      graphics: vi.fn(() => createMockGraphics())
+    },
+    textures: {
+      exists: vi.fn(opts.textureExists ?? (() => false))
+    }
+  } as any;
+}
+
+function makeRenderable(overrides: Partial<Entity['renderable']> = {}): NonNullable<Entity['renderable']> {
+  return {
+    type: 'firefly',
+    sprite: 'firefly',
+    color: 0xffff00,
+    radius: 10,
+    alpha: 1,
+    scale: 1,
+    tint: 0xFFFFFF,
+    rotation: 0,
+    rotationSpeed: 0,
+    depth: 50,
+    offsetY: 0,
+    ...overrides
+  };
+}
 
 describe('RenderingSystem', () => {
-  let world: World;
+  let world: GameWorld;
   let mockScene: any;
-  let system: any;
+  let system: RenderingSystem;
 
   beforeEach(() => {
-    world = new World();
-    world
-      .registerComponent(Position)
-      .registerComponent(Renderable);
-
-    mockScene = createMockSceneWithoutTextures();
-    // Register system first so ECSY query listeners work properly
-    world.registerSystem(RenderingSystem, { scene: mockScene });
-    system = world.getSystem(RenderingSystem);
+    world = new World<Entity>();
+    mockScene = createMockScene();
+    system = new RenderingSystem(world, { scene: mockScene });
   });
 
   describe('Initialization', () => {
     it('should initialize with scene', () => {
-      expect(system.scene).toBe(mockScene);
+      expect((system as any).scene).toBe(mockScene);
     });
 
     it('should initialize sprite map', () => {
-      expect(system.spriteMap).toBeInstanceOf(Map);
-      expect(system.spriteMap.size).toBe(0);
+      expect((system as any).spriteMap).toBeInstanceOf(Map);
+      expect((system as any).spriteMap.size).toBe(0);
     });
   });
 
   describe('Sprite Creation', () => {
-    it('should create sprite for entity with Renderable', () => {
-      const entity = world.createEntity();
-      entity.addComponent(Position, { x: 100, y: 200 });
-      entity.addComponent(Renderable, {
-        type: 'firefly',
-        sprite: 'firefly',
-        color: 0xffff00,
-        radius: 10
+    it('should create sprite for entity with renderable', () => {
+      world.add({
+        position: { x: 100, y: 200 },
+        renderable: makeRenderable()
       });
-
-      world.execute(16, 16);
 
       expect(mockScene.add.container).toHaveBeenCalledWith(100, 200);
     });
 
     it('should fallback to circle when sprite texture does not exist', () => {
-      const entity = world.createEntity();
-      entity.addComponent(Position, { x: 100, y: 200 });
-      entity.addComponent(Renderable, {
-        type: 'firefly',
-        sprite: 'firefly',
-        color: 0xffff00,
-        radius: 10
+      world.add({
+        position: { x: 100, y: 200 },
+        renderable: makeRenderable()
       });
-
-      world.execute(16, 16);
 
       expect(mockScene.add.circle).toHaveBeenCalledWith(0, 0, 10, 0xffff00);
       expect(mockScene.add.sprite).not.toHaveBeenCalled();
     });
 
     describe('with textures available', () => {
-      let localWorld: World;
+      let localWorld: GameWorld;
       let localScene: any;
-      let localSystem: any;
+      let localSystem: RenderingSystem;
 
       beforeEach(() => {
-        localWorld = new World();
-        localWorld
-          .registerComponent(Position)
-          .registerComponent(Renderable);
-
-        localScene = createMockSceneWithTextures();
-        localWorld.registerSystem(RenderingSystem, { scene: localScene });
-        localSystem = localWorld.getSystem(RenderingSystem);
+        localWorld = new World<Entity>();
+        localScene = createMockScene({ textureExists: () => true });
+        localSystem = new RenderingSystem(localWorld, { scene: localScene });
       });
 
       it('should use sprite when texture exists', () => {
-        const entity = localWorld.createEntity();
-        entity.addComponent(Position, { x: 100, y: 200 });
-        entity.addComponent(Renderable, {
-          type: 'firefly',
-          sprite: 'firefly',
-          color: 0xffff00,
-          radius: 10
+        localWorld.add({
+          position: { x: 100, y: 200 },
+          renderable: makeRenderable()
         });
-
-        localWorld.execute(16, 16);
 
         expect(localScene.add.sprite).toHaveBeenCalledWith(0, 0, 'firefly');
         expect(localScene.add.circle).not.toHaveBeenCalled();
@@ -109,22 +158,13 @@ describe('RenderingSystem', () => {
           spriteFactory: () => mockSprite
         });
 
-        const customWorld = new World();
-        customWorld
-          .registerComponent(Position)
-          .registerComponent(Renderable);
-        customWorld.registerSystem(RenderingSystem, { scene: sceneWithCustomSprite });
+        const customWorld = new World<Entity>();
+        new RenderingSystem(customWorld, { scene: sceneWithCustomSprite });
 
-        const entity = customWorld.createEntity();
-        entity.addComponent(Position, { x: 100, y: 200 });
-        entity.addComponent(Renderable, {
-          type: 'firefly',
-          sprite: 'firefly',
-          color: 0xffff00,
-          radius: 10
+        customWorld.add({
+          position: { x: 100, y: 200 },
+          renderable: makeRenderable()
         });
-
-        customWorld.execute(16, 16);
 
         const expectedScale = (10 * 2) / 100;
         expect(mockSprite.setScale).toHaveBeenCalledWith(expectedScale);
@@ -132,33 +172,20 @@ describe('RenderingSystem', () => {
     });
 
     it('should store sprite in sprite map', () => {
-      const entity = world.createEntity();
-      entity.addComponent(Position, { x: 100, y: 200 });
-      entity.addComponent(Renderable, {
-        type: 'firefly',
-        sprite: 'firefly',
-        color: 0xffff00,
-        radius: 10
+      const entity = world.add({
+        position: { x: 100, y: 200 },
+        renderable: makeRenderable()
       });
 
-      const system = world.getSystem(RenderingSystem) as any;
-      world.execute(16, 16);
-
-      expect(system.spriteMap.has(entity)).toBe(true);
+      expect((system as any).spriteMap.has(entity)).toBe(true);
     });
 
     it('should handle entity without sprite property', () => {
-      const entity = world.createEntity();
-      entity.addComponent(Position, { x: 100, y: 200 });
-      entity.addComponent(Renderable, {
-        type: 'firefly',
-        sprite: undefined as any,
-        color: 0xffff00,
-        radius: 10
+      world.add({
+        position: { x: 100, y: 200 },
+        renderable: makeRenderable({ sprite: undefined })
       });
 
-
-      expect(() => world.execute(16, 16)).not.toThrow();
       expect(mockScene.add.circle).toHaveBeenCalled();
     });
 
@@ -167,21 +194,16 @@ describe('RenderingSystem', () => {
         throw new Error('Scene error');
       });
 
-      const entity = world.createEntity();
-      entity.addComponent(Position, { x: 100, y: 200 });
-      entity.addComponent(Renderable, {
-        type: 'firefly',
-        sprite: 'firefly',
-        color: 0xffff00,
-        radius: 10
-      });
-
       const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
 
+      expect(() => {
+        world.add({
+          position: { x: 100, y: 200 },
+          renderable: makeRenderable()
+        });
+      }).not.toThrow();
 
-      expect(() => world.execute(16, 16)).not.toThrow();
       expect(consoleSpy).toHaveBeenCalled();
-
       consoleSpy.mockRestore();
     });
   });
@@ -191,41 +213,28 @@ describe('RenderingSystem', () => {
       const mockContainer = createMockContainer();
       mockScene.add.container.mockReturnValue(mockContainer);
 
-      const entity = world.createEntity();
-      entity.addComponent(Position, { x: 100, y: 200 });
-      entity.addComponent(Renderable, {
-        type: 'firefly',
-        sprite: 'firefly',
-        color: 0xffff00,
-        radius: 10
+      const entity = world.add({
+        position: { x: 100, y: 200 },
+        renderable: makeRenderable()
       });
 
-      world.execute(16, 16);
+      entity.position!.x = 300;
+      entity.position!.y = 400;
 
-      const pos = entity.getMutableComponent(Position)!;
-      pos.x = 300;
-      pos.y = 400;
-
-      world.execute(16, 16);
+      system.update(16, 16);
 
       expect(mockContainer.setPosition).toHaveBeenCalledWith(300, 400);
     });
 
     it('should not throw if sprite not found in map', () => {
-      const entity = world.createEntity();
-      entity.addComponent(Position, { x: 100, y: 200 });
-      entity.addComponent(Renderable, {
-        type: 'firefly',
-        sprite: 'firefly',
-        color: 0xffff00,
-        radius: 10
+      world.add({
+        position: { x: 100, y: 200 },
+        renderable: makeRenderable()
       });
 
-      const system = world.getSystem(RenderingSystem) as any;
+      (system as any).spriteMap.clear();
 
-      system.spriteMap.clear();
-
-      expect(() => world.execute(16, 16)).not.toThrow();
+      expect(() => system.update(16, 16)).not.toThrow();
     });
 
     it('should handle errors during sprite update gracefully', () => {
@@ -235,23 +244,16 @@ describe('RenderingSystem', () => {
       });
       mockScene.add.container.mockReturnValue(mockContainer);
 
-      const entity = world.createEntity();
-      entity.addComponent(Position, { x: 100, y: 200 });
-      entity.addComponent(Renderable, {
-        type: 'firefly',
-        sprite: 'firefly',
-        color: 0xffff00,
-        radius: 10
+      const entity = world.add({
+        position: { x: 100, y: 200 },
+        renderable: makeRenderable()
       });
 
       const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
 
-      world.execute(16, 16);
+      entity.position!.x = 300;
 
-      const pos = entity.getMutableComponent(Position)!;
-      pos.x = 300;
-
-      expect(() => world.execute(16, 16)).not.toThrow();
+      expect(() => system.update(16, 16)).not.toThrow();
       expect(consoleSpy).toHaveBeenCalled();
 
       consoleSpy.mockRestore();
@@ -263,44 +265,28 @@ describe('RenderingSystem', () => {
       const mockContainer = createMockContainer();
       mockScene.add.container.mockReturnValue(mockContainer);
 
-      const entity = world.createEntity();
-      entity.addComponent(Position, { x: 100, y: 200 });
-      entity.addComponent(Renderable, {
-        type: 'firefly',
-        sprite: 'firefly',
-        color: 0xffff00,
-        radius: 10
+      const entity = world.add({
+        position: { x: 100, y: 200 },
+        renderable: makeRenderable()
       });
 
-      const system = world.getSystem(RenderingSystem) as any;
-      world.execute(16, 16);
+      expect((system as any).spriteMap.has(entity)).toBe(true);
 
-      expect(system.spriteMap.has(entity)).toBe(true);
-
-      entity.remove();
-      world.execute(16, 16);
+      world.remove(entity);
 
       expect(mockContainer.destroy).toHaveBeenCalled();
-      expect(system.spriteMap.has(entity)).toBe(false);
+      expect((system as any).spriteMap.has(entity)).toBe(false);
     });
 
     it('should handle sprite destruction when sprite not in map', () => {
-      const entity = world.createEntity();
-      entity.addComponent(Position, { x: 100, y: 200 });
-      entity.addComponent(Renderable, {
-        type: 'firefly',
-        sprite: 'firefly',
-        color: 0xffff00,
-        radius: 10
+      const entity = world.add({
+        position: { x: 100, y: 200 },
+        renderable: makeRenderable()
       });
 
-      const system = world.getSystem(RenderingSystem) as any;
+      (system as any).spriteMap.clear();
 
-      world.execute(16, 16);
-      system.spriteMap.clear();
-      entity.remove();
-
-      expect(() => world.execute(16, 16)).not.toThrow();
+      expect(() => world.remove(entity)).not.toThrow();
     });
 
     it('should handle errors during sprite destruction gracefully', () => {
@@ -310,22 +296,14 @@ describe('RenderingSystem', () => {
       });
       mockScene.add.container.mockReturnValue(mockContainer);
 
-      const entity = world.createEntity();
-      entity.addComponent(Position, { x: 100, y: 200 });
-      entity.addComponent(Renderable, {
-        type: 'firefly',
-        sprite: 'firefly',
-        color: 0xffff00,
-        radius: 10
+      const entity = world.add({
+        position: { x: 100, y: 200 },
+        renderable: makeRenderable()
       });
 
       const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
 
-      world.execute(16, 16);
-
-      entity.remove();
-
-      expect(() => world.execute(16, 16)).not.toThrow();
+      expect(() => world.remove(entity)).not.toThrow();
       expect(consoleSpy).toHaveBeenCalled();
 
       consoleSpy.mockRestore();
@@ -337,26 +315,17 @@ describe('RenderingSystem', () => {
       const mockContainer = createMockContainer();
       mockScene.add.container.mockReturnValue(mockContainer);
 
-      const entity = world.createEntity();
-      entity.addComponent(Position, { x: 100, y: 200 });
-      entity.addComponent(Renderable, {
-        type: 'firefly',
-        sprite: 'firefly',
-        color: 0xffff00,
-        radius: 10
+      const entity = world.add({
+        position: { x: 100, y: 200 },
+        renderable: makeRenderable()
       });
-
-      const system = world.getSystem(RenderingSystem) as any;
-      world.execute(16, 16);
 
       const sprite = system.getSpriteForEntity(entity);
       expect(sprite).toBe(mockContainer);
     });
 
     it('should return undefined for non-existent entity', () => {
-      const entity = world.createEntity();
-
-      const system = world.getSystem(RenderingSystem) as any;
+      const entity = world.add({ position: { x: 0, y: 0 } });
 
       const sprite = system.getSpriteForEntity(entity);
       expect(sprite).toBeUndefined();
@@ -365,31 +334,19 @@ describe('RenderingSystem', () => {
 
   describe('Multiple Entities', () => {
     it('should handle multiple entities with sprites', () => {
-      const system = world.getSystem(RenderingSystem) as any;
-
-      const entity1 = world.createEntity();
-      entity1.addComponent(Position, { x: 100, y: 200 });
-      entity1.addComponent(Renderable, {
-        type: 'firefly',
-        sprite: 'firefly',
-        color: 0xffff00,
-        radius: 10
+      const entity1 = world.add({
+        position: { x: 100, y: 200 },
+        renderable: makeRenderable()
       });
 
-      const entity2 = world.createEntity();
-      entity2.addComponent(Position, { x: 300, y: 400 });
-      entity2.addComponent(Renderable, {
-        type: 'monster',
-        sprite: 'monster',
-        color: 0xff0000,
-        radius: 15
+      const entity2 = world.add({
+        position: { x: 300, y: 400 },
+        renderable: makeRenderable({ type: 'monster', sprite: 'monster', color: 0xff0000, radius: 15 })
       });
 
-      world.execute(16, 16);
-
-      expect(system.spriteMap.size).toBe(2);
-      expect(system.spriteMap.has(entity1)).toBe(true);
-      expect(system.spriteMap.has(entity2)).toBe(true);
+      expect((system as any).spriteMap.size).toBe(2);
+      expect((system as any).spriteMap.has(entity1)).toBe(true);
+      expect((system as any).spriteMap.has(entity2)).toBe(true);
     });
   });
 
@@ -398,17 +355,10 @@ describe('RenderingSystem', () => {
       const mockContainer = createMockContainer();
       mockScene.add.container.mockReturnValue(mockContainer);
 
-      const entity = world.createEntity();
-      entity.addComponent(Position, { x: 100, y: 200 });
-      entity.addComponent(Renderable, {
-        type: 'firefly',
-        sprite: 'firefly',
-        color: 0xffff00,
-        radius: 10,
-        scale: 1.5
+      world.add({
+        position: { x: 100, y: 200 },
+        renderable: makeRenderable({ scale: 1.5 })
       });
-
-      world.execute(16, 16);
 
       expect(mockContainer.setScale).toHaveBeenCalledWith(1.5);
     });
@@ -417,16 +367,10 @@ describe('RenderingSystem', () => {
       const mockContainer = createMockContainer();
       mockScene.add.container.mockReturnValue(mockContainer);
 
-      const entity = world.createEntity();
-      entity.addComponent(Position, { x: 100, y: 200 });
-      entity.addComponent(Renderable, {
-        type: 'firefly',
-        sprite: 'firefly',
-        color: 0xffff00,
-        radius: 10
+      world.add({
+        position: { x: 100, y: 200 },
+        renderable: makeRenderable()
       });
-
-      world.execute(16, 16);
 
       expect(mockContainer.setScale).toHaveBeenCalledWith(1.0);
     });
@@ -435,55 +379,37 @@ describe('RenderingSystem', () => {
       const mockContainer = createMockContainer();
       mockScene.add.container.mockReturnValue(mockContainer);
 
-      const entity = world.createEntity();
-      entity.addComponent(Position, { x: 100, y: 200 });
-      entity.addComponent(Renderable, {
-        type: 'firefly',
-        sprite: 'firefly',
-        color: 0xffff00,
-        radius: 10,
-        scale: 1.0
+      const entity = world.add({
+        position: { x: 100, y: 200 },
+        renderable: makeRenderable({ scale: 1.0 })
       });
 
-      world.execute(16, 16);
       expect(mockContainer.setScale).toHaveBeenCalledWith(1.0);
 
-      // Change scale
-      const renderable = entity.getMutableComponent(Renderable)!;
-      renderable.scale = 1.5;
+      entity.renderable!.scale = 1.5;
 
-      world.execute(16, 16);
+      system.update(16, 16);
       expect(mockContainer.setScale).toHaveBeenCalledWith(1.5);
     });
 
     it('should apply tint to sprite children when using sprite graphics', () => {
       const mockSprite = createMockSprite(100, 100);
       const mockContainer = createMockContainer();
-      mockContainer.list = [mockSprite]; // Mock children list
-      
+      mockContainer.list = [mockSprite];
+
       const sceneWithCustomSprite = createMockScene({
         textureExists: () => true,
         spriteFactory: () => mockSprite,
         containerFactory: () => mockContainer
       });
 
-      const customWorld = new World();
-      customWorld
-        .registerComponent(Position)
-        .registerComponent(Renderable);
-      customWorld.registerSystem(RenderingSystem, { scene: sceneWithCustomSprite });
+      const customWorld = new World<Entity>();
+      new RenderingSystem(customWorld, { scene: sceneWithCustomSprite });
 
-      const entity = customWorld.createEntity();
-      entity.addComponent(Position, { x: 100, y: 200 });
-      entity.addComponent(Renderable, {
-        type: 'firefly',
-        sprite: 'firefly',
-        color: 0xffff00,
-        radius: 10,
-        tint: 0xff0000
+      customWorld.add({
+        position: { x: 100, y: 200 },
+        renderable: makeRenderable({ tint: 0xff0000 })
       });
-
-      customWorld.execute(16, 16);
 
       expect(mockSprite.setTint).toHaveBeenCalledWith(0xff0000);
     });
@@ -492,29 +418,20 @@ describe('RenderingSystem', () => {
       const mockSprite = createMockSprite(100, 100);
       const mockContainer = createMockContainer();
       mockContainer.list = [mockSprite];
-      
+
       const sceneWithCustomSprite = createMockScene({
         textureExists: () => true,
         spriteFactory: () => mockSprite,
         containerFactory: () => mockContainer
       });
 
-      const customWorld = new World();
-      customWorld
-        .registerComponent(Position)
-        .registerComponent(Renderable);
-      customWorld.registerSystem(RenderingSystem, { scene: sceneWithCustomSprite });
+      const customWorld = new World<Entity>();
+      new RenderingSystem(customWorld, { scene: sceneWithCustomSprite });
 
-      const entity = customWorld.createEntity();
-      entity.addComponent(Position, { x: 100, y: 200 });
-      entity.addComponent(Renderable, {
-        type: 'firefly',
-        sprite: 'firefly',
-        color: 0xffff00,
-        radius: 10
+      customWorld.add({
+        position: { x: 100, y: 200 },
+        renderable: makeRenderable()
       });
-
-      customWorld.execute(16, 16);
 
       expect(mockSprite.setTint).toHaveBeenCalledWith(0xFFFFFF);
     });
@@ -523,142 +440,110 @@ describe('RenderingSystem', () => {
       const mockSprite = createMockSprite(100, 100);
       const mockContainer = createMockContainer();
       mockContainer.list = [mockSprite];
-      
+
       const sceneWithCustomSprite = createMockScene({
         textureExists: () => true,
         spriteFactory: () => mockSprite,
         containerFactory: () => mockContainer
       });
 
-      const customWorld = new World();
-      customWorld
-        .registerComponent(Position)
-        .registerComponent(Renderable);
-      customWorld.registerSystem(RenderingSystem, { scene: sceneWithCustomSprite });
+      const customWorld = new World<Entity>();
+      const customSystem = new RenderingSystem(customWorld, { scene: sceneWithCustomSprite });
 
-      const entity = customWorld.createEntity();
-      entity.addComponent(Position, { x: 100, y: 200 });
-      entity.addComponent(Renderable, {
-        type: 'firefly',
-        sprite: 'firefly',
-        color: 0xffff00,
-        radius: 10,
-        tint: 0xFFFFFF
+      const entity = customWorld.add({
+        position: { x: 100, y: 200 },
+        renderable: makeRenderable({ tint: 0xFFFFFF })
       });
 
-      customWorld.execute(16, 16);
       expect(mockSprite.setTint).toHaveBeenCalledWith(0xFFFFFF);
 
-      // Change tint
-      const renderable = entity.getMutableComponent(Renderable)!;
-      renderable.tint = 0xff0000;
+      entity.renderable!.tint = 0xff0000;
 
-      customWorld.execute(16, 16);
+      customSystem.update(16, 16);
       expect(mockSprite.setTint).toHaveBeenCalledWith(0xff0000);
     });
 
     it('should apply tint to circle graphics when not using sprite', () => {
       const mockCircle = {
-        setFillStyle: vi.fn()
+        setFillStyle: vi.fn(),
+        setPosition: vi.fn()
       };
       const mockContainer = createMockContainer();
+      mockContainer.list = [mockCircle];
       mockScene.add.circle.mockReturnValue(mockCircle);
       mockScene.add.container.mockReturnValue(mockContainer);
 
-      const entity = world.createEntity();
-      entity.addComponent(Position, { x: 100, y: 200 });
-      entity.addComponent(Renderable, {
-        type: 'firefly',
-        color: 0xffff00,
-        radius: 10,
-        tint: 0xff0000
+      world.add({
+        position: { x: 100, y: 200 },
+        renderable: makeRenderable({ tint: 0xff0000 })
       });
 
-      world.execute(16, 16);
-
-      // For circles, we apply tint by modifying the fillStyle color
       expect(mockCircle.setFillStyle).toHaveBeenCalled();
     });
   });
 
   describe('Glow Effects', () => {
-    it('should add glow graphics when Renderable has glow configuration', () => {
-      const mockGlowGraphics = {
-        fillStyle: vi.fn(),
-        fillCircle: vi.fn(),
-        setAlpha: vi.fn(),
-        setBlendMode: vi.fn()
-      };
+    it('should add glow graphics when renderable has glow configuration', () => {
+      const mockGlowGraphics = createMockGraphics();
       const mockContainer = createMockContainer();
       mockScene.add.container.mockReturnValue(mockContainer);
       mockScene.add.graphics.mockReturnValue(mockGlowGraphics);
 
-      const entity = world.createEntity();
-      entity.addComponent(Position, { x: 100, y: 200 });
-      entity.addComponent(Renderable, {
-        type: 'firefly',
-        color: 0xDEF4B4,
-        radius: 4,
-        glow: {
-          radius: 20,
+      world.add({
+        position: { x: 100, y: 200 },
+        renderable: makeRenderable({
           color: 0xDEF4B4,
-          intensity: 0.6
-        }
+          radius: 4,
+          glow: {
+            radius: 20,
+            color: 0xDEF4B4,
+            intensity: 0.6
+          }
+        })
       });
 
-      world.execute(16, 16);
-
-      // Glow graphics should be created
       expect(mockScene.add.graphics).toHaveBeenCalled();
     });
 
     it('should update glow intensity with pulsing animation', () => {
-      const entity = world.createEntity();
-      entity.addComponent(Position, { x: 100, y: 200 });
-      entity.addComponent(Renderable, {
-        type: 'firefly',
-        color: 0xDEF4B4,
-        radius: 4,
-        glow: {
-          radius: 20,
+      const entity = world.add({
+        position: { x: 100, y: 200 },
+        renderable: makeRenderable({
           color: 0xDEF4B4,
-          intensity: 0.6,
-          pulse: {
-            enabled: true,
-            speed: 1.0,
-            minIntensity: 0.4,
-            maxIntensity: 0.8
+          radius: 4,
+          glow: {
+            radius: 20,
+            color: 0xDEF4B4,
+            intensity: 0.6,
+            pulse: {
+              enabled: true,
+              speed: 1.0,
+              minIntensity: 0.4,
+              maxIntensity: 0.8
+            }
           }
-        }
+        })
       });
 
-      world.execute(16, 16);
+      system.update(16, 16);
+      system.update(500, 516);
+      system.update(500, 1016);
 
-      // Execute multiple frames to see pulse animation
-      world.execute(500, 516);
-      world.execute(500, 1016);
-
-      const renderable = entity.getComponent(Renderable)!;
-      // Pulse should modify glow intensity over time
-      expect(renderable.glow).toBeDefined();
+      expect(entity.renderable!.glow).toBeDefined();
     });
 
     it('should not create glow graphics when glow config is undefined', () => {
       const mockContainer = createMockContainer();
       mockScene.add.container.mockReturnValue(mockContainer);
 
-      const entity = world.createEntity();
-      entity.addComponent(Position, { x: 100, y: 200 });
-      entity.addComponent(Renderable, {
-        type: 'firefly',
-        color: 0xDEF4B4,
-        radius: 4
-        // No glow config
+      world.add({
+        position: { x: 100, y: 200 },
+        renderable: makeRenderable({
+          color: 0xDEF4B4,
+          radius: 4
+        })
       });
 
-      world.execute(16, 16);
-
-      // Graphics should not be created for glow
       expect(mockScene.add.graphics).not.toHaveBeenCalled();
     });
   });

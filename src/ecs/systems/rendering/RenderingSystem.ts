@@ -1,73 +1,65 @@
-import { System } from 'ecsy';
+import type { Query, With } from 'miniplex';
 import Phaser from 'phaser';
-import { Position, Renderable } from '@/ecs/components';
-import { ECSEntity } from '@/types';
+import type { Entity, GameWorld, Renderable } from '@/ecs/Entity';
+import type { GameSystem } from '@/ecs/GameSystem';
 
-export class RenderingSystem extends System {
-  private scene!: Phaser.Scene;
-  private spriteMap: Map<ECSEntity, Phaser.GameObjects.Container>;
-  private glowMap: Map<ECSEntity, Phaser.GameObjects.Graphics>;
+type RenderableEntity = With<Entity, 'position' | 'renderable'>;
 
-  constructor(world: any, attributes?: any) {
-    super(world, attributes);
-    this.spriteMap = new Map();
-    this.glowMap = new Map();
-  }
+export class RenderingSystem implements GameSystem {
+  private renderables: Query<RenderableEntity>;
+  private scene: Phaser.Scene;
+  private spriteMap = new Map<Entity, Phaser.GameObjects.Container>();
+  private glowMap = new Map<Entity, Phaser.GameObjects.Graphics>();
+  private lastTime = 0;
 
-  init(attributes?: any): void {
-    if (attributes?.scene) {
-      this.scene = attributes.scene;
-    }
-  }
+  constructor(private world: GameWorld, config: Record<string, any>) {
+    this.scene = config.scene;
+    this.renderables = world.with('position', 'renderable') as any;
 
-  static queries = {
-    renderables: {
-      components: [Position, Renderable],
-      listen: {
-        added: true,
-        removed: true
-      }
-    }
-  };
-
-  execute(delta: number, time: number) {
-    const { renderables } = this.queries;
-    const deltaInSeconds = delta / 1000;
-    this.lastTime = time;
-
-    renderables.added?.forEach((entity) => {
+    this.renderables.onEntityAdded.subscribe((entity) => {
       try {
         this.createSprite(entity);
       } catch (error) {
-        console.error('[RenderingSystem] Error creating sprite for entity:', entity.id, error);
+        console.error('[RenderingSystem] Error creating sprite:', error);
       }
     });
 
-    renderables.removed?.forEach((entity) => {
+    this.renderables.onEntityRemoved.subscribe((entity) => {
       try {
         this.destroySprite(entity);
       } catch (error) {
-        console.error('[RenderingSystem] Error destroying sprite for entity:', entity.id, error);
-      }
-    });
-
-    renderables.results.forEach((entity) => {
-      try {
-        this.updateSprite(entity, deltaInSeconds);
-      } catch (error) {
-        console.error('[RenderingSystem] Error updating sprite for entity:', entity.id, error);
+        console.error('[RenderingSystem] Error destroying sprite:', error);
       }
     });
   }
 
-  private createSprite(entity: ECSEntity): void {
-    const position = entity.getComponent(Position)!;
-    const renderable = entity.getComponent(Renderable)!;
+  destroy(): void {
+    for (const [, sprite] of this.spriteMap) {
+      sprite.destroy();
+    }
+    this.spriteMap.clear();
+    this.glowMap.clear();
+  }
+
+  update(_delta: number, time: number): void {
+    const deltaInSeconds = _delta / 1000;
+    this.lastTime = time;
+
+    for (const entity of this.renderables) {
+      try {
+        this.updateSprite(entity, deltaInSeconds);
+      } catch (error) {
+        console.error('[RenderingSystem] Error updating sprite:', error);
+      }
+    }
+  }
+
+  private createSprite(entity: RenderableEntity): void {
+    const { position, renderable } = entity;
 
     const container = this.scene.add.container(position.x, position.y);
 
-    // Create glow effect if configured (check for both null and undefined)
-    if (renderable.glow && renderable.glow !== null) {
+    if (renderable.glow) {
       const glowGraphics = this.createGlow(renderable);
       glowGraphics.setData('color', renderable.glow.color);
       glowGraphics.setData('radius', renderable.glow.radius);
@@ -76,28 +68,18 @@ export class RenderingSystem extends System {
       this.glowMap.set(entity, glowGraphics);
     }
 
-    // Use sprite if available, otherwise fall back to circle
     if (renderable.sprite && this.scene.textures.exists(renderable.sprite)) {
       const sprite = this.scene.add.sprite(0, 0, renderable.sprite);
-
-      // Scale sprite to match the desired radius
       const scale = (renderable.radius * 2) / Math.max(sprite.width, sprite.height);
       sprite.setScale(scale);
-
-      // Apply vertical offset
       sprite.setPosition(0, renderable.offsetY || 0);
-
       container.add(sprite);
     } else {
-      // Fallback to circle if no sprite or sprite not loaded
       const circle = this.scene.add.circle(0, 0, renderable.radius, renderable.color);
-      
       circle.setPosition(0, renderable.offsetY || 0);
-      
       container.add(circle);
     }
 
-    // Apply initial scale, tint, and depth
     container.setScale(renderable.scale);
     container.setDepth(renderable.depth);
     this.applyTintToChildren(container, renderable.tint);
@@ -105,26 +87,22 @@ export class RenderingSystem extends System {
     this.spriteMap.set(entity, container);
   }
 
-  private updateSprite(entity: ECSEntity, deltaInSeconds: number): void {
+  private updateSprite(entity: RenderableEntity, deltaInSeconds: number): void {
     const sprite = this.spriteMap.get(entity);
     if (!sprite) return;
 
-    const position = entity.getComponent(Position)!;
-    const renderable = entity.getMutableComponent(Renderable)!;
-    
+    const { position, renderable } = entity;
+
     sprite.setPosition(position.x, position.y);
     sprite.setScale(renderable.scale);
 
-    // Update rotation if there's a rotation speed
     if (renderable.rotationSpeed !== 0) {
       renderable.rotation += renderable.rotationSpeed * deltaInSeconds;
-      // Keep rotation in 0-2π range to avoid floating point drift
       renderable.rotation = renderable.rotation % (Math.PI * 2);
     }
-    
+
     sprite.setRotation(renderable.rotation);
 
-    // Check if glow properties have changed and recreate if needed
     const existingGlow = this.glowMap.get(entity);
     if (renderable.glow && existingGlow) {
       const needsUpdate =
@@ -132,69 +110,42 @@ export class RenderingSystem extends System {
         existingGlow.getData('color') !== renderable.glow.color ||
         existingGlow.getData('radius') !== renderable.glow.radius ||
         existingGlow.getData('intensity') !== renderable.glow.intensity;
-      // Store previous glow color to detect changes
+
       if (needsUpdate) {
-        // Glow property has changed, recreate it
         existingGlow.destroy();
         sprite.remove(existingGlow);
-        
+
         const newGlow = this.createGlow(renderable);
-        sprite.addAt(newGlow, 0); // Add at index 0 so it's behind the sprite
+        sprite.addAt(newGlow, 0);
         this.glowMap.set(entity, newGlow);
-        
-        // Store current glow properties for future comparisons
+
         newGlow.setData('color', renderable.glow.color);
         newGlow.setData('radius', renderable.glow.radius);
         newGlow.setData('intensity', renderable.glow.intensity);
       }
     }
 
-    // Update glow pulsing animation if enabled
     if (renderable.glow?.pulse?.enabled) {
       this.updateGlowPulse(entity, renderable, deltaInSeconds);
-    }
-
-    // Get tint of the first child sprite or circle, if present
-    let childTint = undefined;
-    const mainChild = (sprite.list && sprite.list.length > 0) ? sprite.list[0] : undefined;
-    if (mainChild && typeof mainChild.tintTopLeft !== 'undefined') {
-      // Phaser v3 Sprite, use tintTopLeft (or tint for v2/older plugins)
-      childTint = mainChild.tintTopLeft;
-    } else if (mainChild && mainChild.fillColor) {
-      childTint = mainChild.fillColor;
-    }
-
-    // check if sprite is currently green and turning white
-    if (renderable.tint === 16777215 && childTint === 65280) {
-      debugger;
-      console.log('Sprite is currently green and turning white');
     }
 
     this.applyTintToChildren(sprite, renderable.tint);
   }
 
-  private destroySprite(entity: ECSEntity): void {
+  private destroySprite(entity: Entity): void {
     const sprite = this.spriteMap.get(entity);
     if (sprite) {
       sprite.destroy();
       this.spriteMap.delete(entity);
     }
-    
-    // Clean up glow graphics if present
-    const glow = this.glowMap.get(entity);
-    if (glow) {
-      this.glowMap.delete(entity);
-    }
+    this.glowMap.delete(entity);
   }
 
   private applyTintToChildren(container: Phaser.GameObjects.Container, tint: number): void {
-    // Apply tint to all children in the container
     container.list.forEach((child: any) => {
       if (child.setTint) {
         child.setTint(tint);
       } else if (child.setFillStyle) {
-        // For circles, we need to update fillStyle
-        // Convert hex tint to RGB components
         const r = ((tint >> 16) & 0xFF);
         const g = ((tint >> 8) & 0xFF);
         const b = (tint & 0xFF);
@@ -206,53 +157,39 @@ export class RenderingSystem extends System {
 
   private createGlow(renderable: Renderable): Phaser.GameObjects.Graphics {
     const glowGraphics = this.scene.add.graphics();
-    
-    if (!renderable.glow || renderable.glow === null) {
-      return glowGraphics;
-    }
+
+    if (!renderable.glow) return glowGraphics;
 
     const { radius, color, intensity } = renderable.glow;
-    
-    // Create radial gradient effect with multiple circles
-    // Draw from outside to inside with decreasing alpha for smooth fade
+
     const steps = 10;
     for (let i = steps; i >= 0; i--) {
       const stepRadius = radius * (i / steps);
-      const stepAlpha = intensity * (1 - i / steps) * 0.3; // Fade out towards edges
-      
+      const stepAlpha = intensity * (1 - i / steps) * 0.3;
       glowGraphics.fillStyle(color, stepAlpha);
       glowGraphics.fillCircle(0, 0, stepRadius);
     }
-    
-    // Use ADD blend mode for luminous effect
+
     glowGraphics.setBlendMode(Phaser.BlendModes.ADD);
-    
     return glowGraphics;
   }
 
-  private updateGlowPulse(entity: ECSEntity, renderable: Renderable, deltaInSeconds: number): void {
+  private updateGlowPulse(entity: Entity, renderable: Renderable, _deltaInSeconds: number): void {
     const glow = this.glowMap.get(entity);
-    if (!glow || !renderable.glow || renderable.glow === null || !renderable.glow.pulse) return;
+    if (!glow || !renderable.glow?.pulse) return;
 
     const pulse = renderable.glow.pulse;
-    const time = this.world.getSystem(RenderingSystem).lastTime || 0;
-    
-    // Calculate pulsing intensity using sine wave
+    const time = this.lastTime;
+
     const cyclePosition = (time / 1000) * pulse.speed;
     const sineWave = Math.sin(cyclePosition * Math.PI * 2);
-    const normalizedSine = (sineWave + 1) / 2; // Convert from [-1,1] to [0,1]
-    
-    // Map to min/max intensity range
+    const normalizedSine = (sineWave + 1) / 2;
+
     const currentIntensity = pulse.minIntensity + (normalizedSine * (pulse.maxIntensity - pulse.minIntensity));
-    
-    // Update the glow's alpha to reflect new intensity
     glow.setAlpha(currentIntensity);
   }
 
-  getSpriteForEntity(entity: ECSEntity): Phaser.GameObjects.Container | undefined {
+  getSpriteForEntity(entity: Entity): Phaser.GameObjects.Container | undefined {
     return this.spriteMap.get(entity);
   }
-  
-  // Track last time for pulse calculations
-  private lastTime: number = 0;
 }

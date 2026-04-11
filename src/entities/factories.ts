@@ -1,151 +1,144 @@
-import { World } from 'ecsy';
-import {
-  ActivationConfig,
-  Position,
-  Velocity,
-  Renderable,
-  PhysicsBody,
-  Path,
-  Lodge,
-  Targeting,
-  Destination,
-  Interaction,
-  Health,
-  Combat,
-  CombatState,
-  Trail,
-  FireflyGoal,
-  FireflyTag,
-  WispTag,
-  MonsterTag,
-  GoalTag
-} from '@/ecs/components';
-import { ECSEntity } from '@/types';
+import type { Entity, GameWorld } from '@/ecs/Entity';
+import { CombatState } from '@/ecs/Entity';
 import { ENTITY_CONFIG, PHYSICS_CONFIG } from '@/config';
 
-export function createFirefly(world: World, x: number, y: number): ECSEntity {
+export function createFirefly(world: GameWorld, x: number, y: number): Entity {
   const config = ENTITY_CONFIG.firefly;
 
-  return world.createEntity()
-    .addComponent(Position, {
+  return world.add({
+    position: {
       x: x + Math.random() * PHYSICS_CONFIG.POSITION_JITTER,
       y: y + Math.random() * PHYSICS_CONFIG.POSITION_JITTER
-    })
-    .addComponent(Velocity, { vx: 0, vy: 0 })
-    .addComponent(Path, {
+    },
+    velocity: { vx: 0, vy: 0 },
+    path: {
       currentPath: [],
       nextPath: [],
       direction: config.direction!
-    })
-    .addComponent(Renderable, {
+    },
+    renderable: {
       type: config.type,
-      sprite: config.type, // Use type as sprite key
+      sprite: config.type,
       color: config.color,
       radius: config.radius,
-      depth: 50, // Secondary - player units
+      alpha: 1,
+      scale: 1,
+      tint: 0xFFFFFF,
+      rotation: 0,
+      rotationSpeed: 0,
+      depth: 50,
+      offsetY: 0,
       glow: {
         radius: 15,
-        color: 0xDEF4B4, // Soft yellow-green firefly glow
+        color: 0xDEF4B4,
         intensity: 0.4,
         pulse: {
           enabled: true,
-          speed: 0.6, // Slow, gentle pulse
+          speed: 0.6,
           minIntensity: 0.4,
           maxIntensity: 0.7
         }
       }
-    })
-    .addComponent(PhysicsBody, {
+    },
+    physicsBody: {
       mass: config.mass,
       isStatic: config.isStatic,
       collisionRadius: config.radius
-    })
-    .addComponent(Interaction, {
+    },
+    interaction: {
       interactsWith: config.interactsWith!,
-      interactionRadius: config.interactionRadius!,
-      onInteract: () => {}
-    })
-    .addComponent(Targeting, {
+      interactionRadius: config.interactionRadius!
+    },
+    targeting: {
       potentialTargets: []
-    })
-    .addComponent(Health, {
+    },
+    health: {
       currentHealth: config.health!,
       maxHealth: config.health!,
       isDead: false
-    })
-    .addComponent(Combat, {
+    },
+    combat: {
       state: CombatState.IDLE,
       chargeTime: 0,
       attackElapsed: 0,
       recoveryElapsed: 0,
       attackPattern: config.combat!,
       hasHit: false
-    })
-    .addComponent(Trail, {
+    },
+    trail: {
       enabled: true,
       config: {
         length: 100,
         fadeTime: 800,
-        color: 0xDEF4B4, // Soft yellow-green to match firefly glow
+        color: 0xDEF4B4,
         width: 3,
         minAlpha: 0.05
       },
       points: []
-    })
-    .addComponent(FireflyTag);
+    },
+    fireflyTag: true
+  });
 }
 
-export function createWisp(world: World, x: number, y: number): ECSEntity {
+export function createWisp(world: GameWorld, x: number, y: number): Entity {
   const config = ENTITY_CONFIG.wisp;
 
-  return world.createEntity()
-    .addComponent(Position, { x, y })
-    .addComponent(Destination, { for: ['firefly'] })
-    .addComponent(Renderable, {
+  return world.add({
+    position: { x, y },
+    destination: { for: ['firefly'] },
+    renderable: {
       type: config.type,
-      sprite: config.type, // Use type as sprite key
-      tint: config.color,
+      sprite: config.type,
+      color: config.color,
       radius: config.radius,
-      depth: 40, // Secondary - towers/strategic structures
-      rotationSpeed: Math.PI * 0.5, // Rotate 90 degrees per second (adjust to taste)
+      alpha: 1,
+      scale: 1,
+      tint: config.color,
+      rotation: 0,
+      rotationSpeed: Math.PI * 0.5,
+      depth: 40,
+      offsetY: 0,
       glow: {
         radius: 30,
-        color: 0xB0C4DE, // Pale blue tower illumination
+        color: 0xB0C4DE,
         intensity: 0.5,
         pulse: {
           enabled: true,
-          speed: 0.5, // Very slow, calm pulse
+          speed: 0.5,
           minIntensity: 0.3,
           maxIntensity: 0.6
         }
       }
-    })
-    .addComponent(PhysicsBody, {
+    },
+    physicsBody: {
       mass: config.mass,
       isStatic: config.isStatic,
       collisionRadius: config.radius
-    })
-    .addComponent(Health, {
+    },
+    health: {
+      currentHealth: 500,
       maxHealth: 500,
-    })
-    .addComponent(WispTag)
-    .addComponent(Lodge, {
+      isDead: false
+    },
+    wispTag: true,
+    lodge: {
+      tenants: [],
       allowedTenants: ['firefly'],
       maxTenants: 1
-    })
-    .addComponent(ActivationConfig, {
+    },
+    activationConfig: {
       onActivate: [
         {
-          component: Renderable,
-          config: { 
+          componentName: 'renderable',
+          config: {
             tint: config.activeColor,
             glow: {
               radius: 20,
-              color: 0x5ED6FE, // Crisp blue glow when active
+              color: 0x5ED6FE,
               intensity: 0.8,
               pulse: {
                 enabled: true,
-                speed: 1.0, // Faster pulse when active
+                speed: 1.0,
                 minIntensity: 1,
                 maxIntensity: 1.5
               }
@@ -153,21 +146,20 @@ export function createWisp(world: World, x: number, y: number): ECSEntity {
           }
         },
         {
-          component: Interaction,
+          componentName: 'interaction',
           config: {
             interactsWith: ['monster'],
-            interactionRadius: 75,
-            onInteract: () => {}
+            interactionRadius: 75
           }
         },
         {
-          component: Targeting,
+          componentName: 'targeting',
           config: {
             potentialTargets: []
           }
         },
         {
-          component: Combat,
+          componentName: 'combat',
           config: {
             state: CombatState.IDLE,
             attackPattern: config.combat!,
@@ -177,12 +169,12 @@ export function createWisp(world: World, x: number, y: number): ECSEntity {
       ],
       onDeactivate: [
         {
-          component: Renderable,
-          config: { 
+          componentName: 'renderable',
+          config: {
             tint: config.color,
             glow: {
               radius: 30,
-              color: 0xB0C4DE, // Back to pale blue when inactive
+              color: 0xB0C4DE,
               intensity: 0.5,
               pulse: {
                 enabled: true,
@@ -194,80 +186,91 @@ export function createWisp(world: World, x: number, y: number): ECSEntity {
           }
         }
       ]
-    });
+    }
+  });
 }
 
-export function createMonster(world: World, x: number, y: number): ECSEntity {
+export function createMonster(world: GameWorld, x: number, y: number): Entity {
   const config = ENTITY_CONFIG.monster;
 
-  return world.createEntity()
-    .addComponent(Position, {
+  return world.add({
+    position: {
       x: x + Math.random() * PHYSICS_CONFIG.POSITION_JITTER,
       y: y + Math.random() * PHYSICS_CONFIG.POSITION_JITTER
-    })
-    .addComponent(Velocity, { vx: 0, vy: 0 })
-    .addComponent(Path, {
+    },
+    velocity: { vx: 0, vy: 0 },
+    path: {
       currentPath: [],
       nextPath: [],
       direction: config.direction!
-    })
-    .addComponent(Renderable, {
+    },
+    renderable: {
       type: config.type,
-      sprite: 'monster1', // Use type as sprite key
+      sprite: 'monster1',
       color: config.color,
       radius: config.radius,
-      rotationSpeed: Math.PI * 0.2, // Rotate 90 degrees per second (adjust to taste)
-      depth: 100 // Primary - threats (highest priority)
-    })
-    .addComponent(PhysicsBody, {
+      alpha: 1,
+      scale: 1,
+      tint: 0xFFFFFF,
+      rotation: 0,
+      rotationSpeed: Math.PI * 0.2,
+      depth: 100,
+      offsetY: 0
+    },
+    physicsBody: {
       mass: config.mass,
       isStatic: config.isStatic,
       collisionRadius: config.radius
-    })
-    .addComponent(Interaction, {
+    },
+    interaction: {
       interactsWith: config.interactsWith!,
-      interactionRadius: config.interactionRadius!,
-      onInteract: () => {}
-    })
-    .addComponent(Targeting, {
+      interactionRadius: config.interactionRadius!
+    },
+    targeting: {
       potentialTargets: []
-    })
-    .addComponent(Health, {
+    },
+    health: {
       currentHealth: config.health!,
       maxHealth: config.health!,
       isDead: false
-    })
-    .addComponent(Combat, {
+    },
+    combat: {
       state: CombatState.IDLE,
+      chargeTime: 0,
+      attackElapsed: 0,
+      recoveryElapsed: 0,
       attackPattern: config.combat!,
       hasHit: false
-    })
-    .addComponent(MonsterTag);
+    },
+    monsterTag: true
+  });
 }
 
 export function createGoal(
-  world: World,
+  world: GameWorld,
   x: number,
   y: number,
   attractType: string
-): ECSEntity {
+): Entity {
   const config = ENTITY_CONFIG.goal;
 
-  // Use different sprites based on what type of entity this goal attracts
   const spriteKey = attractType === 'monster' ? 'fireflywell' : 'greattree';
   const spriteRadius = attractType === 'monster' ? 20 : 40;
-  
-  // Build renderable config based on attract type
+
   const renderableConfig: any = {
     type: config.type,
     sprite: spriteKey,
     color: config.color,
     radius: spriteRadius,
+    alpha: 1,
+    scale: 1,
+    tint: 0xFFFFFF,
+    rotation: 0,
+    rotationSpeed: 0,
     depth: 10,
     offsetY: -spriteRadius + 8
   };
 
-  // Only add glow for firefly goals
   if (attractType === 'firefly') {
     renderableConfig.glow = {
       radius: 30,
@@ -276,21 +279,21 @@ export function createGoal(
     };
   }
 
-  const entity = world.createEntity()
-    .addComponent(Position, { x, y })
-    .addComponent(Destination, { for: [attractType] })
-    .addComponent(Renderable, renderableConfig)
-    .addComponent(PhysicsBody, {
+  const entity: Partial<Entity> = {
+    position: { x, y },
+    destination: { for: [attractType] },
+    renderable: renderableConfig,
+    physicsBody: {
       mass: config.mass,
       isStatic: config.isStatic,
       collisionRadius: config.radius
-    })
-    .addComponent(GoalTag);
+    },
+    goalTag: true
+  };
 
-  // Add FireflyGoal component for firefly goals to track progress
   if (attractType === 'firefly') {
-    entity.addComponent(FireflyGoal, { currentCount: 0 });
+    entity.fireflyGoal = { currentCount: 0 };
   }
 
-  return entity;
+  return world.add(entity as Entity);
 }

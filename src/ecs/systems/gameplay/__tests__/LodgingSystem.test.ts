@@ -1,235 +1,233 @@
 import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
-import { World } from 'ecsy';
+import { World } from 'miniplex';
+import type { Entity, GameWorld } from '@/ecs/Entity';
 import { LodgingSystem } from '../LodgingSystem';
-import {
-  Position,
-  Velocity,
-  Path,
-  Lodge,
-  Renderable,
-  FireflyTag,
-  WispTag,
-  ActivationConfig,
-  FleeingToGoalTag
-} from '@/ecs/components';
 import { SpatialGrid } from '@/utils';
 import { gameEvents, GameEvents } from '@/events';
 import { PHYSICS_CONFIG, ENTITY_CONFIG } from '@/config';
 
 describe('LodgingSystem', () => {
-  let world: World;
+  let world: GameWorld;
   let system: LodgingSystem;
   let spatialGrid: SpatialGrid;
 
   beforeEach(() => {
-    world = new World();
-    world
-      .registerComponent(Position)
-      .registerComponent(Velocity)
-      .registerComponent(Path)
-      .registerComponent(Lodge)
-      .registerComponent(Renderable)
-      .registerComponent(ActivationConfig)
-      .registerComponent(FireflyTag)
-      .registerComponent(WispTag)
-      .registerComponent(FleeingToGoalTag);
-
+    world = new World<Entity>();
     spatialGrid = new SpatialGrid(100);
-    world.registerSystem(LodgingSystem, { spatialGrid });
-    system = world.getSystem(LodgingSystem) as LodgingSystem;
+    gameEvents.clear();
+    system = new LodgingSystem(world, { spatialGrid });
   });
 
   afterEach(() => {
     gameEvents.clear();
   });
 
-  // Populate spatial grid with all entities
   const populateGridAndExecute = () => {
     spatialGrid.clear();
-    const positionedEntities = (world.entityManager as any)._entities.filter(
-      (e: any) => e.hasComponent(Position)
-    );
-    positionedEntities.forEach((entity: any) => {
-      const pos = entity.getComponent(Position);
-      if (pos) {
-        spatialGrid.insert(entity, pos.x, pos.y);
-      }
-    });
-    system.execute();
+    for (const entity of world.with('position')) {
+      spatialGrid.insert(entity, entity.position.x, entity.position.y);
+    }
+    system.update(16, 16);
   };
 
   describe('Tenant detection and addition', () => {
     it('should add firefly tenant when within range of wisp lodge', () => {
-      const wisp = world.createEntity();
-      wisp
-        .addComponent(Position, { x: 100, y: 100 })
-        .addComponent(Renderable, { type: 'wisp' })
-        .addComponent(Lodge, {
-          allowedTenants: ['firefly'],
-          maxTenants: 1
-        })
-        .addComponent(WispTag);
+      const wisp = world.add({
+        position: { x: 100, y: 100 },
+        renderable: {
+          type: 'wisp', sprite: 'wisp', color: 0x0000ff, radius: 10,
+          alpha: 1, scale: 1, tint: 0xFFFFFF, rotation: 0, rotationSpeed: 0, depth: 50, offsetY: 0
+        },
+        lodge: { allowedTenants: ['firefly'], maxTenants: 1, tenants: [] },
+        wispTag: true
+      });
 
-      const firefly = world.createEntity();
-      firefly
-        .addComponent(Position, { x: 100, y: 100 })
-        .addComponent(Velocity, { vx: 0, vy: 0 })
-        .addComponent(Path, { currentPath: [], nextPath: [], direction: 'r' })
-        .addComponent(Renderable, { type: 'firefly' })
-        .addComponent(FireflyTag);
+      world.add({
+        position: { x: 100, y: 100 },
+        velocity: { vx: 0, vy: 0 },
+        path: { currentPath: [], nextPath: [], direction: 'r' },
+        renderable: {
+          type: 'firefly', sprite: 'firefly', color: 0xffff00, radius: 5,
+          alpha: 1, scale: 1, tint: 0xFFFFFF, rotation: 0, rotationSpeed: 0, depth: 50, offsetY: 0
+        },
+        fireflyTag: true
+      });
 
       populateGridAndExecute();
 
-      const lodge = wisp.getComponent(Lodge)!;
-      expect(lodge.tenants).toHaveLength(1);
+      expect(wisp.lodge!.tenants).toHaveLength(1);
     });
 
     it('should not add tenant when outside arrival threshold', () => {
-      const wisp = world.createEntity();
-      wisp
-        .addComponent(Position, { x: 100, y: 100 })
-        .addComponent(Renderable, { type: 'wisp' })
-        .addComponent(Lodge, {
-          allowedTenants: ['firefly'],
-          maxTenants: 1
-        })
-        .addComponent(WispTag);
+      const wisp = world.add({
+        position: { x: 100, y: 100 },
+        renderable: {
+          type: 'wisp', sprite: 'wisp', color: 0x0000ff, radius: 10,
+          alpha: 1, scale: 1, tint: 0xFFFFFF, rotation: 0, rotationSpeed: 0, depth: 50, offsetY: 0
+        },
+        lodge: { allowedTenants: ['firefly'], maxTenants: 1, tenants: [] },
+        wispTag: true
+      });
 
-      const firefly = world.createEntity();
-      // Position far away
-      firefly
-        .addComponent(Position, { x: 200, y: 200 })
-        .addComponent(Velocity, { vx: 0, vy: 0 })
-        .addComponent(Path, { currentPath: [], nextPath: [], direction: 'r' })
-        .addComponent(Renderable, { type: 'firefly' })
-        .addComponent(FireflyTag);
+      world.add({
+        position: { x: 200, y: 200 },
+        velocity: { vx: 0, vy: 0 },
+        path: { currentPath: [], nextPath: [], direction: 'r' },
+        renderable: {
+          type: 'firefly', sprite: 'firefly', color: 0xffff00, radius: 5,
+          alpha: 1, scale: 1, tint: 0xFFFFFF, rotation: 0, rotationSpeed: 0, depth: 50, offsetY: 0
+        },
+        fireflyTag: true
+      });
 
       populateGridAndExecute();
 
-      const lodge = wisp.getComponent(Lodge)!;
-      expect(lodge.tenants).toHaveLength(0);
+      expect(wisp.lodge!.tenants).toHaveLength(0);
     });
 
     it('should not add tenant when lodge is at max capacity', () => {
-      const wisp = world.createEntity();
-      wisp
-        .addComponent(Position, { x: 100, y: 100 })
-        .addComponent(Renderable, { type: 'wisp' })
-        .addComponent(Lodge, {
-          allowedTenants: ['firefly'],
-          maxTenants: 1
-        })
-        .addComponent(WispTag);
+      const wisp = world.add({
+        position: { x: 100, y: 100 },
+        renderable: {
+          type: 'wisp', sprite: 'wisp', color: 0x0000ff, radius: 10,
+          alpha: 1, scale: 1, tint: 0xFFFFFF, rotation: 0, rotationSpeed: 0, depth: 50, offsetY: 0
+        },
+        lodge: { allowedTenants: ['firefly'], maxTenants: 1, tenants: [] },
+        wispTag: true
+      });
 
-      const firefly1 = world.createEntity();
-      firefly1
-        .addComponent(Position, { x: 100, y: 100 })
-        .addComponent(Velocity, { vx: 0, vy: 0 })
-        .addComponent(Path, { currentPath: [], nextPath: [], direction: 'r' })
-        .addComponent(Renderable, { type: 'firefly' })
-        .addComponent(FireflyTag);
+      world.add({
+        position: { x: 100, y: 100 },
+        velocity: { vx: 0, vy: 0 },
+        path: { currentPath: [], nextPath: [], direction: 'r' },
+        renderable: {
+          type: 'firefly', sprite: 'firefly', color: 0xffff00, radius: 5,
+          alpha: 1, scale: 1, tint: 0xFFFFFF, rotation: 0, rotationSpeed: 0, depth: 50, offsetY: 0
+        },
+        fireflyTag: true
+      });
 
-      const firefly2 = world.createEntity();
-      firefly2
-        .addComponent(Position, { x: 100, y: 100 })
-        .addComponent(Velocity, { vx: 0, vy: 0 })
-        .addComponent(Path, { currentPath: [], nextPath: [], direction: 'r' })
-        .addComponent(Renderable, { type: 'firefly' })
-        .addComponent(FireflyTag);
+      world.add({
+        position: { x: 100, y: 100 },
+        velocity: { vx: 0, vy: 0 },
+        path: { currentPath: [], nextPath: [], direction: 'r' },
+        renderable: {
+          type: 'firefly', sprite: 'firefly', color: 0xffff00, radius: 5,
+          alpha: 1, scale: 1, tint: 0xFFFFFF, rotation: 0, rotationSpeed: 0, depth: 50, offsetY: 0
+        },
+        fireflyTag: true
+      });
 
       populateGridAndExecute();
 
-      const lodge = wisp.getComponent(Lodge)!;
-      // Only one tenant should be added
-      expect(lodge.tenants).toHaveLength(1);
+      expect(wisp.lodge!.tenants).toHaveLength(1);
     });
 
     it('should not add tenant of disallowed type', () => {
-      const wisp = world.createEntity();
-      wisp
-        .addComponent(Position, { x: 100, y: 100 })
-        .addComponent(Renderable, { type: 'wisp' })
-        .addComponent(Lodge, {
-          allowedTenants: ['monster'], // Only monsters allowed
-          maxTenants: 1
-        })
-        .addComponent(WispTag);
+      const wisp = world.add({
+        position: { x: 100, y: 100 },
+        renderable: {
+          type: 'wisp', sprite: 'wisp', color: 0x0000ff, radius: 10,
+          alpha: 1, scale: 1, tint: 0xFFFFFF, rotation: 0, rotationSpeed: 0, depth: 50, offsetY: 0
+        },
+        lodge: { allowedTenants: ['monster'], maxTenants: 1, tenants: [] },
+        wispTag: true
+      });
 
-      const firefly = world.createEntity();
-      firefly
-        .addComponent(Position, { x: 100, y: 100 })
-        .addComponent(Velocity, { vx: 0, vy: 0 })
-        .addComponent(Path, { currentPath: [], nextPath: [], direction: 'r' })
-        .addComponent(Renderable, { type: 'firefly' })
-        .addComponent(FireflyTag);
+      world.add({
+        position: { x: 100, y: 100 },
+        velocity: { vx: 0, vy: 0 },
+        path: { currentPath: [], nextPath: [], direction: 'r' },
+        renderable: {
+          type: 'firefly', sprite: 'firefly', color: 0xffff00, radius: 5,
+          alpha: 1, scale: 1, tint: 0xFFFFFF, rotation: 0, rotationSpeed: 0, depth: 50, offsetY: 0
+        },
+        fireflyTag: true
+      });
 
       populateGridAndExecute();
 
-      const lodge = wisp.getComponent(Lodge)!;
-      expect(lodge.tenants).toHaveLength(0);
+      expect(wisp.lodge!.tenants).toHaveLength(0);
     });
 
     it('should not add lodge entity as its own tenant', () => {
-      const wisp = world.createEntity();
-      wisp
-        .addComponent(Position, { x: 100, y: 100 })
-        .addComponent(Renderable, { type: 'wisp' })
-        .addComponent(Lodge, {
-          allowedTenants: ['wisp'],
-          maxTenants: 1
-        })
-        .addComponent(WispTag);
+      const wisp = world.add({
+        position: { x: 100, y: 100 },
+        renderable: {
+          type: 'wisp', sprite: 'wisp', color: 0x0000ff, radius: 10,
+          alpha: 1, scale: 1, tint: 0xFFFFFF, rotation: 0, rotationSpeed: 0, depth: 50, offsetY: 0
+        },
+        lodge: { allowedTenants: ['wisp'], maxTenants: 1, tenants: [] },
+        wispTag: true
+      });
 
       populateGridAndExecute();
 
-      const lodge = wisp.getComponent(Lodge)!;
-      expect(lodge.tenants).toHaveLength(0);
+      expect(wisp.lodge!.tenants).toHaveLength(0);
     });
   });
 
   describe('canLodge helper', () => {
     it('should return true for allowed tenant type', () => {
-      const firefly = world.createEntity();
-      firefly.addComponent(Renderable, { type: 'firefly' });
+      const firefly = world.add({
+        renderable: {
+          type: 'firefly', sprite: 'firefly', color: 0xffff00, radius: 5,
+          alpha: 1, scale: 1, tint: 0xFFFFFF, rotation: 0, rotationSpeed: 0, depth: 50, offsetY: 0
+        }
+      });
 
-      expect(system.canLodge(firefly, ['firefly'])).toBe(true);
+      expect((system as any).canLodge(firefly, ['firefly'])).toBe(true);
     });
 
     it('should return false for disallowed tenant type', () => {
-      const firefly = world.createEntity();
-      firefly.addComponent(Renderable, { type: 'firefly' });
+      const firefly = world.add({
+        renderable: {
+          type: 'firefly', sprite: 'firefly', color: 0xffff00, radius: 5,
+          alpha: 1, scale: 1, tint: 0xFFFFFF, rotation: 0, rotationSpeed: 0, depth: 50, offsetY: 0
+        }
+      });
 
-      expect(system.canLodge(firefly, ['monster'])).toBe(false);
+      expect((system as any).canLodge(firefly, ['monster'])).toBe(false);
     });
 
     it('should return true if tenant type is in multiple allowed types', () => {
-      const firefly = world.createEntity();
-      firefly.addComponent(Renderable, { type: 'firefly' });
+      const firefly = world.add({
+        renderable: {
+          type: 'firefly', sprite: 'firefly', color: 0xffff00, radius: 5,
+          alpha: 1, scale: 1, tint: 0xFFFFFF, rotation: 0, rotationSpeed: 0, depth: 50, offsetY: 0
+        }
+      });
 
-      expect(system.canLodge(firefly, ['monster', 'firefly', 'wisp'])).toBe(true);
+      expect((system as any).canLodge(firefly, ['monster', 'firefly', 'wisp'])).toBe(true);
     });
 
     it('should return false for entity without Renderable component', () => {
-      const entity = world.createEntity();
+      const entity = world.add({});
 
-      expect(system.canLodge(entity, ['firefly'])).toBe(false);
+      expect((system as any).canLodge(entity, ['firefly'])).toBe(false);
     });
 
     it('should return false for empty allowedTenants array', () => {
-      const firefly = world.createEntity();
-      firefly.addComponent(Renderable, { type: 'firefly' });
+      const firefly = world.add({
+        renderable: {
+          type: 'firefly', sprite: 'firefly', color: 0xffff00, radius: 5,
+          alpha: 1, scale: 1, tint: 0xFFFFFF, rotation: 0, rotationSpeed: 0, depth: 50, offsetY: 0
+        }
+      });
 
-      expect(system.canLodge(firefly, [])).toBe(false);
+      expect((system as any).canLodge(firefly, [])).toBe(false);
     });
 
     it('should return false for entity with FleeingToGoalTag', () => {
-      world.registerComponent(FleeingToGoalTag);
-      
-      const firefly = world.createEntity();
-      firefly.addComponent(Renderable, { type: 'firefly' });
-      firefly.addComponent(FleeingToGoalTag);
+      const firefly = world.add({
+        renderable: {
+          type: 'firefly', sprite: 'firefly', color: 0xffff00, radius: 5,
+          alpha: 1, scale: 1, tint: 0xFFFFFF, rotation: 0, rotationSpeed: 0, depth: 50, offsetY: 0
+        },
+        fleeingToGoalTag: true
+      });
 
-      expect(system.canLodge(firefly, ['firefly'])).toBe(false);
+      expect((system as any).canLodge(firefly, ['firefly'])).toBe(false);
     });
   });
 
@@ -238,23 +236,26 @@ describe('LodgingSystem', () => {
       const eventSpy = vi.fn();
       gameEvents.on(GameEvents.TENANT_ADDED_TO_LODGE, eventSpy);
 
-      const wisp = world.createEntity();
-      wisp
-        .addComponent(Position, { x: 100, y: 100 })
-        .addComponent(Renderable, { type: 'wisp' })
-        .addComponent(Lodge, {
-          allowedTenants: ['firefly'],
-          maxTenants: 1
-        })
-        .addComponent(WispTag);
+      const wisp = world.add({
+        position: { x: 100, y: 100 },
+        renderable: {
+          type: 'wisp', sprite: 'wisp', color: 0x0000ff, radius: 10,
+          alpha: 1, scale: 1, tint: 0xFFFFFF, rotation: 0, rotationSpeed: 0, depth: 50, offsetY: 0
+        },
+        lodge: { allowedTenants: ['firefly'], maxTenants: 1, tenants: [] },
+        wispTag: true
+      });
 
-      const firefly = world.createEntity();
-      firefly
-        .addComponent(Position, { x: 100, y: 100 })
-        .addComponent(Velocity, { vx: 0, vy: 0 })
-        .addComponent(Path, { currentPath: [], nextPath: [], direction: 'r' })
-        .addComponent(Renderable, { type: 'firefly' })
-        .addComponent(FireflyTag);
+      const firefly = world.add({
+        position: { x: 100, y: 100 },
+        velocity: { vx: 0, vy: 0 },
+        path: { currentPath: [], nextPath: [], direction: 'r' },
+        renderable: {
+          type: 'firefly', sprite: 'firefly', color: 0xffff00, radius: 5,
+          alpha: 1, scale: 1, tint: 0xFFFFFF, rotation: 0, rotationSpeed: 0, depth: 50, offsetY: 0
+        },
+        fireflyTag: true
+      });
 
       populateGridAndExecute();
 
@@ -266,272 +267,279 @@ describe('LodgingSystem', () => {
     });
 
     it('should remove Position, Velocity, and Path components from tenant', () => {
-      const wisp = world.createEntity();
-      wisp
-        .addComponent(Position, { x: 100, y: 100 })
-        .addComponent(Renderable, { type: 'wisp' })
-        .addComponent(Lodge, {
-          allowedTenants: ['firefly'],
-          maxTenants: 1
-        })
-        .addComponent(WispTag);
+      world.add({
+        position: { x: 100, y: 100 },
+        renderable: {
+          type: 'wisp', sprite: 'wisp', color: 0x0000ff, radius: 10,
+          alpha: 1, scale: 1, tint: 0xFFFFFF, rotation: 0, rotationSpeed: 0, depth: 50, offsetY: 0
+        },
+        lodge: { allowedTenants: ['firefly'], maxTenants: 1, tenants: [] },
+        wispTag: true
+      });
 
-      const firefly = world.createEntity();
-      firefly
-        .addComponent(Position, { x: 100, y: 100 })
-        .addComponent(Velocity, { vx: 5, vy: 5 })
-        .addComponent(Path, { currentPath: [], nextPath: [], direction: 'r' })
-        .addComponent(Renderable, { type: 'firefly' })
-        .addComponent(FireflyTag);
+      const firefly = world.add({
+        position: { x: 100, y: 100 },
+        velocity: { vx: 5, vy: 5 },
+        path: { currentPath: [], nextPath: [], direction: 'r' },
+        renderable: {
+          type: 'firefly', sprite: 'firefly', color: 0xffff00, radius: 5,
+          alpha: 1, scale: 1, tint: 0xFFFFFF, rotation: 0, rotationSpeed: 0, depth: 50, offsetY: 0
+        },
+        fireflyTag: true
+      });
 
       populateGridAndExecute();
 
-      expect(firefly.hasComponent(Position)).toBe(false);
-      expect(firefly.hasComponent(Velocity)).toBe(false);
-      expect(firefly.hasComponent(Path)).toBe(false);
+      expect(firefly.position).toBeUndefined();
+      expect(firefly.velocity).toBeUndefined();
+      expect(firefly.path).toBeUndefined();
     });
 
     it('should change lodge color to activeColor when full', () => {
-      const wisp = world.createEntity();
-      const wispRenderable = wisp
-        .addComponent(Position, { x: 100, y: 100 })
-        .addComponent(Renderable, { type: 'wisp', tint: ENTITY_CONFIG.wisp.color })
-        .addComponent(Lodge, {
-          allowedTenants: ['firefly'],
-          maxTenants: 1
-        })
-        .addComponent(ActivationConfig, {
+      const wisp = world.add({
+        position: { x: 100, y: 100 },
+        renderable: {
+          type: 'wisp', sprite: 'wisp', color: 0x0000ff, radius: 10,
+          alpha: 1, scale: 1, tint: ENTITY_CONFIG.wisp.color, rotation: 0, rotationSpeed: 0, depth: 50, offsetY: 0
+        },
+        lodge: { allowedTenants: ['firefly'], maxTenants: 1, tenants: [] },
+        activationConfig: {
           onActivate: [
-            {
-              component: Renderable,
-              config: { tint: ENTITY_CONFIG.wisp.activeColor }
-            }
+            { componentName: 'renderable', config: { tint: ENTITY_CONFIG.wisp.activeColor } }
           ],
           onDeactivate: [
-            {
-              component: Renderable,
-              config: { tint: ENTITY_CONFIG.wisp.color }
-            }
+            { componentName: 'renderable', config: { tint: ENTITY_CONFIG.wisp.color } }
           ]
-        })
-        .addComponent(WispTag)
-        .getMutableComponent(Renderable)!;
+        },
+        wispTag: true
+      });
 
-      const firefly = world.createEntity();
-      firefly
-        .addComponent(Position, { x: 100, y: 100 })
-        .addComponent(Velocity, { vx: 0, vy: 0 })
-        .addComponent(Path, { currentPath: [], nextPath: [], direction: 'r' })
-        .addComponent(Renderable, { type: 'firefly' })
-        .addComponent(FireflyTag);
+      world.add({
+        position: { x: 100, y: 100 },
+        velocity: { vx: 0, vy: 0 },
+        path: { currentPath: [], nextPath: [], direction: 'r' },
+        renderable: {
+          type: 'firefly', sprite: 'firefly', color: 0xffff00, radius: 5,
+          alpha: 1, scale: 1, tint: 0xFFFFFF, rotation: 0, rotationSpeed: 0, depth: 50, offsetY: 0
+        },
+        fireflyTag: true
+      });
 
       populateGridAndExecute();
 
-      // Color should change to activeColor when lodge is full
-      expect(wispRenderable.tint).toBe(ENTITY_CONFIG.wisp.activeColor);
+      expect(wisp.renderable!.tint).toBe(ENTITY_CONFIG.wisp.activeColor);
     });
 
     it('should not change color when lodge is not yet full', () => {
-      const wisp = world.createEntity();
       const originalColor = ENTITY_CONFIG.wisp.color;
-      const wispRenderable = wisp
-        .addComponent(Position, { x: 100, y: 100 })
-        .addComponent(Renderable, { type: 'wisp', tint: originalColor })
-        .addComponent(Lodge, {
-          allowedTenants: ['firefly'],
-          maxTenants: 2 // Can hold 2, will only add 1
-        })
-        .addComponent(WispTag)
-        .getMutableComponent(Renderable)!;
 
-      const firefly = world.createEntity();
-      firefly
-        .addComponent(Position, { x: 100, y: 100 })
-        .addComponent(Velocity, { vx: 0, vy: 0 })
-        .addComponent(Path, { currentPath: [], nextPath: [], direction: 'r' })
-        .addComponent(Renderable, { type: 'firefly' })
-        .addComponent(FireflyTag);
+      const wisp = world.add({
+        position: { x: 100, y: 100 },
+        renderable: {
+          type: 'wisp', sprite: 'wisp', color: 0x0000ff, radius: 10,
+          alpha: 1, scale: 1, tint: originalColor, rotation: 0, rotationSpeed: 0, depth: 50, offsetY: 0
+        },
+        lodge: { allowedTenants: ['firefly'], maxTenants: 2, tenants: [] },
+        wispTag: true
+      });
+
+      world.add({
+        position: { x: 100, y: 100 },
+        velocity: { vx: 0, vy: 0 },
+        path: { currentPath: [], nextPath: [], direction: 'r' },
+        renderable: {
+          type: 'firefly', sprite: 'firefly', color: 0xffff00, radius: 5,
+          alpha: 1, scale: 1, tint: 0xFFFFFF, rotation: 0, rotationSpeed: 0, depth: 50, offsetY: 0
+        },
+        fireflyTag: true
+      });
 
       populateGridAndExecute();
 
-      // Color should NOT change yet since lodge isn't full
-      expect(wispRenderable.tint).toBe(originalColor);
+      expect(wisp.renderable!.tint).toBe(originalColor);
     });
   });
 
   describe('Distance calculations', () => {
     it('should respect PATH_ARRIVAL_THRESHOLD for lodging', () => {
       const threshold = PHYSICS_CONFIG.PATH_ARRIVAL_THRESHOLD;
-      
-      const wisp = world.createEntity();
-      wisp
-        .addComponent(Position, { x: 100, y: 100 })
-        .addComponent(Renderable, { type: 'wisp' })
-        .addComponent(Lodge, {
-          allowedTenants: ['firefly'],
-          maxTenants: 1
-        })
-        .addComponent(WispTag);
 
-      const firefly = world.createEntity();
-      // Position exactly at threshold boundary
-      firefly
-        .addComponent(Position, { x: 100 + threshold, y: 100 })
-        .addComponent(Velocity, { vx: 0, vy: 0 })
-        .addComponent(Path, { currentPath: [], nextPath: [], direction: 'r' })
-        .addComponent(Renderable, { type: 'firefly' })
-        .addComponent(FireflyTag);
+      const wisp = world.add({
+        position: { x: 100, y: 100 },
+        renderable: {
+          type: 'wisp', sprite: 'wisp', color: 0x0000ff, radius: 10,
+          alpha: 1, scale: 1, tint: 0xFFFFFF, rotation: 0, rotationSpeed: 0, depth: 50, offsetY: 0
+        },
+        lodge: { allowedTenants: ['firefly'], maxTenants: 1, tenants: [] },
+        wispTag: true
+      });
+
+      world.add({
+        position: { x: 100 + threshold, y: 100 },
+        velocity: { vx: 0, vy: 0 },
+        path: { currentPath: [], nextPath: [], direction: 'r' },
+        renderable: {
+          type: 'firefly', sprite: 'firefly', color: 0xffff00, radius: 5,
+          alpha: 1, scale: 1, tint: 0xFFFFFF, rotation: 0, rotationSpeed: 0, depth: 50, offsetY: 0
+        },
+        fireflyTag: true
+      });
 
       populateGridAndExecute();
 
-      const lodge = wisp.getComponent(Lodge)!;
-      expect(lodge.tenants).toHaveLength(1);
+      expect(wisp.lodge!.tenants).toHaveLength(1);
     });
 
     it('should handle diagonal distances correctly', () => {
-      const wisp = world.createEntity();
-      wisp
-        .addComponent(Position, { x: 100, y: 100 })
-        .addComponent(Renderable, { type: 'wisp' })
-        .addComponent(Lodge, {
-          allowedTenants: ['firefly'],
-          maxTenants: 1
-        })
-        .addComponent(WispTag);
+      const wisp = world.add({
+        position: { x: 100, y: 100 },
+        renderable: {
+          type: 'wisp', sprite: 'wisp', color: 0x0000ff, radius: 10,
+          alpha: 1, scale: 1, tint: 0xFFFFFF, rotation: 0, rotationSpeed: 0, depth: 50, offsetY: 0
+        },
+        lodge: { allowedTenants: ['firefly'], maxTenants: 1, tenants: [] },
+        wispTag: true
+      });
 
-      const firefly = world.createEntity();
-      // Position at diagonal, within threshold
       const offset = PHYSICS_CONFIG.PATH_ARRIVAL_THRESHOLD / Math.sqrt(2) - 0.1;
-      firefly
-        .addComponent(Position, { x: 100 + offset, y: 100 + offset })
-        .addComponent(Velocity, { vx: 0, vy: 0 })
-        .addComponent(Path, { currentPath: [], nextPath: [], direction: 'r' })
-        .addComponent(Renderable, { type: 'firefly' })
-        .addComponent(FireflyTag);
+      world.add({
+        position: { x: 100 + offset, y: 100 + offset },
+        velocity: { vx: 0, vy: 0 },
+        path: { currentPath: [], nextPath: [], direction: 'r' },
+        renderable: {
+          type: 'firefly', sprite: 'firefly', color: 0xffff00, radius: 5,
+          alpha: 1, scale: 1, tint: 0xFFFFFF, rotation: 0, rotationSpeed: 0, depth: 50, offsetY: 0
+        },
+        fireflyTag: true
+      });
 
       populateGridAndExecute();
 
-      const lodge = wisp.getComponent(Lodge)!;
-      expect(lodge.tenants).toHaveLength(1);
+      expect(wisp.lodge!.tenants).toHaveLength(1);
     });
   });
 
   describe('Multiple lodges', () => {
     it('should handle multiple lodges independently', () => {
-      const wisp1 = world.createEntity();
-      wisp1
-        .addComponent(Position, { x: 100, y: 100 })
-        .addComponent(Renderable, { type: 'wisp' })
-        .addComponent(Lodge, {
-          allowedTenants: ['firefly'],
-          maxTenants: 1
-        })
-        .addComponent(WispTag);
+      const wisp1 = world.add({
+        position: { x: 100, y: 100 },
+        renderable: {
+          type: 'wisp', sprite: 'wisp', color: 0x0000ff, radius: 10,
+          alpha: 1, scale: 1, tint: 0xFFFFFF, rotation: 0, rotationSpeed: 0, depth: 50, offsetY: 0
+        },
+        lodge: { allowedTenants: ['firefly'], maxTenants: 1, tenants: [] },
+        wispTag: true
+      });
 
-      const wisp2 = world.createEntity();
-      wisp2
-        .addComponent(Position, { x: 200, y: 200 })
-        .addComponent(Renderable, { type: 'wisp' })
-        .addComponent(Lodge, {
-          allowedTenants: ['firefly'],
-          maxTenants: 1
-        })
-        .addComponent(WispTag);
+      const wisp2 = world.add({
+        position: { x: 200, y: 200 },
+        renderable: {
+          type: 'wisp', sprite: 'wisp', color: 0x0000ff, radius: 10,
+          alpha: 1, scale: 1, tint: 0xFFFFFF, rotation: 0, rotationSpeed: 0, depth: 50, offsetY: 0
+        },
+        lodge: { allowedTenants: ['firefly'], maxTenants: 1, tenants: [] },
+        wispTag: true
+      });
 
-      const firefly1 = world.createEntity();
-      firefly1
-        .addComponent(Position, { x: 100, y: 100 })
-        .addComponent(Velocity, { vx: 0, vy: 0 })
-        .addComponent(Path, { currentPath: [], nextPath: [], direction: 'r' })
-        .addComponent(Renderable, { type: 'firefly' })
-        .addComponent(FireflyTag);
+      world.add({
+        position: { x: 100, y: 100 },
+        velocity: { vx: 0, vy: 0 },
+        path: { currentPath: [], nextPath: [], direction: 'r' },
+        renderable: {
+          type: 'firefly', sprite: 'firefly', color: 0xffff00, radius: 5,
+          alpha: 1, scale: 1, tint: 0xFFFFFF, rotation: 0, rotationSpeed: 0, depth: 50, offsetY: 0
+        },
+        fireflyTag: true
+      });
 
-      const firefly2 = world.createEntity();
-      firefly2
-        .addComponent(Position, { x: 200, y: 200 })
-        .addComponent(Velocity, { vx: 0, vy: 0 })
-        .addComponent(Path, { currentPath: [], nextPath: [], direction: 'r' })
-        .addComponent(Renderable, { type: 'firefly' })
-        .addComponent(FireflyTag);
+      world.add({
+        position: { x: 200, y: 200 },
+        velocity: { vx: 0, vy: 0 },
+        path: { currentPath: [], nextPath: [], direction: 'r' },
+        renderable: {
+          type: 'firefly', sprite: 'firefly', color: 0xffff00, radius: 5,
+          alpha: 1, scale: 1, tint: 0xFFFFFF, rotation: 0, rotationSpeed: 0, depth: 50, offsetY: 0
+        },
+        fireflyTag: true
+      });
 
       populateGridAndExecute();
 
-      const lodge1 = wisp1.getComponent(Lodge)!;
-      const lodge2 = wisp2.getComponent(Lodge)!;
-      
-      expect(lodge1.tenants).toHaveLength(1);
-      expect(lodge2.tenants).toHaveLength(1);
+      expect(wisp1.lodge!.tenants).toHaveLength(1);
+      expect(wisp2.lodge!.tenants).toHaveLength(1);
     });
 
     it('should allow lodge with multiple tenant capacity', () => {
-      const wisp = world.createEntity();
-      wisp
-        .addComponent(Position, { x: 100, y: 100 })
-        .addComponent(Renderable, { type: 'wisp' })
-        .addComponent(Lodge, {
-          allowedTenants: ['firefly'],
-          maxTenants: 3
-        })
-        .addComponent(WispTag);
+      const wisp = world.add({
+        position: { x: 100, y: 100 },
+        renderable: {
+          type: 'wisp', sprite: 'wisp', color: 0x0000ff, radius: 10,
+          alpha: 1, scale: 1, tint: 0xFFFFFF, rotation: 0, rotationSpeed: 0, depth: 50, offsetY: 0
+        },
+        lodge: { allowedTenants: ['firefly'], maxTenants: 3, tenants: [] },
+        wispTag: true
+      });
 
-      const firefly1 = world.createEntity();
-      firefly1
-        .addComponent(Position, { x: 100, y: 100 })
-        .addComponent(Velocity, { vx: 0, vy: 0 })
-        .addComponent(Path, { currentPath: [], nextPath: [], direction: 'r' })
-        .addComponent(Renderable, { type: 'firefly' })
-        .addComponent(FireflyTag);
+      world.add({
+        position: { x: 100, y: 100 },
+        velocity: { vx: 0, vy: 0 },
+        path: { currentPath: [], nextPath: [], direction: 'r' },
+        renderable: {
+          type: 'firefly', sprite: 'firefly', color: 0xffff00, radius: 5,
+          alpha: 1, scale: 1, tint: 0xFFFFFF, rotation: 0, rotationSpeed: 0, depth: 50, offsetY: 0
+        },
+        fireflyTag: true
+      });
 
-      const firefly2 = world.createEntity();
-      firefly2
-        .addComponent(Position, { x: 100, y: 100 })
-        .addComponent(Velocity, { vx: 0, vy: 0 })
-        .addComponent(Path, { currentPath: [], nextPath: [], direction: 'r' })
-        .addComponent(Renderable, { type: 'firefly' })
-        .addComponent(FireflyTag);
+      world.add({
+        position: { x: 100, y: 100 },
+        velocity: { vx: 0, vy: 0 },
+        path: { currentPath: [], nextPath: [], direction: 'r' },
+        renderable: {
+          type: 'firefly', sprite: 'firefly', color: 0xffff00, radius: 5,
+          alpha: 1, scale: 1, tint: 0xFFFFFF, rotation: 0, rotationSpeed: 0, depth: 50, offsetY: 0
+        },
+        fireflyTag: true
+      });
 
       populateGridAndExecute();
 
-      const lodge = wisp.getComponent(Lodge)!;
-      expect(lodge.tenants).toHaveLength(2);
+      expect(wisp.lodge!.tenants).toHaveLength(2);
     });
   });
 
   describe('Edge cases', () => {
     it('should handle lodge without Position component gracefully', () => {
-      const wisp = world.createEntity();
-      wisp
-        .addComponent(Renderable, { type: 'wisp' })
-        .addComponent(Lodge, {
-          allowedTenants: ['firefly'],
-          maxTenants: 1
-        })
-        .addComponent(WispTag);
+      world.add({
+        renderable: {
+          type: 'wisp', sprite: 'wisp', color: 0x0000ff, radius: 10,
+          alpha: 1, scale: 1, tint: 0xFFFFFF, rotation: 0, rotationSpeed: 0, depth: 50, offsetY: 0
+        },
+        lodge: { allowedTenants: ['firefly'], maxTenants: 1, tenants: [] },
+        wispTag: true
+      });
 
       expect(() => populateGridAndExecute()).not.toThrow();
     });
 
     it('should handle tenant without Renderable component', () => {
-      const wisp = world.createEntity();
-      wisp
-        .addComponent(Position, { x: 100, y: 100 })
-        .addComponent(Renderable, { type: 'wisp' })
-        .addComponent(Lodge, {
-          allowedTenants: ['firefly'],
-          maxTenants: 1
-        })
-        .addComponent(WispTag);
+      world.add({
+        position: { x: 100, y: 100 },
+        renderable: {
+          type: 'wisp', sprite: 'wisp', color: 0x0000ff, radius: 10,
+          alpha: 1, scale: 1, tint: 0xFFFFFF, rotation: 0, rotationSpeed: 0, depth: 50, offsetY: 0
+        },
+        lodge: { allowedTenants: ['firefly'], maxTenants: 1, tenants: [] },
+        wispTag: true
+      });
 
-      const entity = world.createEntity();
-      entity
-        .addComponent(Position, { x: 100, y: 100 })
-        .addComponent(Velocity, { vx: 0, vy: 0 })
-        .addComponent(Path, { currentPath: [], nextPath: [], direction: 'r' });
+      world.add({
+        position: { x: 100, y: 100 },
+        velocity: { vx: 0, vy: 0 },
+        path: { currentPath: [], nextPath: [], direction: 'r' }
+      });
 
       expect(() => populateGridAndExecute()).not.toThrow();
-
-      const lodge = wisp.getComponent(Lodge)!;
-      expect(lodge.tenants).toHaveLength(0);
     });
 
     it('should handle no lodges in world', () => {
@@ -539,131 +547,128 @@ describe('LodgingSystem', () => {
     });
 
     it('should handle no tenants near lodge', () => {
-      const wisp = world.createEntity();
-      wisp
-        .addComponent(Position, { x: 100, y: 100 })
-        .addComponent(Renderable, { type: 'wisp' })
-        .addComponent(Lodge, {
-          allowedTenants: ['firefly'],
-          maxTenants: 1
-        })
-        .addComponent(WispTag);
+      const wisp = world.add({
+        position: { x: 100, y: 100 },
+        renderable: {
+          type: 'wisp', sprite: 'wisp', color: 0x0000ff, radius: 10,
+          alpha: 1, scale: 1, tint: 0xFFFFFF, rotation: 0, rotationSpeed: 0, depth: 50, offsetY: 0
+        },
+        lodge: { allowedTenants: ['firefly'], maxTenants: 1, tenants: [] },
+        wispTag: true
+      });
 
       populateGridAndExecute();
 
-      const lodge = wisp.getComponent(Lodge)!;
-      expect(lodge.tenants).toHaveLength(0);
+      expect(wisp.lodge!.tenants).toHaveLength(0);
     });
 
     it('should not crash when spatial grid is empty', () => {
-      const wisp = world.createEntity();
-      wisp
-        .addComponent(Position, { x: 100, y: 100 })
-        .addComponent(Renderable, { type: 'wisp' })
-        .addComponent(Lodge, {
-          allowedTenants: ['firefly'],
-          maxTenants: 1
-        })
-        .addComponent(WispTag);
+      world.add({
+        position: { x: 100, y: 100 },
+        renderable: {
+          type: 'wisp', sprite: 'wisp', color: 0x0000ff, radius: 10,
+          alpha: 1, scale: 1, tint: 0xFFFFFF, rotation: 0, rotationSpeed: 0, depth: 50, offsetY: 0
+        },
+        lodge: { allowedTenants: ['firefly'], maxTenants: 1, tenants: [] },
+        wispTag: true
+      });
 
       spatialGrid.clear();
-      // Don't populate grid, leave it empty
-      
-      expect(() => system.execute()).not.toThrow();
+
+      expect(() => system.update(16, 16)).not.toThrow();
     });
 
     it('should not allow lodging for entities fleeing to goal', () => {
-      world.registerComponent(FleeingToGoalTag);
-      
-      const wisp = world.createEntity();
-      wisp
-        .addComponent(Position, { x: 100, y: 100 })
-        .addComponent(Renderable, { type: 'wisp' })
-        .addComponent(Lodge, {
-          allowedTenants: ['firefly'],
-          maxTenants: 1
-        })
-        .addComponent(WispTag);
+      const wisp = world.add({
+        position: { x: 100, y: 100 },
+        renderable: {
+          type: 'wisp', sprite: 'wisp', color: 0x0000ff, radius: 10,
+          alpha: 1, scale: 1, tint: 0xFFFFFF, rotation: 0, rotationSpeed: 0, depth: 50, offsetY: 0
+        },
+        lodge: { allowedTenants: ['firefly'], maxTenants: 1, tenants: [] },
+        wispTag: true
+      });
 
-      const firefly = world.createEntity();
-      firefly
-        .addComponent(Position, { x: 100, y: 100 })
-        .addComponent(Velocity, { vx: 0, vy: 0 })
-        .addComponent(Path, { currentPath: [], nextPath: [], direction: 'r' })
-        .addComponent(Renderable, { type: 'firefly' })
-        .addComponent(FireflyTag)
-        .addComponent(FleeingToGoalTag); // Fleeing to goal
+      world.add({
+        position: { x: 100, y: 100 },
+        velocity: { vx: 0, vy: 0 },
+        path: { currentPath: [], nextPath: [], direction: 'r' },
+        renderable: {
+          type: 'firefly', sprite: 'firefly', color: 0xffff00, radius: 5,
+          alpha: 1, scale: 1, tint: 0xFFFFFF, rotation: 0, rotationSpeed: 0, depth: 50, offsetY: 0
+        },
+        fireflyTag: true,
+        fleeingToGoalTag: true
+      });
 
       populateGridAndExecute();
 
-      const lodge = wisp.getComponent(Lodge)!;
-      // Should not be lodged because it's fleeing
-      expect(lodge.tenants).toHaveLength(0);
+      expect(wisp.lodge!.tenants).toHaveLength(0);
     });
 
     it('should not lodge fleeing entities even if they are the right type and within range', () => {
-      world.registerComponent(FleeingToGoalTag);
-      
-      const wisp = world.createEntity();
-      wisp
-        .addComponent(Position, { x: 100, y: 100 })
-        .addComponent(Renderable, { type: 'wisp' })
-        .addComponent(Lodge, {
-          allowedTenants: ['firefly'],
-          maxTenants: 2
-        })
-        .addComponent(WispTag);
+      const wisp = world.add({
+        position: { x: 100, y: 100 },
+        renderable: {
+          type: 'wisp', sprite: 'wisp', color: 0x0000ff, radius: 10,
+          alpha: 1, scale: 1, tint: 0xFFFFFF, rotation: 0, rotationSpeed: 0, depth: 50, offsetY: 0
+        },
+        lodge: { allowedTenants: ['firefly'], maxTenants: 2, tenants: [] },
+        wispTag: true
+      });
 
-      // Normal firefly that can lodge
-      const normalFirefly = world.createEntity();
-      normalFirefly
-        .addComponent(Position, { x: 100, y: 100 })
-        .addComponent(Velocity, { vx: 0, vy: 0 })
-        .addComponent(Path, { currentPath: [], nextPath: [], direction: 'r' })
-        .addComponent(Renderable, { type: 'firefly' })
-        .addComponent(FireflyTag);
+      const normalFirefly = world.add({
+        position: { x: 100, y: 100 },
+        velocity: { vx: 0, vy: 0 },
+        path: { currentPath: [], nextPath: [], direction: 'r' },
+        renderable: {
+          type: 'firefly', sprite: 'firefly', color: 0xffff00, radius: 5,
+          alpha: 1, scale: 1, tint: 0xFFFFFF, rotation: 0, rotationSpeed: 0, depth: 50, offsetY: 0
+        },
+        fireflyTag: true
+      });
 
-      // Fleeing firefly that should not lodge
-      const fleeingFirefly = world.createEntity();
-      fleeingFirefly
-        .addComponent(Position, { x: 100, y: 100 })
-        .addComponent(Velocity, { vx: 0, vy: 0 })
-        .addComponent(Path, { currentPath: [], nextPath: [], direction: 'r' })
-        .addComponent(Renderable, { type: 'firefly' })
-        .addComponent(FireflyTag)
-        .addComponent(FleeingToGoalTag);
+      world.add({
+        position: { x: 100, y: 100 },
+        velocity: { vx: 0, vy: 0 },
+        path: { currentPath: [], nextPath: [], direction: 'r' },
+        renderable: {
+          type: 'firefly', sprite: 'firefly', color: 0xffff00, radius: 5,
+          alpha: 1, scale: 1, tint: 0xFFFFFF, rotation: 0, rotationSpeed: 0, depth: 50, offsetY: 0
+        },
+        fireflyTag: true,
+        fleeingToGoalTag: true
+      });
 
       populateGridAndExecute();
 
-      const lodge = wisp.getComponent(Lodge)!;
-      // Only normal firefly should be lodged
-      expect(lodge.tenants).toHaveLength(1);
-      expect(lodge.tenants[0]).toBe(normalFirefly);
+      expect(wisp.lodge!.tenants).toHaveLength(1);
+      expect(wisp.lodge!.tenants[0]).toBe(normalFirefly);
     });
   });
 
   describe('System queries', () => {
     it('should only process entities with Lodge and Position components', () => {
-      const wisp1 = world.createEntity();
-      wisp1
-        .addComponent(Position, { x: 100, y: 100 })
-        .addComponent(Lodge, {
-          allowedTenants: ['firefly'],
-          maxTenants: 1
-        });
+      world.add({
+        position: { x: 100, y: 100 },
+        lodge: { allowedTenants: ['firefly'], maxTenants: 1, tenants: [] }
+      });
 
-      const wisp2 = world.createEntity();
-      wisp2
-        .addComponent(Renderable, { type: 'wisp' })
-        .addComponent(Lodge, {
-          allowedTenants: ['firefly'],
-          maxTenants: 1
-        }); // Missing Position
+      world.add({
+        renderable: {
+          type: 'wisp', sprite: 'wisp', color: 0x0000ff, radius: 10,
+          alpha: 1, scale: 1, tint: 0xFFFFFF, rotation: 0, rotationSpeed: 0, depth: 50, offsetY: 0
+        },
+        lodge: { allowedTenants: ['firefly'], maxTenants: 1, tenants: [] }
+      });
 
-      const wisp3 = world.createEntity();
-      wisp3
-        .addComponent(Position, { x: 100, y: 100 })
-        .addComponent(Renderable, { type: 'wisp' }); // Missing Lodge
+      world.add({
+        position: { x: 100, y: 100 },
+        renderable: {
+          type: 'wisp', sprite: 'wisp', color: 0x0000ff, radius: 10,
+          alpha: 1, scale: 1, tint: 0xFFFFFF, rotation: 0, rotationSpeed: 0, depth: 50, offsetY: 0
+        }
+      });
 
       expect(() => populateGridAndExecute()).not.toThrow();
     });

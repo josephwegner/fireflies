@@ -1,161 +1,182 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { World } from 'ecsy';
-import { Lodge } from '../Lodge';
-import { Renderable } from '@/ecs/components/core';
+import { World } from 'miniplex';
+import type { Entity, GameWorld } from '@/ecs/Entity';
 
 describe('Lodge Component', () => {
-  let world: World;
+  let world: GameWorld;
 
   beforeEach(() => {
-    world = new World();
-    world.registerComponent(Lodge);
-    world.registerComponent(Renderable);
+    world = new World<Entity>();
   });
 
   describe('Component initialization', () => {
-    it('should have correct default values', () => {
-      const entity = world.createEntity();
-      entity.addComponent(Lodge);
-      
-      const lodge = entity.getComponent(Lodge)!;
-      expect(lodge.tenants).toEqual([]);
-      expect(lodge.allowedTenants).toEqual([]);
-      expect(lodge.maxTenants).toBe(2);
+    it('should store lodge values', () => {
+      const entity = world.add({
+        lodge: {
+          tenants: [],
+          allowedTenants: [],
+          maxTenants: 2
+        }
+      });
+
+      expect(entity.lodge!.tenants).toEqual([]);
+      expect(entity.lodge!.allowedTenants).toEqual([]);
+      expect(entity.lodge!.maxTenants).toBe(2);
     });
 
     it('should allow custom tenant configuration', () => {
-      const entity = world.createEntity();
-      entity.addComponent(Lodge, {
-        allowedTenants: ['firefly', 'wisp'],
-        maxTenants: 5
+      const entity = world.add({
+        lodge: {
+          tenants: [],
+          allowedTenants: ['firefly', 'wisp'],
+          maxTenants: 5
+        }
       });
-      
-      const lodge = entity.getComponent(Lodge)!;
-      expect(lodge.allowedTenants).toEqual(['firefly', 'wisp']);
-      expect(lodge.maxTenants).toBe(5);
-      expect(lodge.tenants).toEqual([]);
+
+      expect(entity.lodge!.allowedTenants).toEqual(['firefly', 'wisp']);
+      expect(entity.lodge!.maxTenants).toBe(5);
+      expect(entity.lodge!.tenants).toEqual([]);
     });
 
     it('should allow single allowed tenant type', () => {
-      const entity = world.createEntity();
-      entity.addComponent(Lodge, {
-        allowedTenants: ['firefly'],
-        maxTenants: 1
+      const entity = world.add({
+        lodge: {
+          tenants: [],
+          allowedTenants: ['firefly'],
+          maxTenants: 1
+        }
       });
-      
-      const lodge = entity.getComponent(Lodge)!;
-      expect(lodge.allowedTenants).toEqual(['firefly']);
-      expect(lodge.maxTenants).toBe(1);
+
+      expect(entity.lodge!.allowedTenants).toEqual(['firefly']);
+      expect(entity.lodge!.maxTenants).toBe(1);
     });
   });
 
   describe('Tenant management', () => {
     it('should be mutable for adding tenants', () => {
-      const entity = world.createEntity();
-      entity.addComponent(Lodge, {
-        allowedTenants: ['firefly'],
-        maxTenants: 2
+      const entity = world.add({
+        lodge: {
+          tenants: [],
+          allowedTenants: ['firefly'],
+          maxTenants: 2
+        }
       });
-      
-      const tenant = world.createEntity();
-      tenant.addComponent(Renderable, { type: 'firefly' });
-      
-      const lodge = entity.getMutableComponent(Lodge)!;
-      const tenantRenderable = tenant.getComponent(Renderable)!;
-      lodge.tenants.push(tenantRenderable);
-      
-      expect(lodge.tenants).toHaveLength(1);
-      expect(lodge.tenants[0]).toBe(tenantRenderable);
+
+      const tenant = world.add({
+        renderable: {
+          type: 'firefly',
+          color: 0xffff00,
+          radius: 4,
+          alpha: 1,
+          scale: 1,
+          tint: 0xFFFFFF,
+          rotation: 0,
+          rotationSpeed: 0,
+          depth: 50,
+          offsetY: 0
+        }
+      });
+
+      entity.lodge!.tenants.push(tenant);
+
+      expect(entity.lodge!.tenants).toHaveLength(1);
+      expect(entity.lodge!.tenants[0]).toBe(tenant);
     });
 
     it('should handle multiple tenants', () => {
-      const entity = world.createEntity();
-      entity.addComponent(Lodge, {
-        allowedTenants: ['firefly'],
-        maxTenants: 3
+      const entity = world.add({
+        lodge: {
+          tenants: [],
+          allowedTenants: ['firefly'],
+          maxTenants: 3
+        }
       });
-      
-      const tenant1 = world.createEntity();
-      tenant1.addComponent(Renderable, { type: 'firefly' });
-      
-      const tenant2 = world.createEntity();
-      tenant2.addComponent(Renderable, { type: 'firefly' });
-      
-      const lodge = entity.getMutableComponent(Lodge)!;
-      lodge.tenants.push(tenant1.getComponent(Renderable)!);
-      lodge.tenants.push(tenant2.getComponent(Renderable)!);
-      
-      expect(lodge.tenants).toHaveLength(2);
+
+      const tenant1 = world.add({ fireflyTag: true });
+      const tenant2 = world.add({ fireflyTag: true });
+
+      entity.lodge!.tenants.push(tenant1);
+      entity.lodge!.tenants.push(tenant2);
+
+      expect(entity.lodge!.tenants).toHaveLength(2);
     });
 
     it('should handle empty allowedTenants array', () => {
-      const entity = world.createEntity();
-      entity.addComponent(Lodge, {
-        allowedTenants: [],
-        maxTenants: 5
+      const entity = world.add({
+        lodge: {
+          tenants: [],
+          allowedTenants: [],
+          maxTenants: 5
+        }
       });
-      
-      const lodge = entity.getComponent(Lodge)!;
-      expect(lodge.allowedTenants).toEqual([]);
+
+      expect(entity.lodge!.allowedTenants).toEqual([]);
     });
 
     it('should support zero maxTenants', () => {
-      const entity = world.createEntity();
-      entity.addComponent(Lodge, {
-        allowedTenants: ['firefly'],
-        maxTenants: 0
+      const entity = world.add({
+        lodge: {
+          tenants: [],
+          allowedTenants: ['firefly'],
+          maxTenants: 0
+        }
       });
-      
-      const lodge = entity.getComponent(Lodge)!;
-      expect(lodge.maxTenants).toBe(0);
+
+      expect(entity.lodge!.maxTenants).toBe(0);
     });
   });
 
   describe('Component queries', () => {
     it('should be queryable by systems', () => {
-      const entity1 = world.createEntity();
-      entity1.addComponent(Lodge);
-      
-      const entity2 = world.createEntity();
-      entity2.addComponent(Lodge);
-      
-      // Systems would query for entities with Lodge component
-      expect(entity1.hasComponent(Lodge)).toBe(true);
-      expect(entity2.hasComponent(Lodge)).toBe(true);
+      const entity1 = world.add({
+        lodge: { tenants: [], allowedTenants: [], maxTenants: 2 }
+      });
+
+      const entity2 = world.add({
+        lodge: { tenants: [], allowedTenants: [], maxTenants: 2 }
+      });
+
+      expect(!!entity1.lodge).toBe(true);
+      expect(!!entity2.lodge).toBe(true);
     });
 
     it('should differentiate lodges from non-lodges', () => {
-      const lodge = world.createEntity();
-      lodge.addComponent(Lodge);
-      
-      const nonLodge = world.createEntity();
-      
-      expect(lodge.hasComponent(Lodge)).toBe(true);
-      expect(nonLodge.hasComponent(Lodge)).toBe(false);
+      const lodge = world.add({
+        lodge: { tenants: [], allowedTenants: [], maxTenants: 2 }
+      });
+
+      const nonLodge = world.add({
+        position: { x: 0, y: 0 }
+      });
+
+      expect(!!lodge.lodge).toBe(true);
+      expect(!!nonLodge.lodge).toBe(false);
     });
   });
 
   describe('Configuration validation', () => {
     it('should handle large maxTenants values', () => {
-      const entity = world.createEntity();
-      entity.addComponent(Lodge, {
-        allowedTenants: ['firefly'],
-        maxTenants: 100
+      const entity = world.add({
+        lodge: {
+          tenants: [],
+          allowedTenants: ['firefly'],
+          maxTenants: 100
+        }
       });
-      
-      const lodge = entity.getComponent(Lodge)!;
-      expect(lodge.maxTenants).toBe(100);
+
+      expect(entity.lodge!.maxTenants).toBe(100);
     });
 
     it('should handle multiple allowed tenant types', () => {
-      const entity = world.createEntity();
-      entity.addComponent(Lodge, {
-        allowedTenants: ['firefly', 'wisp', 'monster'],
-        maxTenants: 2
+      const entity = world.add({
+        lodge: {
+          tenants: [],
+          allowedTenants: ['firefly', 'wisp', 'monster'],
+          maxTenants: 2
+        }
       });
-      
-      const lodge = entity.getComponent(Lodge)!;
-      expect(lodge.allowedTenants).toEqual(['firefly', 'wisp', 'monster']);
+
+      expect(entity.lodge!.allowedTenants).toEqual(['firefly', 'wisp', 'monster']);
     });
   });
 });

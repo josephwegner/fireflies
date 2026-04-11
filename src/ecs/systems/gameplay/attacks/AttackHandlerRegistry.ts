@@ -1,4 +1,4 @@
-import { AttackHandler } from './AttackHandler';
+import type { AttackHandler } from './AttackHandler';
 import { DashAttackHandler } from './DashAttackHandler';
 import { PulseAttackHandler } from './PulseAttackHandler';
 
@@ -18,14 +18,8 @@ export class AttackHandlerRegistry {
   }
 
   static initialize(): void {
-    // Clear existing handlers first
     this.clear();
-    
-    // Register all attack handlers
     this.register('dash', new DashAttackHandler());
     this.register('pulse', new PulseAttackHandler());
-    // Easy to add more:
-    // this.register('projectile', new ProjectileAttackHandler());
-    // this.register('beam', new BeamAttackHandler());
   }
 }

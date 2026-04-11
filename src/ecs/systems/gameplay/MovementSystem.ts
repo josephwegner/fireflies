@@ -1,54 +1,52 @@
-import { System } from 'ecsy';
-import { Position, Velocity, Path, Target, Health } from '@/ecs/components';
+import type { Query, With } from 'miniplex';
+import type { Entity, GameWorld } from '@/ecs/Entity';
+import type { GameSystem } from '@/ecs/GameSystem';
 import { PHYSICS_CONFIG } from '@/config';
 import { gameEvents, GameEvents } from '@/events';
 import { Vector } from '@/utils';
 
-export class MovementSystem extends System {
-  execute(delta?: number): void {
+type MovingEntity = With<Entity, 'position' | 'velocity'>;
+
+export class MovementSystem implements GameSystem {
+  private moving: Query<MovingEntity>;
+
+  constructor(private world: GameWorld, _config: Record<string, any>) {
+    this.moving = world.with('position', 'velocity');
+  }
+
+  update(delta: number, _time: number): void {
     const dt = (delta || 16) / 1000;
 
-    this.queries.moving.results.forEach(entity => {
+    for (const entity of this.moving) {
       try {
-        const position = entity.getMutableComponent(Position)!;
-        const velocity = entity.getMutableComponent(Velocity)!;
-        const pathComp = entity.getComponent(Path);
+        const { position, velocity } = entity;
 
-        // Skip movement for dead entities
-        const health = entity.getComponent(Health);
-        if (health && health.isDead) {
-          // Zero out velocity so dead entities don't drift
+        if (entity.health?.isDead) {
           velocity.vx = 0;
           velocity.vy = 0;
-          return;
+          continue;
         }
 
-        // Check if entity is in combat (has Target component)
-        const inCombat = entity.hasComponent(Target);
+        const inCombat = !!entity.target;
 
-        // Determine desired velocity based on state
-        if (!inCombat && pathComp && pathComp.currentPath && pathComp.currentPath.length > 0) {
-          // Following a path - steer toward next waypoint
-          const target = pathComp.currentPath[0];
-          const dx = target.x - position.x;
-          const dy = target.y - position.y;
+        if (!inCombat && entity.path && entity.path.currentPath.length > 0) {
+          const waypoint = entity.path.currentPath[0];
+          const dx = waypoint.x - position.x;
+          const dy = waypoint.y - position.y;
           const dist = Vector.length(dx, dy);
 
-          // Check if we've arrived at current waypoint
-          if ((dist <= PHYSICS_CONFIG.PATH_ARRIVAL_THRESHOLD && pathComp.currentPath.length > 1) || dist < PHYSICS_CONFIG.PATH_ARRIVAL_MIN) {
-            pathComp.currentPath.shift();
+          if ((dist <= PHYSICS_CONFIG.PATH_ARRIVAL_THRESHOLD && entity.path.currentPath.length > 1) || dist < PHYSICS_CONFIG.PATH_ARRIVAL_MIN) {
+            entity.path.currentPath.shift();
 
-            if (pathComp.currentPath.length === 0) {
-              pathComp.currentPath = pathComp.nextPath;
-              pathComp.nextPath = [];
+            if (entity.path.currentPath.length === 0) {
+              entity.path.currentPath = entity.path.nextPath;
+              entity.path.nextPath = [];
 
-              if (pathComp.currentPath.length === 0) {
-                console.log(`[MovementSystem] PATH_COMPLETED for entity ${entity.id} at position (${position.x.toFixed(0)}, ${position.y.toFixed(0)})`);
+              if (entity.path.currentPath.length === 0) {
                 gameEvents.emit(GameEvents.PATH_COMPLETED, { entity, position: { x: position.x, y: position.y } });
               }
             }
           } else {
-            // Set velocity toward waypoint (steering)
             const direction = Vector.normalize(dx, dy);
             velocity.vx = direction.x * PHYSICS_CONFIG.DEFAULT_SPEED;
             velocity.vy = direction.y * PHYSICS_CONFIG.DEFAULT_SPEED;
@@ -60,22 +58,16 @@ export class MovementSystem extends System {
 
         this.applyFriction(velocity);
       } catch (error) {
-        console.error('[MovementSystem] Error processing entity:', entity.id, error);
+        console.error('[MovementSystem] Error processing entity:', error);
       }
-    });
+    }
   }
 
-  applyFriction(velocity: Velocity): void {
+  private applyFriction(velocity: { vx: number; vy: number }): void {
     velocity.vx *= PHYSICS_CONFIG.FRICTION;
     velocity.vy *= PHYSICS_CONFIG.FRICTION;
 
     if (Math.abs(velocity.vx) < PHYSICS_CONFIG.MIN_VELOCITY) velocity.vx = 0;
     if (Math.abs(velocity.vy) < PHYSICS_CONFIG.MIN_VELOCITY) velocity.vy = 0;
   }
-
-  static queries = {
-    moving: {
-      components: [Position, Velocity]
-    }
-  };
 }

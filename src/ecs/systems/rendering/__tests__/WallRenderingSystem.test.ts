@@ -1,60 +1,74 @@
-import { describe, it, expect, beforeEach } from 'vitest';
-import { World } from 'ecsy';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { World } from 'miniplex';
 import { WallRenderingSystem } from '../WallRenderingSystem';
-import { Wall } from '@/ecs/components';
-import { createMockScene, createMockGraphics } from '@/__tests__/helpers';
+import type { Entity, GameWorld } from '@/ecs/Entity';
+
+function createMockGraphics() {
+  return {
+    lineStyle: vi.fn(),
+    beginPath: vi.fn(),
+    moveTo: vi.fn(),
+    lineTo: vi.fn(),
+    strokePath: vi.fn(),
+    clear: vi.fn(),
+    destroy: vi.fn()
+  };
+}
+
+function createMockScene(mockGraphics: any) {
+  return {
+    add: {
+      graphics: vi.fn(() => mockGraphics)
+    }
+  } as any;
+}
 
 describe('WallRenderingSystem', () => {
-  let world: World;
+  let world: GameWorld;
   let mockScene: any;
   let mockGraphics: any;
-  let system: any;
+  let system: WallRenderingSystem;
 
   beforeEach(() => {
-    world = new World();
-    world.registerComponent(Wall);
-
+    world = new World<Entity>();
     mockGraphics = createMockGraphics();
-    mockScene = createMockScene({
-      graphicsFactory: () => mockGraphics
-    });
-
-    world.registerSystem(WallRenderingSystem, { scene: mockScene });
-    system = world.getSystem(WallRenderingSystem);
+    mockScene = createMockScene(mockGraphics);
+    system = new WallRenderingSystem(world, { scene: mockScene });
   });
 
   describe('Initialization', () => {
     it('should initialize with scene', () => {
-      expect(system.scene).toBe(mockScene);
+      expect((system as any).scene).toBe(mockScene);
     });
 
     it('should create graphics object', () => {
       expect(mockScene.add.graphics).toHaveBeenCalled();
-      expect(system.graphics).toBe(mockGraphics);
+      expect((system as any).graphics).toBe(mockGraphics);
     });
 
     it('should initialize wallsDrawn flag to false', () => {
-      expect(system.wallsDrawn).toBe(false);
+      expect((system as any).wallsDrawn).toBe(false);
     });
   });
 
   describe('Wall Rendering', () => {
     it('should draw walls on first execution', () => {
-      const entity = world.createEntity();
-      entity.addComponent(Wall, {
-        segments: [
-          [
-            { x: 0, y: 0 },
-            { x: 100, y: 0 },
-            { x: 100, y: 100 },
-            { x: 0, y: 100 }
-          ]
-        ],
-        thickness: 2,
-        color: 0x333333
+      world.add({
+        wall: {
+          segments: [
+            [
+              { x: 0, y: 0 },
+              { x: 100, y: 0 },
+              { x: 100, y: 100 },
+              { x: 0, y: 100 }
+            ]
+          ],
+          thickness: 2,
+          color: 0x333333
+        }
       });
 
-      world.execute(16, 16);
+      system.update(16, 16);
 
       expect(mockGraphics.lineStyle).toHaveBeenCalledWith(2, 0x333333);
       expect(mockGraphics.beginPath).toHaveBeenCalled();
@@ -64,44 +78,46 @@ describe('WallRenderingSystem', () => {
     });
 
     it('should draw multiple wall segments', () => {
-      const entity = world.createEntity();
-      entity.addComponent(Wall, {
-        segments: [
-          [
-            { x: 0, y: 0 },
-            { x: 100, y: 0 }
+      world.add({
+        wall: {
+          segments: [
+            [
+              { x: 0, y: 0 },
+              { x: 100, y: 0 }
+            ],
+            [
+              { x: 200, y: 200 },
+              { x: 300, y: 300 }
+            ]
           ],
-          [
-            { x: 200, y: 200 },
-            { x: 300, y: 300 }
-          ]
-        ],
-        thickness: 2,
-        color: 0x333333
+          thickness: 2,
+          color: 0x333333
+        }
       });
 
-      world.execute(16, 16);
+      system.update(16, 16);
 
       expect(mockGraphics.beginPath).toHaveBeenCalledTimes(2);
       expect(mockGraphics.strokePath).toHaveBeenCalledTimes(2);
     });
 
     it('should draw all points in a segment', () => {
-      const entity = world.createEntity();
-      entity.addComponent(Wall, {
-        segments: [
-          [
-            { x: 0, y: 0 },
-            { x: 50, y: 50 },
-            { x: 100, y: 0 },
-            { x: 150, y: 50 }
-          ]
-        ],
-        thickness: 2,
-        color: 0x333333
+      world.add({
+        wall: {
+          segments: [
+            [
+              { x: 0, y: 0 },
+              { x: 50, y: 50 },
+              { x: 100, y: 0 },
+              { x: 150, y: 50 }
+            ]
+          ],
+          thickness: 2,
+          color: 0x333333
+        }
       });
 
-      world.execute(16, 16);
+      system.update(16, 16);
 
       expect(mockGraphics.moveTo).toHaveBeenCalledWith(0, 0);
       expect(mockGraphics.lineTo).toHaveBeenCalledWith(50, 50);
@@ -110,155 +126,162 @@ describe('WallRenderingSystem', () => {
     });
 
     it('should not draw segment with less than 2 points', () => {
-      const entity = world.createEntity();
-      entity.addComponent(Wall, {
-        segments: [
-          [
-            { x: 0, y: 0 }
-          ]
-        ],
-        thickness: 2,
-        color: 0x333333
+      world.add({
+        wall: {
+          segments: [
+            [{ x: 0, y: 0 }]
+          ],
+          thickness: 2,
+          color: 0x333333
+        }
       });
 
-      world.execute(16, 16);
+      system.update(16, 16);
 
       expect(mockGraphics.beginPath).not.toHaveBeenCalled();
     });
 
     it('should not draw segment with empty array', () => {
-      const entity = world.createEntity();
-      entity.addComponent(Wall, {
-        segments: [[]],
-        thickness: 2,
-        color: 0x333333
+      world.add({
+        wall: {
+          segments: [[]],
+          thickness: 2,
+          color: 0x333333
+        }
       });
 
-      world.execute(16, 16);
+      system.update(16, 16);
 
       expect(mockGraphics.beginPath).not.toHaveBeenCalled();
     });
 
     it('should only draw walls once', () => {
-      const entity = world.createEntity();
-      entity.addComponent(Wall, {
-        segments: [
-          [
-            { x: 0, y: 0 },
-            { x: 100, y: 0 }
-          ]
-        ],
-        thickness: 2,
-        color: 0x333333
+      world.add({
+        wall: {
+          segments: [
+            [
+              { x: 0, y: 0 },
+              { x: 100, y: 0 }
+            ]
+          ],
+          thickness: 2,
+          color: 0x333333
+        }
       });
 
-      world.execute(16, 16);
-      world.execute(16, 16);
-      world.execute(16, 16);
+      system.update(16, 16);
+      system.update(16, 16);
+      system.update(16, 16);
 
       expect(mockGraphics.lineStyle).toHaveBeenCalledTimes(1);
     });
 
     it('should set wallsDrawn flag after drawing', () => {
-      const entity = world.createEntity();
-      entity.addComponent(Wall, {
-        segments: [
-          [
-            { x: 0, y: 0 },
-            { x: 100, y: 0 }
-          ]
-        ],
-        thickness: 2,
-        color: 0x333333
+      world.add({
+        wall: {
+          segments: [
+            [
+              { x: 0, y: 0 },
+              { x: 100, y: 0 }
+            ]
+          ],
+          thickness: 2,
+          color: 0x333333
+        }
       });
 
-      expect(system.wallsDrawn).toBe(false);
+      expect((system as any).wallsDrawn).toBe(false);
 
-      world.execute(16, 16);
+      system.update(16, 16);
 
-      expect(system.wallsDrawn).toBe(true);
+      expect((system as any).wallsDrawn).toBe(true);
     });
 
     it('should use wall thickness and color from component', () => {
-      const entity = world.createEntity();
-      entity.addComponent(Wall, {
-        segments: [
-          [
-            { x: 0, y: 0 },
-            { x: 100, y: 0 }
-          ]
-        ],
-        thickness: 5,
-        color: 0xff0000
+      world.add({
+        wall: {
+          segments: [
+            [
+              { x: 0, y: 0 },
+              { x: 100, y: 0 }
+            ]
+          ],
+          thickness: 5,
+          color: 0xff0000
+        }
       });
 
-      world.execute(16, 16);
+      system.update(16, 16);
 
       expect(mockGraphics.lineStyle).toHaveBeenCalledWith(5, 0xff0000);
     });
 
     it('should handle multiple wall entities', () => {
-      const entity1 = world.createEntity();
-      entity1.addComponent(Wall, {
-        segments: [
-          [
-            { x: 0, y: 0 },
-            { x: 100, y: 0 }
-          ]
-        ],
-        thickness: 2,
-        color: 0x333333
+      world.add({
+        wall: {
+          segments: [
+            [
+              { x: 0, y: 0 },
+              { x: 100, y: 0 }
+            ]
+          ],
+          thickness: 2,
+          color: 0x333333
+        }
       });
 
-      const entity2 = world.createEntity();
-      entity2.addComponent(Wall, {
-        segments: [
-          [
-            { x: 200, y: 200 },
-            { x: 300, y: 300 }
-          ]
-        ],
-        thickness: 3,
-        color: 0x666666
+      world.add({
+        wall: {
+          segments: [
+            [
+              { x: 200, y: 200 },
+              { x: 300, y: 300 }
+            ]
+          ],
+          thickness: 3,
+          color: 0x666666
+        }
       });
 
-      world.execute(16, 16);
+      system.update(16, 16);
 
       expect(mockGraphics.lineStyle).toHaveBeenCalledWith(2, 0x333333);
       expect(mockGraphics.lineStyle).toHaveBeenCalledWith(3, 0x666666);
     });
 
     it('should handle entity with no segments', () => {
-      const entity = world.createEntity();
-      entity.addComponent(Wall, {
-        segments: [],
-        thickness: 2,
-        color: 0x333333
+      world.add({
+        wall: {
+          segments: [],
+          thickness: 2,
+          color: 0x333333
+        }
       });
 
-      expect(() => world.execute(16, 16)).not.toThrow();
+      expect(() => system.update(16, 16)).not.toThrow();
     });
   });
 
   describe('Early Exit Optimization', () => {
     it('should skip execution after walls are drawn', () => {
-      const entity = world.createEntity();
-      entity.addComponent(Wall, {
-        segments: [
-          [
-            { x: 0, y: 0 },
-            { x: 100, y: 0 }
-          ]
-        ],
-        thickness: 2,
-        color: 0x333333
+      world.add({
+        wall: {
+          segments: [
+            [
+              { x: 0, y: 0 },
+              { x: 100, y: 0 }
+            ]
+          ],
+          thickness: 2,
+          color: 0x333333
+        }
       });
 
-      world.execute(16, 16);
+      system.update(16, 16);
 
       mockGraphics.lineStyle.mockClear();
 
-      world.execute(16, 16);
+      system.update(16, 16);
 
       expect(mockGraphics.lineStyle).not.toHaveBeenCalled();
     });

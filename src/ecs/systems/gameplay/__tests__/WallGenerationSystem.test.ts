@@ -1,21 +1,17 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { World } from 'ecsy';
+import { World } from 'miniplex';
+import type { Entity, GameWorld } from '@/ecs/Entity';
 import { WallGenerationSystem } from '../WallGenerationSystem';
-import { Wall, WallTag } from '@/ecs/components';
 import { GAME_CONFIG } from '@/config';
+import { createMockWorker } from '@/__tests__/helpers';
 
 describe('WallGenerationSystem', () => {
-  let world: World;
+  let world: GameWorld;
   let mockWorker: any;
 
   beforeEach(() => {
-    world = new World();
-    world.registerComponent(Wall);
-    world.registerComponent(WallTag);
-
-    mockWorker = {
-      postMessage: vi.fn()
-    };
+    world = new World<Entity>();
+    mockWorker = createMockWorker();
   });
 
   it('should create wall entity on first execution', () => {
@@ -25,12 +21,11 @@ describe('WallGenerationSystem', () => {
       [1, 1, 1]
     ];
 
-    world.registerSystem(WallGenerationSystem, { worker: mockWorker, map });
-    world.execute(16, 16);
+    const system = new WallGenerationSystem(world, { worker: mockWorker, map });
+    system.update(16, 16);
 
-    const system = world.getSystem(WallGenerationSystem) as any;
-    expect(system.wallEntity).toBeDefined();
-    expect(system.wallEntity.hasComponent(WallTag)).toBe(true);
+    const wallEntities = world.with('wallTag');
+    expect(wallEntities.entities.length).toBe(1);
   });
 
   it('should add Wall component with segments', () => {
@@ -40,13 +35,13 @@ describe('WallGenerationSystem', () => {
       [1, 1, 1]
     ];
 
-    world.registerSystem(WallGenerationSystem, { worker: mockWorker, map });
-    world.execute(16, 16);
+    const system = new WallGenerationSystem(world, { worker: mockWorker, map });
+    system.update(16, 16);
 
-    const system = world.getSystem(WallGenerationSystem) as any;
-    expect(system.wallEntity.hasComponent(Wall)).toBe(true);
+    const wallEntities = world.with('wall', 'wallTag');
+    expect(wallEntities.entities.length).toBe(1);
 
-    const wall = system.wallEntity.getComponent(Wall)!;
+    const wall = wallEntities.entities[0].wall!;
     expect(wall.segments).toBeDefined();
     expect(Array.isArray(wall.segments)).toBe(true);
     expect(wall.segments.length).toBeGreaterThan(0);
@@ -59,11 +54,11 @@ describe('WallGenerationSystem', () => {
       [1, 1, 1]
     ];
 
-    world.registerSystem(WallGenerationSystem, { worker: mockWorker, map });
-    world.execute(16, 16);
+    const system = new WallGenerationSystem(world, { worker: mockWorker, map });
+    system.update(16, 16);
 
-    const system = world.getSystem(WallGenerationSystem) as any;
-    const wall = system.wallEntity.getComponent(Wall)!;
+    const wallEntities = world.with('wall', 'wallTag');
+    const wall = wallEntities.entities[0].wall!;
 
     expect(wall.thickness).toBe(GAME_CONFIG.WALL_THICKNESS);
     expect(wall.color).toBe(GAME_CONFIG.WALL_COLOR);
@@ -76,8 +71,8 @@ describe('WallGenerationSystem', () => {
       [1, 1, 1]
     ];
 
-    world.registerSystem(WallGenerationSystem, { worker: mockWorker, map });
-    world.execute(16, 16);
+    const system = new WallGenerationSystem(world, { worker: mockWorker, map });
+    system.update(16, 16);
 
     expect(mockWorker.postMessage).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -94,17 +89,14 @@ describe('WallGenerationSystem', () => {
       [1, 1, 1]
     ];
 
-    world.registerSystem(WallGenerationSystem, { worker: mockWorker, map });
-    const system = world.getSystem(WallGenerationSystem) as any;
+    const system = new WallGenerationSystem(world, { worker: mockWorker, map });
 
-    world.execute(16, 16);
-    const firstEntity = system.wallEntity;
+    system.update(16, 16);
+    system.update(16, 16);
+    system.update(16, 16);
 
-    world.execute(16, 16);
-    world.execute(16, 16);
-
-    // Should be the same entity
-    expect(system.wallEntity).toBe(firstEntity);
+    const wallEntities = world.with('wallTag');
+    expect(wallEntities.entities.length).toBe(1);
   });
 
   it('should handle simple rectangular map', () => {
@@ -115,13 +107,13 @@ describe('WallGenerationSystem', () => {
       [1, 1, 1, 1]
     ];
 
-    world.registerSystem(WallGenerationSystem, { worker: mockWorker, map });
-    world.execute(16, 16);
+    const system = new WallGenerationSystem(world, { worker: mockWorker, map });
+    system.update(16, 16);
 
-    const system = world.getSystem(WallGenerationSystem) as any;
-    expect(system.wallEntity).toBeDefined();
+    const wallEntities = world.with('wall', 'wallTag');
+    expect(wallEntities.entities.length).toBe(1);
 
-    const wall = system.wallEntity.getComponent(Wall)!;
+    const wall = wallEntities.entities[0].wall!;
     expect(wall.segments.length).toBeGreaterThan(0);
   });
 
@@ -133,22 +125,22 @@ describe('WallGenerationSystem', () => {
       [1, 1, 1, 1, 1, 1, 1]
     ];
 
-    world.registerSystem(WallGenerationSystem, { worker: mockWorker, map });
-    world.execute(16, 16);
+    const system = new WallGenerationSystem(world, { worker: mockWorker, map });
+    system.update(16, 16);
 
-    const system = world.getSystem(WallGenerationSystem) as any;
-    expect(system.wallEntity).toBeDefined();
+    const wallEntities = world.with('wall', 'wallTag');
+    expect(wallEntities.entities.length).toBe(1);
 
-    const wall = system.wallEntity.getComponent(Wall)!;
+    const wall = wallEntities.entities[0].wall!;
     expect(wall.segments.length).toBeGreaterThan(0);
   });
 
   it('should not create wall entity without map', () => {
-    world.registerSystem(WallGenerationSystem, { worker: mockWorker });
-    world.execute(16, 16);
+    const system = new WallGenerationSystem(world, { worker: mockWorker });
+    system.update(16, 16);
 
-    const system = world.getSystem(WallGenerationSystem) as any;
-    expect(system.wallEntity).toBeNull();
+    const wallEntities = world.with('wallTag');
+    expect(wallEntities.entities.length).toBe(0);
   });
 
   it('should generate smooth wall segments', () => {
@@ -158,13 +150,12 @@ describe('WallGenerationSystem', () => {
       [1, 1, 1]
     ];
 
-    world.registerSystem(WallGenerationSystem, { worker: mockWorker, map });
-    world.execute(16, 16);
+    const system = new WallGenerationSystem(world, { worker: mockWorker, map });
+    system.update(16, 16);
 
-    const system = world.getSystem(WallGenerationSystem) as any;
-    const wall = system.wallEntity.getComponent(Wall)!;
+    const wallEntities = world.with('wall', 'wallTag');
+    const wall = wallEntities.entities[0].wall!;
 
-    // Smoothed segments should have more points than the original marching squares contour
     wall.segments.forEach((segment: any[]) => {
       expect(segment.length).toBeGreaterThan(3);
       segment.forEach((point: any) => {

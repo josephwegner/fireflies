@@ -1,174 +1,161 @@
-import { System } from 'ecsy';
+import type { Query, With } from 'miniplex';
+import type { Entity, GameWorld } from '@/ecs/Entity';
+import type { GameSystem } from '@/ecs/GameSystem';
 import { ENTITY_CONFIG, PHYSICS_CONFIG } from '@/config';
-import { ActivationConfig, Position, Velocity, Path, Lodge, Renderable } from '@/ecs/components';
-import { ECSEntity } from '@/types';
 import { SpatialGrid, Vector } from '@/utils';
 import { gameEvents, GameEventPayloads, GameEvents } from '@/events';
-import { FleeingToGoalTag } from '@/ecs/components/tags';
+import { logger } from '@/utils/logger';
 
-export class LodgingSystem extends System {
-  private spatialGrid!: SpatialGrid;
+type LodgeEntity = With<Entity, 'lodge' | 'position'>;
 
-  constructor(world: any, attributes?: any) {
-    super(world, attributes);
-    if (attributes?.spatialGrid) {
-      this.spatialGrid = attributes.spatialGrid;
-    }
+// Component registry for ActivationConfig string-based lookups
+const COMPONENT_REGISTRY: Record<string, keyof Entity> = {
+  renderable: 'renderable',
+  interaction: 'interaction',
+  targeting: 'targeting',
+  combat: 'combat',
+};
 
-    gameEvents.on(GameEvents.TENANT_ADDED_TO_LODGE, this.handleTenantAdded.bind(this));
-    gameEvents.on(GameEvents.TENANT_REMOVED_FROM_LODGE, this.handleTenantRemoved.bind(this));
+export class LodgingSystem implements GameSystem {
+  private lodges: Query<LodgeEntity>;
+  private spatialGrid: SpatialGrid;
+  private handleTenantAddedBound: (data: any) => void;
+  private handleTenantRemovedBound: (data: any) => void;
+
+  constructor(private world: GameWorld, config: Record<string, any>) {
+    this.lodges = world.with('lodge', 'position');
+    this.spatialGrid = config.spatialGrid;
+
+    this.handleTenantAddedBound = this.handleTenantAdded.bind(this);
+    this.handleTenantRemovedBound = this.handleTenantRemoved.bind(this);
+    gameEvents.on(GameEvents.TENANT_ADDED_TO_LODGE, this.handleTenantAddedBound);
+    gameEvents.on(GameEvents.TENANT_REMOVED_FROM_LODGE, this.handleTenantRemovedBound);
   }
 
-  execute(delta?: number): void {
-    this.queries.lodges.results.forEach(lodgeEntity => {
-      const lodge = lodgeEntity.getComponent(Lodge);
-      const renderable = lodgeEntity.getComponent(Renderable);
-      
-      // Debug: check if any tenants have become invalid
-      if (lodge && lodge.tenants.length > 0) {
-        const aliveTenants = lodge.tenants.filter(t => t.alive);
-        if (aliveTenants.length !== lodge.tenants.length) {
-          console.log('🔴 DEAD TENANTS DETECTED!', {
-            lodgeId: lodgeEntity.id,
-            lodgeType: renderable?.type,
-            totalTenants: lodge.tenants.length,
-            aliveTenants: aliveTenants.length,
-            deadCount: lodge.tenants.length - aliveTenants.length
-          });
+  destroy(): void {
+    gameEvents.off(GameEvents.TENANT_ADDED_TO_LODGE, this.handleTenantAddedBound);
+    gameEvents.off(GameEvents.TENANT_REMOVED_FROM_LODGE, this.handleTenantRemovedBound);
+  }
+
+  update(_delta: number, _time: number): void {
+    for (const lodgeEntity of this.lodges) {
+      const { lodge } = lodgeEntity;
+
+      // Clean dead tenants
+      if (lodge.tenants.length > 0) {
+        const aliveBefore = lodge.tenants.length;
+        lodge.tenants = lodge.tenants.filter(t => this.world.has(t));
+        if (lodge.tenants.length !== aliveBefore) {
+          logger.debug('LodgingSystem', `Removed ${aliveBefore - lodge.tenants.length} dead tenants`);
         }
       }
-      
+
       this.addNewTenants(lodgeEntity);
-    });
-  }
-
-  addNewTenants(lodgeEntity: ECSEntity) {
-    const lodge = <Lodge>lodgeEntity.getMutableComponent(Lodge)!;
-    const lodgePos = lodgeEntity.getComponent(Position)!;
-    
-    // Only look for new tenants if there's room
-    if (lodge.tenants.length < lodge.maxTenants) {
-      const nearbyEntities = this.spatialGrid.getNearby(
-        lodgePos.x,
-        lodgePos.y,
-        PHYSICS_CONFIG.PATH_ARRIVAL_THRESHOLD
-      );
-
-      nearbyEntities.forEach(entity => {
-        if (lodge.tenants.length >= lodge.maxTenants) return;
-        if (entity === lodgeEntity) return;
-        if (!this.canLodge(entity, lodge.allowedTenants)) return;
-
-        // Verify exact distance (spatial grid returns candidates within cell radius)
-        const entityPos = entity.getComponent(Position);
-        if (!entityPos) return;
-
-        const dx = entityPos.x - lodgePos.x;
-        const dy = entityPos.y - lodgePos.y;
-        const distance = Vector.length(dx, dy);
-
-        if (distance <= PHYSICS_CONFIG.PATH_ARRIVAL_THRESHOLD) {
-          this.addTenantToLodge(lodgeEntity, entity);
-        }
-      });
     }
   }
 
-  canLodge(entity: ECSEntity, allowedTenants: readonly string[]): boolean {
-    const renderable = entity.getComponent(Renderable);
-    if (!renderable) return false;
-    
-    // Don't allow lodging if entity is fleeing to goal
-    if (entity.hasComponent(FleeingToGoalTag)) return false;
-    
-    return allowedTenants.includes(renderable.type);
+  private addNewTenants(lodgeEntity: LodgeEntity): void {
+    const { lodge, position: lodgePos } = lodgeEntity;
+
+    if (lodge.tenants.length >= lodge.maxTenants) return;
+
+    const nearbyEntities = this.spatialGrid.getNearby(
+      lodgePos.x,
+      lodgePos.y,
+      PHYSICS_CONFIG.PATH_ARRIVAL_THRESHOLD
+    );
+
+    for (const entity of nearbyEntities) {
+      if (lodge.tenants.length >= lodge.maxTenants) return;
+      if (entity === lodgeEntity) continue;
+      if (!this.canLodge(entity, lodge.allowedTenants)) continue;
+
+      const entityPos = entity.position;
+      if (!entityPos) continue;
+
+      const dx = entityPos.x - lodgePos.x;
+      const dy = entityPos.y - lodgePos.y;
+      const distance = Vector.length(dx, dy);
+
+      if (distance <= PHYSICS_CONFIG.PATH_ARRIVAL_THRESHOLD) {
+        this.addTenantToLodge(lodgeEntity, entity);
+      }
+    }
   }
 
-  handleTenantAdded(event: GameEventPayloads[GameEvents.TENANT_ADDED_TO_LODGE]): void {
+  private canLodge(entity: Entity, allowedTenants: readonly string[]): boolean {
+    if (!entity.renderable) return false;
+    if (entity.fleeingToGoalTag) return false;
+    return allowedTenants.includes(entity.renderable.type);
+  }
+
+  private handleTenantAdded(event: GameEventPayloads[typeof GameEvents.TENANT_ADDED_TO_LODGE]): void {
     const { lodgeEntity, tenantEntity } = event;
 
-    tenantEntity.removeComponent(Position);
-    tenantEntity.removeComponent(Velocity);
-    tenantEntity.removeComponent(Path);
+    this.world.removeComponent(tenantEntity, 'position');
+    this.world.removeComponent(tenantEntity, 'velocity');
+    this.world.removeComponent(tenantEntity, 'path');
 
-
-    const lodge = <Lodge>lodgeEntity.getMutableComponent(Lodge)!;
+    const lodge = lodgeEntity.lodge!;
     if (lodge.tenants.length >= lodge.maxTenants) {
       this.activate(lodgeEntity);
     }
   }
 
-  handleTenantRemoved(event: GameEventPayloads[GameEvents.TENANT_REMOVED_FROM_LODGE]): void {
+  private handleTenantRemoved(event: GameEventPayloads[typeof GameEvents.TENANT_REMOVED_FROM_LODGE]): void {
     const { lodgeEntity, tenantEntity } = event;
 
-    console.log('🔴 TENANT_REMOVED_FROM_LODGE event received', {
-      lodgeId: lodgeEntity.id,
-      tenantId: tenantEntity.id,
-      tenantAlive: tenantEntity.alive
-    });
+    const lodgePos = lodgeEntity.position!;
+    const tenantType = tenantEntity.renderable?.type;
 
-    const tenantRenderable = tenantEntity.getMutableComponent(Renderable);
-    const lodgePos = lodgeEntity.getComponent(Position)!;
-    // Move it 1px to the right so that we don't path to the same lodge
-    tenantEntity.addComponent(Position, { x: lodgePos.x + 1, y: lodgePos.y });
-    tenantEntity.addComponent(Velocity, { vx: 0, vy: 0 });
-    tenantEntity.addComponent(Path, {
+    this.world.addComponent(tenantEntity, 'position', { x: lodgePos.x + 1, y: lodgePos.y });
+    this.world.addComponent(tenantEntity, 'velocity', { vx: 0, vy: 0 });
+    this.world.addComponent(tenantEntity, 'path', {
       currentPath: [],
       nextPath: [],
-      direction: ENTITY_CONFIG[tenantRenderable.type as keyof typeof ENTITY_CONFIG].direction!
+      direction: tenantType ? ENTITY_CONFIG[tenantType as keyof typeof ENTITY_CONFIG]?.direction ?? 'r' : 'r'
     });
 
-    const lodge = <Lodge>lodgeEntity.getMutableComponent(Lodge)!;
+    const lodge = lodgeEntity.lodge!;
     if (lodge.tenants.length < lodge.maxTenants) {
       this.deactivate(lodgeEntity);
     }
   }
 
-  addTenantToLodge(lodgeEntity: ECSEntity, tenantEntity: ECSEntity): void {
-    const lodge = lodgeEntity.getMutableComponent(Lodge)!;
-    const tenant = tenantEntity.getComponent(Renderable)!;
+  private addTenantToLodge(lodgeEntity: Entity, tenantEntity: Entity): void {
+    const lodge = lodgeEntity.lodge!;
     lodge.tenants.push(tenantEntity);
-
     gameEvents.emit(GameEvents.TENANT_ADDED_TO_LODGE, { lodgeEntity, tenantEntity });
   }
 
-  private activate(entity: ECSEntity): void {
-    const activationConfig = entity.getComponent(ActivationConfig);
-    if (!activationConfig) return;
+  private activate(entity: Entity): void {
+    const config = entity.activationConfig;
+    if (!config) return;
 
-    activationConfig.onActivate.forEach(addition => {
-      this.addOrUpdateComponent(entity, addition.component, addition.config);
-    });
+    for (const effect of config.onActivate) {
+      this.applyEffect(entity, effect.componentName, effect.config);
+    }
   }
 
-  private deactivate(entity: ECSEntity): void {
-    console.log('🔴 DEACTIVATE CALLED', {
-      entityId: entity.id,
-      entityType: entity.getComponent(Renderable)?.type,
-      stackTrace: new Error().stack
-    });
-    
-    const activationConfig = entity.getComponent(ActivationConfig);
-    if (!activationConfig) return;
+  private deactivate(entity: Entity): void {
+    const config = entity.activationConfig;
+    if (!config) return;
 
-    activationConfig.onDeactivate.forEach(addition => {
-      this.addOrUpdateComponent(entity, addition.component, addition.config);
-    });
+    for (const effect of config.onDeactivate) {
+      this.applyEffect(entity, effect.componentName, effect.config);
+    }
   }
 
-  private addOrUpdateComponent(entity: ECSEntity, ComponentClass: any, config: any) {
-    if (entity.hasComponent(ComponentClass)) {
-      const component = entity.getMutableComponent(ComponentClass)!;
-      Object.assign(component, config);
+  private applyEffect(entity: Entity, componentName: string, config: Record<string, unknown>): void {
+    const key = COMPONENT_REGISTRY[componentName];
+    if (!key) return;
+
+    const existing = entity[key];
+    if (existing && typeof existing === 'object') {
+      Object.assign(existing, config);
+      this.world.reindex(entity);
     } else {
-      entity.addComponent(ComponentClass, config);
+      this.world.addComponent(entity, key as any, config as any);
     }
   }
-
-  static queries = {
-    lodges: {
-      components: [Lodge, Position]
-    }
-  };
 }
-

@@ -1,24 +1,25 @@
-import { System } from 'ecsy';
+import type { Query, With } from 'miniplex';
 import Phaser from 'phaser';
-import { Wall } from '@/ecs/components';
+import type { Entity, GameWorld } from '@/ecs/Entity';
+import type { GameSystem } from '@/ecs/GameSystem';
 
-export class WallRenderingSystem extends System {
-  private scene!: Phaser.Scene;
-  private graphics!: Phaser.GameObjects.Graphics;
-  private wallsDrawn: boolean = false;
+export class WallRenderingSystem implements GameSystem {
+  private walls: Query<With<Entity, 'wall'>>;
+  private scene: Phaser.Scene;
+  private graphics: Phaser.GameObjects.Graphics;
+  private wallsDrawn = false;
 
-  init(attributes?: any): void {
-    if (attributes?.scene) {
-      this.scene = attributes.scene;
-      this.graphics = this.scene.add.graphics();
-    }
+  constructor(private world: GameWorld, config: Record<string, any>) {
+    this.scene = config.scene;
+    this.graphics = this.scene.add.graphics();
+    this.walls = world.with('wall') as any;
   }
 
-  execute(): void {
+  update(_delta: number, _time: number): void {
     if (this.wallsDrawn) return;
 
-    this.queries.walls.results.forEach(entity => {
-      const wall = entity.getComponent(Wall)!;
+    for (const entity of this.walls) {
+      const { wall } = entity;
 
       this.graphics.lineStyle(wall.thickness, wall.color);
 
@@ -36,12 +37,10 @@ export class WallRenderingSystem extends System {
       });
 
       this.wallsDrawn = true;
-    });
+    }
   }
 
-  static queries = {
-    walls: {
-      components: [Wall]
-    }
-  };
+  destroy(): void {
+    this.graphics.destroy();
+  }
 }

@@ -1,39 +1,30 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { World } from 'ecsy';
+import { World } from 'miniplex';
+import type { Entity, GameWorld, Combat, CombatState } from '@/ecs/Entity';
 import { PulseAttackHandler } from '../PulseAttackHandler';
-import { AttackContext } from '../AttackHandler';
-import { Combat, CombatState, Position, PhysicsBody, FireflyTag, MonsterTag, WispTag, Renderable } from '@/ecs/components';
+import type { AttackContext } from '../AttackHandler';
 import { gameEvents, GameEvents } from '@/events';
 import { SpatialGrid } from '@/utils';
-import { ECSEntity } from '@/types';
-import { createMockScene, createMockGraphics, createMockContainer } from '@/__tests__/helpers/phaser-mocks';
 
 describe('PulseAttackHandler', () => {
   let handler: PulseAttackHandler;
-  let world: World;
+  let world: GameWorld;
   let spatialGrid: SpatialGrid;
-  let attacker: ECSEntity;
+  let attacker: Entity;
   let mockCombat: Combat;
 
   beforeEach(() => {
     handler = new PulseAttackHandler();
-    world = new World();
-    world
-      .registerComponent(Position)
-      .registerComponent(PhysicsBody)
-      .registerComponent(Combat)
-      .registerComponent(FireflyTag)
-      .registerComponent(MonsterTag)
-      .registerComponent(WispTag);
-
+    world = new World<Entity>();
     spatialGrid = new SpatialGrid(100);
 
-    attacker = world.createEntity();
-    attacker.addComponent(Position, { x: 0, y: 0 });
-    attacker.addComponent(MonsterTag);
+    attacker = world.add({
+      position: { x: 0, y: 0 },
+      monsterTag: true
+    });
 
     mockCombat = {
-      state: CombatState.ATTACKING,
+      state: 'ATTACKING' as CombatState,
       chargeTime: 1000,
       attackElapsed: 0,
       recoveryElapsed: 0,
@@ -55,10 +46,11 @@ describe('PulseAttackHandler', () => {
 
   describe('basic functionality', () => {
     it('should hit entities within radius', () => {
-      const target = world.createEntity();
-      target.addComponent(Position, { x: 10, y: 0 });
-      target.addComponent(PhysicsBody, { mass: 1, isStatic: false, collisionRadius: 5 });
-      target.addComponent(FireflyTag);
+      const target = world.add({
+        position: { x: 10, y: 0 },
+        physicsBody: { mass: 1, isStatic: false, collisionRadius: 5 },
+        fireflyTag: true
+      });
 
       spatialGrid.insert(attacker, 0, 0);
       spatialGrid.insert(target, 10, 0);
@@ -83,10 +75,11 @@ describe('PulseAttackHandler', () => {
     });
 
     it('should not hit entities outside radius', () => {
-      const target = world.createEntity();
-      target.addComponent(Position, { x: 100, y: 0 }); // Far away
-      target.addComponent(PhysicsBody, { mass: 1, isStatic: false, collisionRadius: 5 });
-      target.addComponent(FireflyTag);
+      const target = world.add({
+        position: { x: 100, y: 0 },
+        physicsBody: { mass: 1, isStatic: false, collisionRadius: 5 },
+        fireflyTag: true
+      });
 
       spatialGrid.insert(attacker, 0, 0);
       spatialGrid.insert(target, 100, 0);
@@ -109,8 +102,8 @@ describe('PulseAttackHandler', () => {
     });
 
     it('should not hit self', () => {
-      attacker.addComponent(PhysicsBody, { mass: 1, isStatic: false, collisionRadius: 8 });
-      attacker.addComponent(FireflyTag); // Make attacker match target tags
+      world.addComponent(attacker, 'physicsBody', { mass: 1, isStatic: false, collisionRadius: 8 });
+      world.addComponent(attacker, 'fireflyTag', true);
 
       spatialGrid.insert(attacker, 0, 0);
 
@@ -145,10 +138,11 @@ describe('PulseAttackHandler', () => {
     });
 
     it('should only hit targets once even when execute is called multiple times', () => {
-      const target = world.createEntity();
-      target.addComponent(Position, { x: 10, y: 0 });
-      target.addComponent(PhysicsBody, { mass: 1, isStatic: false, collisionRadius: 5 });
-      target.addComponent(FireflyTag);
+      const target = world.add({
+        position: { x: 10, y: 0 },
+        physicsBody: { mass: 1, isStatic: false, collisionRadius: 5 },
+        fireflyTag: true
+      });
 
       spatialGrid.insert(attacker, 0, 0);
       spatialGrid.insert(target, 10, 0);
@@ -162,9 +156,8 @@ describe('PulseAttackHandler', () => {
         spatialGrid
       };
 
-      // Execute the first time - should hit
       handler.execute(context);
-      
+
       expect(gameEvents.emit).toHaveBeenCalledTimes(1);
       expect(gameEvents.emit).toHaveBeenCalledWith(GameEvents.ATTACK_HIT, {
         attacker,
@@ -174,27 +167,27 @@ describe('PulseAttackHandler', () => {
       });
       expect(mockCombat.hasHit).toBe(true);
 
-      // Execute again - should NOT hit again
       handler.execute(context);
       handler.execute(context);
       handler.execute(context);
 
-      // Still only called once total
       expect(gameEvents.emit).toHaveBeenCalledTimes(1);
     });
   });
 
   describe('target tag filtering', () => {
     it('should only hit entities matching targetTags', () => {
-      const fireflyTarget = world.createEntity();
-      fireflyTarget.addComponent(Position, { x: 10, y: 0 });
-      fireflyTarget.addComponent(PhysicsBody, { mass: 1, isStatic: false, collisionRadius: 5 });
-      fireflyTarget.addComponent(FireflyTag);
+      const fireflyTarget = world.add({
+        position: { x: 10, y: 0 },
+        physicsBody: { mass: 1, isStatic: false, collisionRadius: 5 },
+        fireflyTag: true
+      });
 
-      const monsterTarget = world.createEntity();
-      monsterTarget.addComponent(Position, { x: 20, y: 0 });
-      monsterTarget.addComponent(PhysicsBody, { mass: 1, isStatic: false, collisionRadius: 5 });
-      monsterTarget.addComponent(MonsterTag);
+      const monsterTarget = world.add({
+        position: { x: 20, y: 0 },
+        physicsBody: { mass: 1, isStatic: false, collisionRadius: 5 },
+        monsterTag: true
+      });
 
       spatialGrid.insert(attacker, 0, 0);
       spatialGrid.insert(fireflyTarget, 10, 0);
@@ -204,7 +197,7 @@ describe('PulseAttackHandler', () => {
 
       const context: AttackContext = {
         attacker,
-        combat: mockCombat, // targetTags: ['firefly']
+        combat: mockCombat,
         world,
         spatialGrid
       };
@@ -225,20 +218,23 @@ describe('PulseAttackHandler', () => {
     it('should hit multiple entities with different matching tags', () => {
       mockCombat.attackPattern.targetTags = ['firefly', 'wisp'];
 
-      const fireflyTarget = world.createEntity();
-      fireflyTarget.addComponent(Position, { x: 10, y: 0 });
-      fireflyTarget.addComponent(PhysicsBody, { mass: 1, isStatic: false, collisionRadius: 5 });
-      fireflyTarget.addComponent(FireflyTag);
+      const fireflyTarget = world.add({
+        position: { x: 10, y: 0 },
+        physicsBody: { mass: 1, isStatic: false, collisionRadius: 5 },
+        fireflyTag: true
+      });
 
-      const wispTarget = world.createEntity();
-      wispTarget.addComponent(Position, { x: 15, y: 0 });
-      wispTarget.addComponent(PhysicsBody, { mass: 1, isStatic: false, collisionRadius: 5 });
-      wispTarget.addComponent(WispTag);
+      const wispTarget = world.add({
+        position: { x: 15, y: 0 },
+        physicsBody: { mass: 1, isStatic: false, collisionRadius: 5 },
+        wispTag: true
+      });
 
-      const monsterTarget = world.createEntity();
-      monsterTarget.addComponent(Position, { x: 20, y: 0 });
-      monsterTarget.addComponent(PhysicsBody, { mass: 1, isStatic: false, collisionRadius: 5 });
-      monsterTarget.addComponent(MonsterTag);
+      const monsterTarget = world.add({
+        position: { x: 20, y: 0 },
+        physicsBody: { mass: 1, isStatic: false, collisionRadius: 5 },
+        monsterTag: true
+      });
 
       spatialGrid.insert(attacker, 0, 0);
       spatialGrid.insert(fireflyTarget, 10, 0);
@@ -274,15 +270,17 @@ describe('PulseAttackHandler', () => {
     it('should hit all entities when targetTags is empty', () => {
       mockCombat.attackPattern.targetTags = [];
 
-      const fireflyTarget = world.createEntity();
-      fireflyTarget.addComponent(Position, { x: 10, y: 0 });
-      fireflyTarget.addComponent(PhysicsBody, { mass: 1, isStatic: false, collisionRadius: 5 });
-      fireflyTarget.addComponent(FireflyTag);
+      const fireflyTarget = world.add({
+        position: { x: 10, y: 0 },
+        physicsBody: { mass: 1, isStatic: false, collisionRadius: 5 },
+        fireflyTag: true
+      });
 
-      const monsterTarget = world.createEntity();
-      monsterTarget.addComponent(Position, { x: 20, y: 0 });
-      monsterTarget.addComponent(PhysicsBody, { mass: 1, isStatic: false, collisionRadius: 5 });
-      monsterTarget.addComponent(MonsterTag);
+      const monsterTarget = world.add({
+        position: { x: 20, y: 0 },
+        physicsBody: { mass: 1, isStatic: false, collisionRadius: 5 },
+        monsterTag: true
+      });
 
       spatialGrid.insert(attacker, 0, 0);
       spatialGrid.insert(fireflyTarget, 10, 0);
@@ -305,20 +303,20 @@ describe('PulseAttackHandler', () => {
 
   describe('spatial grid optimization', () => {
     it('should use spatial grid when provided', () => {
-      const nearTarget = world.createEntity();
-      nearTarget.addComponent(Position, { x: 10, y: 0 });
-      nearTarget.addComponent(PhysicsBody, { mass: 1, isStatic: false, collisionRadius: 5 });
-      nearTarget.addComponent(FireflyTag);
+      const nearTarget = world.add({
+        position: { x: 10, y: 0 },
+        physicsBody: { mass: 1, isStatic: false, collisionRadius: 5 },
+        fireflyTag: true
+      });
 
-      const farTarget = world.createEntity();
-      farTarget.addComponent(Position, { x: 200, y: 0 });
-      farTarget.addComponent(PhysicsBody, { mass: 1, isStatic: false, collisionRadius: 5 });
-      farTarget.addComponent(FireflyTag);
+      const farTarget = world.add({
+        position: { x: 200, y: 0 },
+        physicsBody: { mass: 1, isStatic: false, collisionRadius: 5 },
+        fireflyTag: true
+      });
 
-      // Only add near target to spatial grid
       spatialGrid.insert(attacker, 0, 0);
       spatialGrid.insert(nearTarget, 10, 0);
-      // Intentionally NOT adding farTarget to spatial grid
 
       vi.spyOn(gameEvents, 'emit');
 
@@ -331,7 +329,6 @@ describe('PulseAttackHandler', () => {
 
       handler.execute(context);
 
-      // Should only hit nearTarget (the one in the grid)
       expect(gameEvents.emit).toHaveBeenCalledTimes(1);
       expect(gameEvents.emit).toHaveBeenCalledWith(
         GameEvents.ATTACK_HIT,
@@ -339,11 +336,12 @@ describe('PulseAttackHandler', () => {
       );
     });
 
-    it('should fall back to all entities when spatial grid not provided', () => {
-      const target = world.createEntity();
-      target.addComponent(Position, { x: 10, y: 0 });
-      target.addComponent(PhysicsBody, { mass: 1, isStatic: false, collisionRadius: 5 });
-      target.addComponent(FireflyTag);
+    it('should return empty results when spatial grid not provided', () => {
+      world.add({
+        position: { x: 10, y: 0 },
+        physicsBody: { mass: 1, isStatic: false, collisionRadius: 5 },
+        fireflyTag: true
+      });
 
       vi.spyOn(gameEvents, 'emit');
 
@@ -351,25 +349,23 @@ describe('PulseAttackHandler', () => {
         attacker,
         combat: mockCombat,
         world
-        // No spatialGrid provided
       };
 
       handler.execute(context);
 
-      // Should still find and hit the target using world entity iteration
-      expect(gameEvents.emit).toHaveBeenCalledWith(
+      expect(gameEvents.emit).not.toHaveBeenCalledWith(
         GameEvents.ATTACK_HIT,
-        expect.objectContaining({ target })
+        expect.anything()
       );
     });
   });
 
   describe('edge cases', () => {
     it('should handle attacker without Position component gracefully', () => {
-      attacker.removeComponent(Position);
+      const noPositionAttacker = world.add({ monsterTag: true });
 
       const context: AttackContext = {
-        attacker,
+        attacker: noPositionAttacker,
         combat: mockCombat,
         world,
         spatialGrid
@@ -379,10 +375,10 @@ describe('PulseAttackHandler', () => {
     });
 
     it('should skip entities without Position component', () => {
-      const target = world.createEntity();
-      // No Position component
-      target.addComponent(PhysicsBody, { mass: 1, isStatic: false, collisionRadius: 5 });
-      target.addComponent(FireflyTag);
+      const target = world.add({
+        physicsBody: { mass: 1, isStatic: false, collisionRadius: 5 },
+        fireflyTag: true
+      });
 
       spatialGrid.insert(attacker, 0, 0);
 
@@ -404,10 +400,10 @@ describe('PulseAttackHandler', () => {
     });
 
     it('should skip entities without PhysicsBody component', () => {
-      const target = world.createEntity();
-      target.addComponent(Position, { x: 10, y: 0 });
-      // No PhysicsBody component
-      target.addComponent(FireflyTag);
+      const target = world.add({
+        position: { x: 10, y: 0 },
+        fireflyTag: true
+      });
 
       spatialGrid.insert(attacker, 0, 0);
       spatialGrid.insert(target, 10, 0);
@@ -432,10 +428,11 @@ describe('PulseAttackHandler', () => {
     it('should handle zero radius', () => {
       mockCombat.attackPattern.radius = 0;
 
-      const target = world.createEntity();
-      target.addComponent(Position, { x: 0, y: 0 }); // Same position as attacker
-      target.addComponent(PhysicsBody, { mass: 1, isStatic: false, collisionRadius: 5 });
-      target.addComponent(FireflyTag);
+      const target = world.add({
+        position: { x: 0, y: 0 },
+        physicsBody: { mass: 1, isStatic: false, collisionRadius: 5 },
+        fireflyTag: true
+      });
 
       spatialGrid.insert(attacker, 0, 0);
       spatialGrid.insert(target, 0, 0);
@@ -451,7 +448,6 @@ describe('PulseAttackHandler', () => {
 
       handler.execute(context);
 
-      // Should hit target at exact same position
       expect(gameEvents.emit).toHaveBeenCalledWith(
         GameEvents.ATTACK_HIT,
         expect.objectContaining({ target })
@@ -461,10 +457,11 @@ describe('PulseAttackHandler', () => {
     it('should handle undefined radius', () => {
       mockCombat.attackPattern.radius = undefined;
 
-      const target = world.createEntity();
-      target.addComponent(Position, { x: 10, y: 0 });
-      target.addComponent(PhysicsBody, { mass: 1, isStatic: false, collisionRadius: 5 });
-      target.addComponent(FireflyTag);
+      const target = world.add({
+        position: { x: 10, y: 0 },
+        physicsBody: { mass: 1, isStatic: false, collisionRadius: 5 },
+        fireflyTag: true
+      });
 
       spatialGrid.insert(attacker, 0, 0);
       spatialGrid.insert(target, 10, 0);
@@ -479,8 +476,7 @@ describe('PulseAttackHandler', () => {
       };
 
       expect(() => handler.execute(context)).not.toThrow();
-      
-      // With radius = 0 (from ?? 0), should not hit anything
+
       expect(gameEvents.emit).not.toHaveBeenCalledWith(
         GameEvents.ATTACK_HIT,
         expect.anything()
@@ -488,257 +484,25 @@ describe('PulseAttackHandler', () => {
     });
   });
 
-  describe('Visual Lifecycle', () => {
-    let mockScene: any;
-    let mockContainer: any;
-
-    beforeEach(() => {
-      mockScene = createMockScene();
-      mockContainer = createMockContainer(); // This will hold our graphics
-      world.registerComponent(Renderable);
-    });
-
-    it('should handle onCharging without errors', () => {
-      attacker.addComponent(Renderable, {
-        type: 'monster',
-        radius: 8,
-        color: 0xff0000,
-        scale: 1.0,
-        tint: 0xFFFFFF
-      });
-
-      const mockGraphics = createMockGraphics();
-      mockScene.add.graphics.mockReturnValue(mockGraphics);
-
-      expect(() => {
-        handler.onCharging({
-          attacker,
-          combat: mockCombat,
-          world,
-          scene: mockScene,
-          spriteContainer: mockContainer,
-          position: attacker.getComponent(Position)!,
-          renderable: attacker.getMutableComponent(Renderable)!,
-          dt: 16
-        });
-      }).not.toThrow();
-    });
-
-    it('should add converging rings to sprite container during charging', () => {
-      attacker.addComponent(Renderable, {
-        type: 'monster',
-        radius: 8,
-        color: 0xff0000,
-        scale: 1.0,
-        tint: 0xFFFFFF
-      });
-
-      const mockGraphics = createMockGraphics();
-      mockScene.add.graphics.mockReturnValue(mockGraphics);
-
-      handler.onCharging({
+  describe('No-op Visual Methods', () => {
+    it('should not throw on onRecovering', () => {
+      const context: AttackContext = {
         attacker,
         combat: mockCombat,
-        world,
-        scene: mockScene,
-        spriteContainer: mockContainer,
-        position: attacker.getComponent(Position)!,
-        renderable: attacker.getMutableComponent(Renderable)!,
-        dt: 16
-      });
+        world
+      };
 
-      // Multiple rings should be created (4 converging rings)
-      expect(mockScene.add.graphics).toHaveBeenCalledTimes(4);
-      expect(mockContainer.add).toHaveBeenCalledTimes(4);
-      
-      // Rings should be findable in container by name pattern
-      const ring = mockContainer.list.find((c: any) => c.name && c.name.startsWith('chargingRing_'));
-      expect(ring).toBeDefined();
+      expect(() => handler.onRecovering?.(context)).not.toThrow();
     });
 
-    it('should recreate rings on subsequent charging calls for animation', () => {
-      attacker.addComponent(Renderable, {
-        type: 'monster',
-        radius: 8,
-        color: 0xff0000,
-        scale: 1.0,
-        tint: 0xFFFFFF
-      });
-
-      const mockGraphics = createMockGraphics();
-      mockScene.add.graphics.mockReturnValue(mockGraphics);
-
-      // First call - creates 4 rings
-      handler.onCharging({
+    it('should not throw on cleanup', () => {
+      const context: AttackContext = {
         attacker,
         combat: mockCombat,
-        world,
-        scene: mockScene,
-        spriteContainer: mockContainer,
-        position: attacker.getComponent(Position)!,
-        renderable: attacker.getMutableComponent(Renderable)!,
-        dt: 16
-      });
+        world
+      };
 
-      expect(mockScene.add.graphics).toHaveBeenCalledTimes(4);
-
-      // Second call - recreates 4 rings for animation
-      handler.onCharging({
-        attacker,
-        combat: mockCombat,
-        world,
-        scene: mockScene,
-        spriteContainer: mockContainer,
-        position: attacker.getComponent(Position)!,
-        renderable: attacker.getMutableComponent(Renderable)!,
-        dt: 16
-      });
-
-      // Should create new graphics objects each frame for animation
-      expect(mockScene.add.graphics).toHaveBeenCalledTimes(8);
-    });
-
-    it('should handle onRecovering without errors', () => {
-      attacker.addComponent(Renderable, {
-        type: 'monster',
-        radius: 8,
-        color: 0xff0000,
-        scale: 1.0,
-        tint: 0xFFFFFF
-      });
-
-      expect(() => {
-        handler.onRecovering({
-          attacker,
-          combat: mockCombat,
-          world,
-          scene: mockScene,
-          spriteContainer: mockContainer,
-          position: attacker.getComponent(Position)!,
-          renderable: attacker.getMutableComponent(Renderable)!,
-          dt: 16
-        });
-      }).not.toThrow();
-    });
-
-    it('should destroy graphics from container on cleanup', () => {
-      attacker.addComponent(Renderable, {
-        type: 'monster',
-        radius: 8,
-        color: 0xff0000,
-        scale: 1.0,
-        tint: 0xFFFFFF
-      });
-
-      const mockGraphics = createMockGraphics();
-      mockGraphics.name = 'pulseCircle';
-      mockScene.add.graphics.mockReturnValue(mockGraphics);
-
-      // Create graphics during charging
-      handler.onCharging({
-        attacker,
-        combat: mockCombat,
-        world,
-        scene: mockScene,
-        spriteContainer: mockContainer,
-        position: attacker.getComponent(Position)!,
-        renderable: attacker.getMutableComponent(Renderable)!,
-        dt: 16
-      });
-
-      // Cleanup should destroy them
-      handler.cleanup({
-        attacker,
-        combat: mockCombat,
-        world,
-        scene: mockScene,
-        spriteContainer: mockContainer,
-        renderable: attacker.getMutableComponent(Renderable)!
-      });
-
-      // Graphics should be destroyed
-      expect(mockGraphics.destroy).toHaveBeenCalled();
-    });
-
-    it('should handle cleanup when no graphics exist', () => {
-      attacker.addComponent(Renderable, {
-        type: 'monster',
-        radius: 8,
-        color: 0xff0000,
-        scale: 1.0,
-        tint: 0xFFFFFF
-      });
-
-      expect(() => {
-        handler.cleanup({
-          attacker,
-          combat: mockCombat,
-          world,
-          scene: mockScene,
-          spriteContainer: mockContainer,
-          renderable: attacker.getMutableComponent(Renderable)!
-        });
-      }).not.toThrow();
-    });
-
-    it('should handle multiple entities with separate graphics', () => {
-      attacker.addComponent(Renderable, {
-        type: 'monster',
-        radius: 8,
-        color: 0xff0000,
-        scale: 1.0,
-        tint: 0xFFFFFF
-      });
-
-      const attacker2 = world.createEntity();
-      attacker2.addComponent(Position, { x: 50, y: 50 });
-      attacker2.addComponent(MonsterTag);
-      attacker2.addComponent(Renderable, {
-        type: 'monster',
-        radius: 8,
-        color: 0xff0000,
-        scale: 1.0,
-        tint: 0xFFFFFF
-      });
-
-      const mockContainer2 = createMockContainer();
-      
-      const mockGraphics1 = createMockGraphics();
-      const mockGraphics2 = createMockGraphics();
-      mockScene.add.graphics
-        .mockReturnValueOnce(mockGraphics1)
-        .mockReturnValueOnce(mockGraphics2);
-
-      // Both entities charge simultaneously
-      handler.onCharging({
-        attacker,
-        combat: mockCombat,
-        world,
-        scene: mockScene,
-        spriteContainer: mockContainer,
-        position: attacker.getComponent(Position)!,
-        renderable: attacker.getMutableComponent(Renderable)!,
-        dt: 16
-      });
-
-      // Verify add was called
-      expect(mockContainer.add).toHaveBeenCalledWith(mockGraphics1);
-      expect(mockContainer.list).toContain(mockGraphics1);
-
-      handler.onCharging({
-        attacker: attacker2,
-        combat: mockCombat,
-        world,
-        scene: mockScene,
-        spriteContainer: mockContainer2,
-        position: attacker2.getComponent(Position)!,
-        renderable: attacker2.getMutableComponent(Renderable)!,
-        dt: 16
-      });
-
-      expect(mockContainer2.add).toHaveBeenCalledWith(mockGraphics2);
-      expect(mockContainer2.list).toContain(mockGraphics2);
-      expect(mockGraphics1).not.toBe(mockGraphics2);
+      expect(() => handler.cleanup?.(context)).not.toThrow();
     });
   });
 });

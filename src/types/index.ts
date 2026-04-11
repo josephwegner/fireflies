@@ -1,15 +1,5 @@
-import { Entity } from 'ecsy';
-import Phaser from 'phaser';
-
-export interface Position {
-  x: number;
-  y: number;
-}
-
-export interface Velocity {
-  vx: number;
-  vy: number;
-}
+export type { Entity } from '@/ecs/Entity';
+export type { GameWorld } from '@/ecs/Entity';
 
 export interface Size {
   width: number;
@@ -29,12 +19,4 @@ export interface GameConfig {
   height: number;
   tileSize: number;
   entities: Record<string, EntityConfig>;
-}
-
-export type ECSEntity = Entity;
-
-export interface SpriteMapping {
-  entity: ECSEntity;
-  sprite: Phaser.GameObjects.Sprite;
-  physicsBody?: Phaser.Physics.Arcade.Body;
 }

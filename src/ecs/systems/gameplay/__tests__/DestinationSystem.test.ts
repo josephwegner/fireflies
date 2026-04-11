@@ -1,18 +1,7 @@
 import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
-import { World } from 'ecsy';
+import { World } from 'miniplex';
+import type { Entity, GameWorld } from '@/ecs/Entity';
 import { DestinationSystem } from '../DestinationSystem';
-import {
-  Position,
-  Velocity,
-  Path,
-  Destination,
-  Renderable,
-  FireflyTag,
-  MonsterTag,
-  WispTag,
-  GoalTag,
-  FleeingToGoalTag
-} from '@/ecs/components';
 import { PHYSICS_CONFIG } from '@/config';
 import {
   createTestFirefly,
@@ -24,23 +13,12 @@ import {
 } from '@/__tests__/helpers';
 
 describe('DestinationSystem', () => {
-  let world: World;
+  let world: GameWorld;
+  let system: DestinationSystem;
   let mockWorker: any;
 
   beforeEach(() => {
-    world = new World();
-    world
-      .registerComponent(Position)
-      .registerComponent(Velocity)
-      .registerComponent(Path)
-      .registerComponent(Destination)
-      .registerComponent(Renderable)
-      .registerComponent(FireflyTag)
-      .registerComponent(MonsterTag)
-      .registerComponent(WispTag)
-      .registerComponent(GoalTag)
-      .registerComponent(FleeingToGoalTag);
-
+    world = new World<Entity>();
     mockWorker = createMockWorker();
   });
 
@@ -50,21 +28,20 @@ describe('DestinationSystem', () => {
 
   describe('Initialization', () => {
     it('should initialize with worker', () => {
-      world.registerSystem(DestinationSystem, { worker: mockWorker });
-      const system = world.getSystem(DestinationSystem) as any;
+      system = new DestinationSystem(world, { worker: mockWorker });
 
-      expect(system.worker).toBe(mockWorker);
+      expect((system as any).worker).toBe(mockWorker);
     });
 
     it('should setup worker message handler', () => {
-      world.registerSystem(DestinationSystem, { worker: mockWorker });
+      system = new DestinationSystem(world, { worker: mockWorker });
 
       expect(mockWorker.onmessage).toBeDefined();
       expect(typeof mockWorker.onmessage).toBe('function');
     });
 
     it('should setup worker error handler', () => {
-      world.registerSystem(DestinationSystem, { worker: mockWorker });
+      system = new DestinationSystem(world, { worker: mockWorker });
 
       expect(mockWorker.onerror).toBeDefined();
       expect(typeof mockWorker.onerror).toBe('function');
@@ -74,71 +51,61 @@ describe('DestinationSystem', () => {
   describe('Entity Type Detection', () => {
     it('should detect firefly entities', () => {
       const entity = createTestFirefly(world);
+      system = new DestinationSystem(world, { worker: mockWorker });
 
-      world.registerSystem(DestinationSystem, { worker: mockWorker });
-      const system = world.getSystem(DestinationSystem) as any;
-
-      expect(system.getEntityType(entity)).toBe('firefly');
+      expect((system as any).getEntityType(entity)).toBe('firefly');
     });
 
     it('should detect monster entities', () => {
       const entity = createTestMonster(world);
+      system = new DestinationSystem(world, { worker: mockWorker });
 
-      world.registerSystem(DestinationSystem, { worker: mockWorker });
-      const system = world.getSystem(DestinationSystem) as any;
-
-      expect(system.getEntityType(entity)).toBe('monster');
+      expect((system as any).getEntityType(entity)).toBe('monster');
     });
 
     it('should detect wisp entities', () => {
       const entity = createTestWisp(world);
+      system = new DestinationSystem(world, { worker: mockWorker });
 
-      world.registerSystem(DestinationSystem, { worker: mockWorker });
-      const system = world.getSystem(DestinationSystem) as any;
-
-      expect(system.getEntityType(entity)).toBe('wisp');
+      expect((system as any).getEntityType(entity)).toBe('wisp');
     });
 
     it('should detect goal entities', () => {
       const entity = createTestGoal(world);
+      system = new DestinationSystem(world, { worker: mockWorker });
 
-      world.registerSystem(DestinationSystem, { worker: mockWorker });
-      const system = world.getSystem(DestinationSystem) as any;
-
-      expect(system.getEntityType(entity)).toBe('goal');
+      expect((system as any).getEntityType(entity)).toBe('goal');
     });
 
     it('should return unknown for untagged entities', () => {
-      const entity = world.createEntity();
+      const entity = world.add({});
+      system = new DestinationSystem(world, { worker: mockWorker });
 
-      world.registerSystem(DestinationSystem, { worker: mockWorker });
-      const system = world.getSystem(DestinationSystem) as any;
-
-      expect(system.getEntityType(entity)).toBe('unknown');
+      expect((system as any).getEntityType(entity)).toBe('unknown');
     });
   });
 
   describe('Path Requests', () => {
     it('should request path when entity has no current path', () => {
       const { entity } = createBasicTestSetup(world);
+      system = new DestinationSystem(world, { worker: mockWorker });
 
-      world.registerSystem(DestinationSystem, { worker: mockWorker });
-      world.execute(16, 16);
+      system.update(16, 16);
 
       expect(mockWorker.postMessage).toHaveBeenCalled();
       const call = mockWorker.postMessage.mock.calls[0][0];
       expect(call.action).toBe('pathfind');
-      expect(call.entityId).toBe(entity.id);
+      expect(call.entityId).toBe(world.id(entity));
       expect(call.pathType).toBe('current');
     });
 
     it('should not spam requests when already waiting for response', () => {
       createBasicTestSetup(world);
+      system = new DestinationSystem(world, { worker: mockWorker });
 
-      world.registerSystem(DestinationSystem, { worker: mockWorker });
-      world.execute(16, 16);
-      world.execute(16, 16);
-      world.execute(16, 16);
+      system.update(16, 16);
+      system.update(16, 16);
+      system.update(16, 16);
 
       expect(mockWorker.postMessage).toHaveBeenCalledTimes(1);
     });
@@ -147,9 +114,9 @@ describe('DestinationSystem', () => {
       const { entity } = createBasicTestSetup(world, {
         currentPath: [{ x: 200, y: 200 }]
       });
+      system = new DestinationSystem(world, { worker: mockWorker });
 
-      world.registerSystem(DestinationSystem, { worker: mockWorker });
-      world.execute(16, 16);
+      system.update(16, 16);
 
       expect(mockWorker.postMessage).toHaveBeenCalled();
       const call = mockWorker.postMessage.mock.calls[0][0];
@@ -159,10 +126,10 @@ describe('DestinationSystem', () => {
     });
 
     it('should include entity radius in path request', () => {
-      const { entity } = createBasicTestSetup(world, { radius: 15 });
+      createBasicTestSetup(world, { radius: 15 });
+      system = new DestinationSystem(world, { worker: mockWorker });
 
-      world.registerSystem(DestinationSystem, { worker: mockWorker });
-      world.execute(16, 16);
+      system.update(16, 16);
 
       const call = mockWorker.postMessage.mock.calls[0][0];
       expect(call.radius).toBe(15);
@@ -170,20 +137,17 @@ describe('DestinationSystem', () => {
     });
 
     it('should use radius 0 if entity has no Renderable component', () => {
-      const entity = world.createEntity();
-      entity.addComponent(Position, { x: 100, y: 100 });
-      entity.addComponent(Velocity, { vx: 0, vy: 0 });
-      entity.addComponent(Path, {
-        currentPath: [],
-        nextPath: [],
-        direction: 'r'
+      world.add({
+        position: { x: 100, y: 100 },
+        velocity: { vx: 0, vy: 0 },
+        path: { currentPath: [], nextPath: [], direction: 'r' },
+        fireflyTag: true
       });
-      entity.addComponent(FireflyTag);
 
       createTestGoal(world);
 
-      world.registerSystem(DestinationSystem, { worker: mockWorker });
-      world.execute(16, 16);
+      system = new DestinationSystem(world, { worker: mockWorker });
+      system.update(16, 16);
 
       const call = mockWorker.postMessage.mock.calls[0][0];
       expect(call.radius).toBe(0);
@@ -192,20 +156,18 @@ describe('DestinationSystem', () => {
 
   describe('Worker Message Handling', () => {
     it('should handle navmeshReady message', () => {
-      world.registerSystem(DestinationSystem, { worker: mockWorker });
+      system = new DestinationSystem(world, { worker: mockWorker });
 
-      const event = {
-        data: { action: 'navmeshReady' }
-      };
+      const event = { data: { action: 'navmeshReady' } };
 
       expect(() => mockWorker.onmessage(event)).not.toThrow();
     });
 
     it('should apply path to entity when receiving pathfinding result', () => {
       const { entity } = createBasicTestSetup(world);
+      system = new DestinationSystem(world, { worker: mockWorker });
 
-      world.registerSystem(DestinationSystem, { worker: mockWorker });
-      world.execute(16, 16);
+      system.update(16, 16);
 
       const newPath = [
         { x: 150, y: 150 },
@@ -215,23 +177,22 @@ describe('DestinationSystem', () => {
 
       mockWorker.onmessage({
         data: {
-          entityId: entity.id,
+          entityId: world.id(entity),
           path: newPath,
           pathType: 'current'
         }
       });
 
-      const pathComp = entity.getComponent(Path)!;
-      expect(pathComp.currentPath).toEqual(newPath);
+      expect(entity.path!.currentPath).toEqual(newPath);
     });
 
     it('should apply next path when pathType is next', () => {
       const { entity } = createBasicTestSetup(world, {
         currentPath: [{ x: 200, y: 200 }]
       });
+      system = new DestinationSystem(world, { worker: mockWorker });
 
-      world.registerSystem(DestinationSystem, { worker: mockWorker });
-      world.execute(16, 16);
+      system.update(16, 16);
 
       const newPath = [
         { x: 300, y: 300 },
@@ -240,19 +201,18 @@ describe('DestinationSystem', () => {
 
       mockWorker.onmessage({
         data: {
-          entityId: entity.id,
+          entityId: world.id(entity),
           path: newPath,
           pathType: 'next'
         }
       });
 
-      const pathComp = entity.getComponent(Path)!;
-      expect(pathComp.nextPath).toEqual(newPath);
-      expect(pathComp.currentPath).toEqual([{ x: 200, y: 200 }]);
+      expect(entity.path!.nextPath).toEqual(newPath);
+      expect(entity.path!.currentPath).toEqual([{ x: 200, y: 200 }]);
     });
 
     it('should handle worker error messages', () => {
-      world.registerSystem(DestinationSystem, { worker: mockWorker });
+      system = new DestinationSystem(world, { worker: mockWorker });
       const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
 
       mockWorker.onmessage({
@@ -268,7 +228,7 @@ describe('DestinationSystem', () => {
     });
 
     it('should handle messages for non-existent entities gracefully', () => {
-      world.registerSystem(DestinationSystem, { worker: mockWorker });
+      system = new DestinationSystem(world, { worker: mockWorker });
 
       expect(() => {
         mockWorker.onmessage({
@@ -285,22 +245,18 @@ describe('DestinationSystem', () => {
   describe('Destination Selection', () => {
     it('should find goal destination for entity type', () => {
       createBasicTestSetup(world);
+      system = new DestinationSystem(world, { worker: mockWorker });
 
-      world.registerSystem(DestinationSystem, { worker: mockWorker });
-      const system = world.getSystem(DestinationSystem) as any;
-
-      const goalDest = system.findGoalDestination('firefly');
+      const goalDest = (system as any).findGoalDestination('firefly');
       expect(goalDest).not.toBeNull();
     });
 
     it('should return null when no goal exists for entity type', () => {
       createTestFirefly(world);
       createTestGoal(world, { for: ['monster'] });
+      system = new DestinationSystem(world, { worker: mockWorker });
 
-      world.registerSystem(DestinationSystem, { worker: mockWorker });
-      const system = world.getSystem(DestinationSystem) as any;
-
-      const goalDest = system.findGoalDestination('firefly');
+      const goalDest = (system as any).findGoalDestination('firefly');
       expect(goalDest).toBeNull();
     });
 
@@ -308,12 +264,10 @@ describe('DestinationSystem', () => {
       createTestFirefly(world);
       const wisp = createTestWisp(world);
       createTestGoal(world);
+      system = new DestinationSystem(world, { worker: mockWorker });
 
-      world.registerSystem(DestinationSystem, { worker: mockWorker });
-      const system = world.getSystem(DestinationSystem) as any;
-
-      const goalDest = system.findGoalDestination('firefly');
-      const destinations = system.gatherDestinations(
+      const goalDest = (system as any).findGoalDestination('firefly');
+      const destinations = (system as any).gatherDestinations(
         { x: 100, y: 100 },
         goalDest,
         'firefly',
@@ -328,12 +282,10 @@ describe('DestinationSystem', () => {
     it('should exclude goal from intermediate destinations', () => {
       createTestFirefly(world);
       const goal = createTestGoal(world);
+      system = new DestinationSystem(world, { worker: mockWorker });
 
-      world.registerSystem(DestinationSystem, { worker: mockWorker });
-      const system = world.getSystem(DestinationSystem) as any;
-
-      const goalDest = system.findGoalDestination('firefly');
-      const destinations = system.gatherDestinations(
+      const goalDest = (system as any).findGoalDestination('firefly');
+      const destinations = (system as any).gatherDestinations(
         { x: 100, y: 100 },
         goalDest,
         'firefly',
@@ -349,12 +301,10 @@ describe('DestinationSystem', () => {
       const wispForFirefly = createTestWisp(world, { x: 300, y: 300, for: ['firefly'] });
       const wispForMonster = createTestWisp(world, { x: 350, y: 350, for: ['monster'] });
       createTestGoal(world);
+      system = new DestinationSystem(world, { worker: mockWorker });
 
-      world.registerSystem(DestinationSystem, { worker: mockWorker });
-      const system = world.getSystem(DestinationSystem) as any;
-
-      const goalDest = system.findGoalDestination('firefly');
-      const destinations = system.gatherDestinations(
+      const goalDest = (system as any).findGoalDestination('firefly');
+      const destinations = (system as any).gatherDestinations(
         { x: 100, y: 100 },
         goalDest,
         'firefly',
@@ -371,12 +321,10 @@ describe('DestinationSystem', () => {
       createTestWisp(world, { x: 300, y: 300 });
       createTestWisp(world, { x: 200, y: 200 });
       createTestGoal(world);
+      system = new DestinationSystem(world, { worker: mockWorker });
 
-      world.registerSystem(DestinationSystem, { worker: mockWorker });
-      const system = world.getSystem(DestinationSystem) as any;
-
-      const goalDest = system.findGoalDestination('firefly');
-      const destinations = system.gatherDestinations(
+      const goalDest = (system as any).findGoalDestination('firefly');
+      const destinations = (system as any).gatherDestinations(
         { x: 100, y: 100 },
         goalDest,
         'firefly',
@@ -395,12 +343,10 @@ describe('DestinationSystem', () => {
     it('should return empty array when at destination', () => {
       createTestFirefly(world, { x: 500, y: 500 });
       createTestGoal(world, { x: 500, y: 500 });
+      system = new DestinationSystem(world, { worker: mockWorker });
 
-      world.registerSystem(DestinationSystem, { worker: mockWorker });
-      const system = world.getSystem(DestinationSystem) as any;
-
-      const goalDest = system.findGoalDestination('firefly');
-      const destinations = system.gatherDestinations(
+      const goalDest = (system as any).findGoalDestination('firefly');
+      const destinations = (system as any).gatherDestinations(
         { x: 500, y: 500 },
         goalDest,
         'firefly',
@@ -417,19 +363,19 @@ describe('DestinationSystem', () => {
       vi.useFakeTimers();
 
       const { entity } = createBasicTestSetup(world);
+      system = new DestinationSystem(world, { worker: mockWorker });
 
-      world.registerSystem(DestinationSystem, { worker: mockWorker });
-      world.execute(16, 16);
+      system.update(16, 16);
 
       mockWorker.onmessage({
         data: {
-          entityId: entity.id,
+          entityId: world.id(entity),
           path: [{ x: 200, y: 200 }],
           pathType: 'current'
         }
       });
 
-      world.execute(16, 16);
+      system.update(16, 16);
       expect(mockWorker.postMessage).toHaveBeenCalledTimes(2);
 
       vi.useRealTimers();
@@ -439,39 +385,38 @@ describe('DestinationSystem', () => {
       vi.useFakeTimers();
 
       const { entity } = createBasicTestSetup(world);
+      system = new DestinationSystem(world, { worker: mockWorker });
 
-      world.registerSystem(DestinationSystem, { worker: mockWorker });
-      world.execute(16, 16);
+      system.update(16, 16);
 
       const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
       mockWorker.onmessage({
         data: {
           action: 'error',
           error: 'Pathfinding failed',
-          entityId: entity.id
+          entityId: world.id(entity)
         }
       });
       consoleSpy.mockRestore();
 
-      world.execute(16, 16);
+      system.update(16, 16);
       expect(mockWorker.postMessage).toHaveBeenCalledTimes(2);
 
       vi.useRealTimers();
     });
 
-    it('should cleanup pending requests on stop', () => {
+    it('should cleanup pending requests on destroy', () => {
       vi.useFakeTimers();
 
       createBasicTestSetup(world);
+      system = new DestinationSystem(world, { worker: mockWorker });
 
-      world.registerSystem(DestinationSystem, { worker: mockWorker });
-      world.execute(16, 16);
+      system.update(16, 16);
 
-      const system = world.getSystem(DestinationSystem) as any;
-      expect(system.pendingRequests.size).toBe(1);
+      expect((system as any).pendingRequests.size).toBe(1);
 
-      system.stop();
-      expect(system.pendingRequests.size).toBe(0);
+      system.destroy!();
+      expect((system as any).pendingRequests.size).toBe(0);
 
       vi.useRealTimers();
     });
@@ -480,76 +425,62 @@ describe('DestinationSystem', () => {
   describe('Error Handling', () => {
     it('should not request path when no goal exists', () => {
       createTestFirefly(world);
+      system = new DestinationSystem(world, { worker: mockWorker });
 
-      world.registerSystem(DestinationSystem, { worker: mockWorker });
-      world.execute(16, 16);
+      system.update(16, 16);
 
       expect(mockWorker.postMessage).not.toHaveBeenCalled();
     });
   });
 
   describe('FleeingToGoalTag behavior', () => {
-    beforeEach(() => {
-      world.registerComponent(FleeingToGoalTag);
-    });
-
     it('should skip intermediate destinations when entity has FleeingToGoalTag', () => {
       const firefly = createTestFirefly(world, { x: 100, y: 100 });
-      const wisp = createTestWisp(world, { x: 300, y: 300 });
-      const goal = createTestGoal(world, { x: 500, y: 500 });
-      
-      // Mark firefly as fleeing
-      firefly.addComponent(FleeingToGoalTag);
+      createTestWisp(world, { x: 300, y: 300 });
+      createTestGoal(world, { x: 500, y: 500 });
 
-      world.registerSystem(DestinationSystem, { worker: mockWorker });
-      world.execute(16, 16);
+      world.addComponent(firefly, 'fleeingToGoalTag', true);
 
-      // Should request path directly to goal, not to wisp
+      system = new DestinationSystem(world, { worker: mockWorker });
+      system.update(16, 16);
+
       expect(mockWorker.postMessage).toHaveBeenCalled();
       const call = mockWorker.postMessage.mock.calls[0][0];
-      
-      // Destination should be goal, not wisp
+
       expect(call.destination.x).toBe(500);
       expect(call.destination.y).toBe(500);
     });
 
     it('should go directly to goal without considering wisps when fleeing', () => {
       const firefly = createTestFirefly(world, { x: 100, y: 100 });
-      
-      // Create multiple wisps that would normally be visited
+
       createTestWisp(world, { x: 200, y: 200, for: ['firefly'] });
       createTestWisp(world, { x: 300, y: 300, for: ['firefly'] });
       createTestWisp(world, { x: 400, y: 400, for: ['firefly'] });
-      
-      const goal = createTestGoal(world, { x: 500, y: 500 });
-      
-      // Mark firefly as fleeing
-      firefly.addComponent(FleeingToGoalTag);
 
-      world.registerSystem(DestinationSystem, { worker: mockWorker });
-      world.execute(16, 16);
+      createTestGoal(world, { x: 500, y: 500 });
+
+      world.addComponent(firefly, 'fleeingToGoalTag', true);
+
+      system = new DestinationSystem(world, { worker: mockWorker });
+      system.update(16, 16);
 
       const call = mockWorker.postMessage.mock.calls[0][0];
-      
-      // Should go directly to goal, skipping all wisps
+
       expect(call.destination.x).toBe(500);
       expect(call.destination.y).toBe(500);
     });
 
     it('should visit intermediate destinations when not fleeing', () => {
-      const firefly = createTestFirefly(world, { x: 100, y: 100 });
-      const wisp = createTestWisp(world, { x: 300, y: 300 });
-      const goal = createTestGoal(world, { x: 500, y: 500 });
-      
-      // Do NOT add FleeingToGoalTag
+      createTestFirefly(world, { x: 100, y: 100 });
+      createTestWisp(world, { x: 300, y: 300 });
+      createTestGoal(world, { x: 500, y: 500 });
 
-      world.registerSystem(DestinationSystem, { worker: mockWorker });
-      world.execute(16, 16);
+      system = new DestinationSystem(world, { worker: mockWorker });
+      system.update(16, 16);
 
       const call = mockWorker.postMessage.mock.calls[0][0];
-      
-      // Should go to wisp first (or goal if wisp is not on the path)
-      // The destination will be either the wisp or the goal depending on pathfinding logic
+
       expect(call.destination).toBeDefined();
       expect(call.destination.x).toBeDefined();
       expect(call.destination.y).toBeDefined();
@@ -562,18 +493,16 @@ describe('DestinationSystem', () => {
         currentPath: [{ x: 200, y: 200 }]
       });
       createTestWisp(world, { x: 300, y: 300 });
-      const goal = createTestGoal(world, { x: 500, y: 500 });
-      
-      // Mark firefly as fleeing
-      firefly.addComponent(FleeingToGoalTag);
+      createTestGoal(world, { x: 500, y: 500 });
 
-      world.registerSystem(DestinationSystem, { worker: mockWorker });
-      world.execute(16, 16);
+      world.addComponent(firefly, 'fleeingToGoalTag', true);
 
-      // Should request next path
+      system = new DestinationSystem(world, { worker: mockWorker });
+      system.update(16, 16);
+
       expect(mockWorker.postMessage).toHaveBeenCalled();
       const call = mockWorker.postMessage.mock.calls[0][0];
-      
+
       expect(call.pathType).toBe('next');
       expect(call.destination.x).toBe(500);
       expect(call.destination.y).toBe(500);
@@ -581,16 +510,13 @@ describe('DestinationSystem', () => {
 
     it('should handle fleeing entity without goal gracefully', () => {
       const firefly = createTestFirefly(world, { x: 100, y: 100 });
-      
-      // Mark firefly as fleeing but don't create a goal
-      firefly.addComponent(FleeingToGoalTag);
 
-      world.registerSystem(DestinationSystem, { worker: mockWorker });
-      
-      // Should not throw
-      expect(() => world.execute(16, 16)).not.toThrow();
-      
-      // Should not request path
+      world.addComponent(firefly, 'fleeingToGoalTag', true);
+
+      system = new DestinationSystem(world, { worker: mockWorker });
+
+      expect(() => system.update(16, 16)).not.toThrow();
+
       expect(mockWorker.postMessage).not.toHaveBeenCalled();
     });
 
@@ -599,29 +525,25 @@ describe('DestinationSystem', () => {
       createTestWisp(world, { x: 300, y: 300 });
       createTestGoal(world, { x: 500, y: 500 });
 
-      world.registerSystem(DestinationSystem, { worker: mockWorker });
-      
-      // First request without fleeing
-      world.execute(16, 16);
-      
+      system = new DestinationSystem(world, { worker: mockWorker });
+
+      system.update(16, 16);
+
       let firstCall = mockWorker.postMessage.mock.calls[0][0];
       expect(firstCall.destination).toBeDefined();
-      
-      // Simulate receiving path
+
       mockWorker.onmessage({
         data: {
-          entityId: firefly.id,
+          entityId: world.id(firefly),
           path: [{ x: 200, y: 200 }],
           pathType: 'current'
         }
       });
-      
-      // Now add FleeingToGoalTag
-      firefly.addComponent(FleeingToGoalTag);
-      
-      // Second request with fleeing
-      world.execute(16, 16);
-      
+
+      world.addComponent(firefly, 'fleeingToGoalTag', true);
+
+      system.update(16, 16);
+
       let secondCall = mockWorker.postMessage.mock.calls[1][0];
       expect(secondCall.destination.x).toBe(500);
       expect(secondCall.destination.y).toBe(500);

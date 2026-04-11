@@ -2,12 +2,12 @@
 
 ## Overview
 
-The Lantern Network is a 2D game built using a pure Entity-Component-System (ECS) architecture with Phaser 3 for rendering. The game features pathfinding-driven entities that navigate through procedurally generated maze-like levels.
+The Lantern Network is a 2D game built using an Entity-Component-System (ECS) architecture with Phaser 3 for rendering. The game features pathfinding-driven entities that navigate through procedurally generated maze-like levels.
 
 ## Technology Stack
 
 - **TypeScript**: Strict mode enabled for type safety
-- **ECSY**: Pure ECS library for game logic
+- **Miniplex**: TypeScript-first ECS library — entities are plain objects, components are interfaces
 - **Phaser 3**: Game rendering engine (decoupled from ECS data)
 - **Vite**: Fast build tool with HMR
 - **Vitest**: Unit testing framework
@@ -15,27 +15,28 @@ The Lantern Network is a 2D game built using a pure Entity-Component-System (ECS
 
 ## Core Architecture Principles
 
-### 1. Pure ECS Architecture
+### 1. ECS Architecture
 
-The game strictly follows ECS patterns:
+The game follows ECS patterns using Miniplex:
 
-- **Components**: Pure data containers with no logic
-- **Systems**: Pure logic that operates on components
-- **Entities**: Simple IDs linking components together
+- **Components**: Plain TypeScript interfaces — just data, no logic
+- **Systems**: Plain classes implementing `GameSystem` — all logic lives here
+- **Entities**: Plain objects with optional component properties
 
 ```
-┌─────────────┐
-│   Entity    │  (Just an ID)
-└─────────────┘
-       │
-       ├──► Position Component (data)
-       ├──► Velocity Component (data)
-       ├──► Path Component (data)
-       └──► Renderable Component (data)
+┌──────────────────────────────────────────┐
+│   Entity (plain object)                  │
+│                                          │
+│   { position: { x, y },                 │
+│     velocity: { vx, vy },               │
+│     path: { currentPath, nextPath },     │
+│     renderable: { type, sprite, ... },   │
+│     fireflyTag: true }                   │
+└──────────────────────────────────────────┘
               │
               ▼
        ┌─────────────┐
-       │   Systems   │  (logic)
+       │   Systems    │  (logic)
        └─────────────┘
               │
               ├──► MovementSystem
@@ -46,15 +47,20 @@ The game strictly follows ECS patterns:
 
 ### 2. Separation of Concerns
 
-**ECS Layer (Game Logic)**
-- Contains all game state and logic
-- No Phaser dependencies
+**Gameplay Systems (no Phaser dependency)**
+- Contain all game state and logic
 - Testable in isolation
+- Communicate via typed events
 
-**Rendering Layer (Phaser)**
+**Rendering Systems (Phaser)**
 - Only responsible for visual representation
-- Reads from ECS components
-- Updates Phaser sprites based on ECS state
+- Read from entity components
+- React to gameplay events (e.g., combat visuals)
+
+**WorldManager (orchestrator)**
+- Creates the Miniplex world, spatial grid, and all systems
+- Rebuilds spatial grid each frame
+- Calls `system.update()` in registration order
 
 ### 3. Event-Driven Communication
 
@@ -64,6 +70,10 @@ Systems communicate via a typed event system rather than direct coupling:
 gameEvents.emit(GameEvents.TARGET_ACQUIRED, { entity, target });
 gameEvents.on(GameEvents.PATH_COMPLETED, (data) => { /* ... */ });
 ```
+
+Combat visuals are fully decoupled from combat logic via events:
+- `COMBAT_CHARGING` / `COMBAT_ATTACK_BURST` / `COMBAT_RECOVERING` / `COMBAT_CLEANUP`
+- CombatSystem emits these; CombatVisualsSystem listens and renders
 
 ## Directory Structure
 
@@ -75,80 +85,175 @@ src/
 │   ├── game.ts          # Game-wide settings
 │   └── physics.ts       # Physics and pathfinding config
 ├── ecs/
-│   ├── components/      # Pure data components
-│   │   ├── gameplay/    # Game logic components
-│   │   └── rendering/   # Rendering-related components
-│   └── systems/         # Logic systems
+│   ├── Entity.ts        # Central Entity type + all component interfaces
+│   ├── GameSystem.ts    # System interface
+│   ├── WorldManager.ts  # World creation, system registration, update loop
+│   ├── components/      # Barrel exports (types come from Entity.ts)
+│   └── systems/
 │       ├── gameplay/    # Game logic systems
-│       └── rendering/   # Rendering systems
-├── entities/            # Entity factories
+│       ├── rendering/   # Rendering systems (Phaser-dependent)
+│       └── effects/     # Particle effects
+├── entities/            # Entity factories (world.add pattern)
 ├── events/              # Typed event system
-├── scenes/              # Phaser scenes
+├── levels/              # Level data and entity spawning
+├── scenes/              # Phaser scenes (thin orchestration)
 ├── types/               # TypeScript type definitions
 ├── utils/               # Shared utilities
 │   ├── logger.ts        # Environment-aware logging
+│   ├── SpatialGrid.ts   # Spatial partitioning
 │   └── vector.ts        # Vector math utilities
 └── workers/             # Web Workers
     └── pathfinding/     # Pathfinding computation
 ```
 
-## Key Components
+## Entity & Component Model
 
-### Components (Data)
+All component interfaces and the Entity type are defined in `src/ecs/Entity.ts`:
 
-**Core Components:**
-- `Position`: x, y coordinates
-- `Velocity`: vx, vy velocity
-- `Path`: currentPath, nextPath, direction
-- `Renderable`: sprite, color, radius
-- `PhysicsBody`: body reference
-- `Destination`: for array of entity types
-- `Targeting`: potentialTargets array
-- `Target`: current target entity
-- `Interaction`: interactsWith, interactionRadius, onInteract
-- `Wall`: segments, thickness, color
+```typescript
+export type Entity = {
+  // Core
+  position?: Position;        // { x, y }
+  velocity?: Velocity;        // { vx, vy }
+  renderable?: Renderable;    // { type, sprite, color, radius, glow, ... }
+  physicsBody?: PhysicsBody;  // { mass, isStatic, collisionRadius }
+  wall?: WallData;            // { segments, thickness, color }
+  trail?: Trail;              // { enabled, config, points }
 
-**Tag Components:**
-- `FireflyTag`, `WispTag`, `MonsterTag`, `GoalTag`, `WallTag`
+  // Gameplay
+  path?: PathData;            // { currentPath, nextPath, direction }
+  destination?: Destination;  // { for: string[] }
+  target?: Target;            // { target: Entity }
+  targeting?: Targeting;      // { potentialTargets: Entity[] }
+  interaction?: Interaction;  // { interactsWith, interactionRadius }
+  health?: Health;            // { currentHealth, maxHealth, isDead }
+  combat?: Combat;            // { state, attackPattern, ... }
+  lodge?: Lodge;              // { tenants, allowedTenants, maxTenants }
+  activationConfig?: ActivationConfig;
+  fireflyGoal?: FireflyGoal;  // { currentCount }
 
-### Systems (Logic)
+  // Tags (boolean flags)
+  fireflyTag?: true;
+  wispTag?: true;
+  monsterTag?: true;
+  goalTag?: true;
+  wallTag?: true;
+  fleeingToGoalTag?: true;
+};
 
-#### Gameplay Systems
+export type GameWorld = World<Entity>;
+```
 
-**MovementSystem**
-- Moves entities along paths
-- Applies friction and physics
-- Handles waypoint arrival
-- Emits PATH_COMPLETED events
+Components are added at creation via `world.add({ ... })` or at runtime via `world.addComponent(entity, 'combat', { ... })`. Tags are just `true` boolean flags.
 
-**DestinationSystem**
-- Requests pathfinding from worker
-- Manages currentPath and nextPath
-- Handles race conditions with timeout-based cleanup
-- Prevents memory leaks with proper cleanup
+## Systems
 
-**TargetingSystem**
-- Acquires targets from potentialTargets
-- Emits TARGET_ACQUIRED events
-- Uses ECSY Not() queries for efficiency
+All systems implement a simple interface:
 
-**WallGenerationSystem**
-- Generates walls from tile maps using marching squares
-- Smooths contours with Catmull-Rom splines
-- Sends wall data to pathfinding worker
-- Creates single wall entity per map
+```typescript
+export interface GameSystem {
+  update(delta: number, time: number): void;
+  destroy?(): void;
+}
+```
 
-#### Rendering Systems
+Systems receive `(world: GameWorld, config: Record<string, any>)` in their constructor and create Miniplex queries to find entities:
 
-**RenderingSystem**
-- Creates/updates/destroys Phaser sprites
-- Syncs sprite position with Position component
-- Handles sprite lifecycle
-- Decoupled from game logic
+```typescript
+export class MovementSystem implements GameSystem {
+  private moving: Query<With<Entity, 'position' | 'velocity'>>;
 
-**WallRenderingSystem**
-- Renders wall segments as Phaser graphics
-- Updates when wall components change
+  constructor(private world: GameWorld, config: Record<string, any>) {
+    this.moving = world.with('position', 'velocity');
+  }
+
+  update(delta: number, time: number): void {
+    for (const entity of this.moving) {
+      entity.position.x += entity.velocity.vx * delta;
+      // ...
+    }
+  }
+}
+```
+
+### Gameplay Systems
+
+| System | Responsibility |
+|--------|---------------|
+| **MovementSystem** | Moves entities along paths, applies friction, emits PATH_COMPLETED |
+| **DestinationSystem** | Requests pathfinding from worker, manages path queues |
+| **TargetingSystem** | Acquires targets from potentialTargets using `world.with().without()` |
+| **InteractionSystem** | Detects nearby entities via spatial grid, populates potentialTargets |
+| **CombatSystem** | State machine (IDLE → CHARGING → ATTACKING → RECOVERING), emits visual events |
+| **DamageSystem** | Handles ATTACK_HIT events, applies damage, manages death animations |
+| **LodgingSystem** | Manages tenant lifecycle in lodges, triggers activation/deactivation |
+| **WallGenerationSystem** | Generates walls via marching squares, sends to pathfinding worker |
+| **FireflyGoalSystem** | Tracks firefly collection progress, updates goal glow |
+| **VictorySystem** | Listens for ENTITY_DIED, checks if all monsters defeated, evicts fireflies |
+
+### Rendering Systems
+
+| System | Responsibility |
+|--------|---------------|
+| **RenderingSystem** | Creates/updates/destroys Phaser sprites, manages glow effects |
+| **CombatVisualsSystem** | Renders charging rings, burst shockwaves, recovery tints via combat events |
+| **WallRenderingSystem** | Renders wall segments as Phaser graphics |
+| **ForestDecorationSystem** | Places tree sprites on non-pathable tiles |
+| **TrailSystem** | Renders fading movement trails behind entities |
+| **WispVisualsSystem** | Updates wisp sprite based on lodge occupancy |
+| **ParticleEffectsSystem** | Event-driven particle bursts for lodging and death |
+
+## WorldManager
+
+`WorldManager` is the central orchestrator, replacing the previous pattern where GameScene owned everything:
+
+```typescript
+export class WorldManager {
+  readonly world: GameWorld;
+  readonly spatialGrid: SpatialGrid;
+
+  constructor(scene: Phaser.Scene, pathfindingWorker: Worker, map: number[][]) {
+    this.world = new World<Entity>();
+    this.spatialGrid = new SpatialGrid(PHYSICS_CONFIG.SPATIAL_GRID_CELL_SIZE);
+    this.registerSystems(); // Creates all systems in order
+  }
+
+  update(delta: number, time: number): void {
+    this.rebuildSpatialGrid();
+    for (const system of this.systems) {
+      system.update(delta, time);
+    }
+  }
+}
+```
+
+GameScene is now thin orchestration:
+
+```typescript
+create(): void {
+  this.worldManager = new WorldManager(this, this.pathfindingWorker, LEVEL_1_MAP);
+  loadLevel(this.worldManager.world);
+}
+
+update(time: number, delta: number): void {
+  this.worldManager.update(delta, time);
+}
+```
+
+## Levels
+
+Level data and entity spawning are separated from the scene:
+
+```typescript
+// src/levels/level1.ts
+export const LEVEL_1_MAP: number[][] = [ /* tile data */ ];
+
+export function loadLevel(world: GameWorld): void {
+  createFirefly(world, x, y);
+  createWisp(world, x, y);
+  // ...
+}
+```
 
 ## Pathfinding Architecture
 
@@ -179,10 +284,10 @@ Main Thread                    Worker Thread
 
 ### Race Condition Prevention
 
-- Pending requests tracked in Map<entityId, timeout>
+- Pending requests tracked in `Map<entityId, timeout>`
 - 5-second timeout auto-clears stuck requests
 - Error responses include entityId for cleanup
-- Stop() method cleans up all listeners and timeouts
+- `destroy()` method cleans up all listeners and timeouts
 
 ## Configuration Management
 
@@ -191,8 +296,8 @@ All configuration is centralized and immutable:
 ```typescript
 export const PHYSICS_CONFIG = Object.freeze({
   DEFAULT_SPEED: 20,
-  FRICTION: 0.01,
-  MIN_VELOCITY: 0.001,
+  FRICTION: 0.975,
+  MIN_VELOCITY: 0.01,
   // ...
 });
 ```
@@ -200,7 +305,7 @@ export const PHYSICS_CONFIG = Object.freeze({
 ### Configuration Files
 
 - `entities.ts`: Entity type definitions (frozen, readonly arrays)
-- `game.ts`: Canvas size, tile size, wall config
+- `game.ts`: Canvas size, tile size, wall config, victory conditions
 - `physics.ts`: Movement, friction, pathfinding weights
 
 ## Event System
@@ -210,21 +315,17 @@ Type-safe event system with payload interfaces:
 ```typescript
 export interface GameEventPayloads {
   [GameEvents.PATH_COMPLETED]: {
-    entity: ECSEntity;
+    entity: Entity;
     position: { x: number; y: number }
   };
-  [GameEvents.TARGET_ACQUIRED]: {
-    entity: ECSEntity;
-    target: ECSEntity
+  [GameEvents.COMBAT_ATTACK_BURST]: {
+    entity: Entity;
+    attackPattern: AttackPattern;
+    position: { x: number; y: number }
   };
   // ...
 }
 ```
-
-Benefits:
-- Type checking at compile time
-- IntelliSense support
-- Prevents typos and runtime errors
 
 ## Logging System
 
@@ -233,23 +334,11 @@ Environment-aware logger with namespace filtering:
 ```typescript
 import { logger } from '@/utils';
 
-// Logs in development, silent in production
 logger.debug('MovementSystem', 'Entity moved', entity);
 logger.error('Worker', 'Pathfinding failed', error);
 ```
 
-**Log Levels:**
-- DEBUG: Development only
-- INFO: Development and staging
-- WARN: All environments
-- ERROR: Always logged
-- NONE: Disable all logging
-
-**Namespace Filtering:**
-```typescript
-logger.enable('MovementSystem');
-logger.disable('RenderingSystem');
-```
+**Log Levels:** DEBUG, INFO, WARN, ERROR, NONE
 
 ## Testing Strategy
 
@@ -262,25 +351,24 @@ Tests cover all critical systems with focus on:
 - Type safety and immutability
 
 **Test Organization:**
-- Component/config tests verify immutability
-- System tests run in isolated ECSY worlds
+- System tests create isolated Miniplex worlds and instantiate systems directly
+- Shared test helpers in `src/__tests__/helpers/` provide entity factories
 - Edge case tests cover boundary conditions
-- Integration tests verify system interactions
 
 ## Performance Considerations
 
 ### Bundle Optimization
 
-- Code splitting: Phaser and ECSY in separate chunks
+- Code splitting: Phaser and Miniplex in separate chunks
 - Worker code bundled independently
-- Source maps enabled for debugging
+- Console logs and debugger statements stripped in production builds
 
 ### Memory Management
 
 **Entity Lifecycle:**
-- ECSY handles entity pooling
-- Components reused when possible
-- Proper cleanup in system stop() methods
+- Entities are plain objects — no pooling overhead
+- `world.remove(entity)` cleans up from all queries
+- Systems implement `destroy()` for event listener cleanup
 
 **Worker Communication:**
 - Minimal data transfer (only coordinates)
@@ -295,14 +383,14 @@ Tests cover all critical systems with focus on:
 ### Rendering Optimization
 
 **Sprite Management:**
-- Create sprites only for Renderable entities
-- Destroy sprites when entities removed
-- Update only changed positions
+- Sprites created/destroyed via Miniplex query `onEntityAdded`/`onEntityRemoved` events
+- Only entities with `position` + `renderable` components get sprites
+- Glow effects recreated only when properties change
 
 **Graphics Rendering:**
-- Walls rendered as single graphics object
-- No per-frame redraw unless changed
+- Walls rendered as single graphics object (drawn once)
 - Catmull-Rom smoothing for fewer points
+- Trails cleared and redrawn each frame with ADD blend mode
 
 ## Error Handling
 
@@ -310,14 +398,14 @@ Tests cover all critical systems with focus on:
 
 All systems wrapped in try-catch:
 ```typescript
-execute() {
-  this.queries.moving.results.forEach(entity => {
+update(delta: number, time: number): void {
+  for (const entity of this.query) {
     try {
       // System logic
     } catch (error) {
-      console.error('[MovementSystem] Error:', entity.id, error);
+      console.error('[SystemName] Error:', error);
     }
-  });
+  }
 }
 ```
 
@@ -329,17 +417,10 @@ catch (error) {
   self.postMessage({
     action: 'error',
     error: error.message,
-    stack: error.stack,
     entityId: e.data?.entityId
   });
 }
 ```
-
-### Memory Leak Prevention
-
-- Worker listeners set to null on stop()
-- Timeouts cleared on cleanup
-- Pending requests tracked and cleaned
 
 ## Build and Development
 
@@ -347,34 +428,7 @@ catch (error) {
 
 ```bash
 npm run dev      # Start development server (port 8080)
-npm run build    # Production build
+npm run build    # Production build (tsc + vite)
 npm test         # Run all tests
 npm run preview  # Preview production build
 ```
-
-### Development Flow
-
-1. **Make changes**: Edit TypeScript files
-2. **HMR**: Vite hot reloads instantly
-3. **Test**: Run tests with Vitest
-4. **Build**: Verify production build
-5. **Commit**: Clean git history
-
-### Type Safety
-
-- TypeScript strict mode enabled
-- No `any` types except in tests
-- Frozen configurations prevent mutations
-- Type-safe event payloads
-
-## Conclusion
-
-This architecture provides:
-
-- **Maintainability**: Clear separation of concerns
-- **Testability**: Pure functions and isolated systems
-- **Performance**: Worker-based pathfinding, efficient rendering
-- **Type Safety**: Compile-time error catching
-- **Scalability**: ECS scales to thousands of entities
-
-The pure ECS approach ensures game logic remains independent of rendering, making it easy to test, maintain, and extend.

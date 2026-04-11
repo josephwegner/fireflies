@@ -1,84 +1,56 @@
-import { System } from 'ecsy';
-import { Interaction, Position, Targeting, Renderable, Health } from '@/ecs/components';
-import { ECSEntity } from '@/types';
+import type { Query, With } from 'miniplex';
+import type { Entity, GameWorld } from '@/ecs/Entity';
+import type { GameSystem } from '@/ecs/GameSystem';
 import { Vector, SpatialGrid } from '@/utils';
 
-export class InteractionSystem extends System {
-  private spatialGrid!: SpatialGrid;
+type InteractiveEntity = With<Entity, 'interaction' | 'position' | 'targeting'>;
 
-  constructor(world: any, attributes?: any) {
-    super(world, attributes);
-    if (attributes?.spatialGrid) {
-      this.spatialGrid = attributes.spatialGrid;
-    }
+export class InteractionSystem implements GameSystem {
+  private interactive: Query<InteractiveEntity>;
+  private spatialGrid: SpatialGrid;
+
+  constructor(private world: GameWorld, config: Record<string, any>) {
+    this.interactive = world.with('interaction', 'position', 'targeting');
+    this.spatialGrid = config.spatialGrid;
   }
 
-  execute(): void {
-    const interactiveEntities = this.queries.interactive.results;
+  update(_delta: number, _time: number): void {
+    // Clear previous potential targets
+    for (const entity of this.interactive) {
+      entity.targeting.potentialTargets = [];
+    }
 
-    // Clear previous potential targets and rebuild each frame
-    interactiveEntities.forEach(entity => {
-      const targeting = entity.getMutableComponent(Targeting);
-      if (targeting) {
-        targeting.potentialTargets = [];
-      }
-    });
+    // Rebuild interactions from spatial grid
+    for (const entity of this.interactive) {
+      const { interaction, position, targeting } = entity;
 
-    // Check each interactive entity against nearby entities from spatial grid
-    interactiveEntities.forEach(entity => {
-      const interaction = entity.getComponent(Interaction)!;
-      const position = entity.getComponent(Position)!;
-      const targeting = entity.getMutableComponent(Targeting);
-
-      if (!targeting) return;
-
-      // Use spatial grid to get nearby entities instead of checking all entities
       const nearbyEntities = this.spatialGrid.getNearby(
         position.x,
         position.y,
         interaction.interactionRadius
       );
 
-      // Check each nearby entity
-      nearbyEntities.forEach(otherEntity => {
-        // Skip self
-        if (entity === otherEntity) return;
+      for (const other of nearbyEntities) {
+        if (entity === other) continue;
+        if (other.health?.isDead) continue;
+        if (!this.canInteractWith(other, interaction.interactsWith)) continue;
 
-        const health = otherEntity.getComponent(Health);
-        if (health && health.isDead) return;
+        const otherPos = other.position;
+        if (!otherPos) continue;
 
-        // Check if other entity is in the interactsWith list
-        if (!this.canInteractWith(otherEntity, interaction.interactsWith)) return;
-
-        // Check if in range (spatial grid returns candidates, still need exact distance)
-        const otherPosition = otherEntity.getComponent(Position);
-        if (!otherPosition) return;
-
-        const dx = otherPosition.x - position.x;
-        const dy = otherPosition.y - position.y;
+        const dx = otherPos.x - position.x;
+        const dy = otherPos.y - position.y;
         const distance = Vector.length(dx, dy);
 
         if (distance <= interaction.interactionRadius) {
-          targeting.potentialTargets.push(otherEntity);
+          targeting.potentialTargets.push(other);
         }
-      });
-    });
-  }
-
-  canInteractWith(entity: ECSEntity, interactsWith: readonly string[]): boolean {
-    const renderable = entity.getComponent(Renderable);
-    if (!renderable) return false;
-    
-    return interactsWith.includes(renderable.type);
-  }
-
-  static queries = {
-    interactive: {
-      components: [Interaction, Position, Targeting]
-    },
-    positioned: {
-      components: [Position]
+      }
     }
-  };
-}
+  }
 
+  private canInteractWith(entity: Entity, interactsWith: readonly string[]): boolean {
+    if (!entity.renderable) return false;
+    return interactsWith.includes(entity.renderable.type);
+  }
+}

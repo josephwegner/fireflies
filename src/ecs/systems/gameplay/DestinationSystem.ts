@@ -1,160 +1,111 @@
-import { System } from 'ecsy';
-import { Position, Velocity, Path, Destination, Renderable } from '@/ecs/components';
-import { FireflyTag, MonsterTag, WispTag, GoalTag, FleeingToGoalTag } from '@/ecs/components';
-import { ECSEntity } from '@/types';
+import type { Query, With } from 'miniplex';
+import type { Entity, GameWorld } from '@/ecs/Entity';
+import type { GameSystem } from '@/ecs/GameSystem';
 import { PHYSICS_CONFIG } from '@/config';
 
-interface PathfindingWorker extends Worker {
-  onmessage: ((this: Worker, ev: MessageEvent) => any) | null;
-}
-
 interface DestinationCandidate {
-  entity: ECSEntity;
-  pos: Position;
+  entity: Entity;
+  pos: { x: number; y: number };
   score: number;
   pathProximityFactor: number;
   progressPercent: number;
 }
 
-export class DestinationSystem extends System {
-  private worker!: PathfindingWorker;
-  private pendingRequests = new Map<number, NodeJS.Timeout>();
+export class DestinationSystem implements GameSystem {
+  private needsDestination: Query<With<Entity, 'position' | 'velocity' | 'path'>>;
+  private destinations: Query<With<Entity, 'position' | 'destination'>>;
+  private worker: Worker;
+  private pendingRequests = new Map<number, ReturnType<typeof setTimeout>>();
 
-  constructor(world: any, attributes?: any) {
-    super(world, attributes);
+  constructor(private world: GameWorld, config: Record<string, any>) {
+    this.needsDestination = world.with('position', 'velocity', 'path');
+    this.destinations = world.with('position', 'destination');
+    this.worker = config.worker;
+
+    this.worker.onmessage = (event: MessageEvent) => {
+      if (event.data.action === 'navmeshReady') return;
+
+      if (event.data.action === 'error') {
+        console.error('[DestinationSystem] Worker error:', event.data.error);
+        if (event.data.entityId !== undefined) {
+          this.clearPendingRequest(event.data.entityId);
+        }
+        return;
+      }
+
+      const { entityId, path, pathType } = event.data;
+      if (entityId !== undefined) {
+        this.clearPendingRequest(entityId);
+        const entity = this.findEntityById(entityId);
+        if (entity) {
+          this.applyPathToEntity(entity, path, pathType);
+        }
+      }
+    };
+
+    this.worker.onerror = (error: ErrorEvent) => {
+      console.error('[DestinationSystem] Worker error:', error.message);
+    };
   }
 
-  stop(): void {
-    // Clean up all pending request timeouts
-    this.pendingRequests.forEach((timeout) => {
-      clearTimeout(timeout);
-    });
+  destroy(): void {
+    this.pendingRequests.forEach((timeout) => clearTimeout(timeout));
     this.pendingRequests.clear();
-
-    // Clean up worker listeners to prevent memory leak
     if (this.worker) {
       this.worker.onmessage = null;
       this.worker.onerror = null;
     }
   }
 
-  init(attributes?: any): void {
-    if (attributes?.worker) {
-      this.worker = attributes.worker;
-      this.worker.onmessage = (event) => {
-        if (event.data.action === 'navmeshReady') {
-          return;
-        }
-
-        if (event.data.action === 'error') {
-          console.error('[DestinationSystem] Worker error:', event.data.error);
-          // Clear pending request on error
-          if (event.data.entityId !== undefined) {
-            this.clearPendingRequest(event.data.entityId);
-          }
-          return;
-        }
-
-        // Currently the only message we get from the worker is the pathfinding result, so assume that
-        const { entityId, path, pathType } = event.data;
-
-        if (entityId !== undefined) {
-          this.clearPendingRequest(entityId);
-
-          const entity = this.findEntityById(entityId);
-          if (entity) {
-            this.applyPathToEntity(entity, path, pathType);
-          }
-        }
-      };
-
-      this.worker.onerror = (error: ErrorEvent) => {
-        console.error('[DestinationSystem] Worker error:', error.message);
-      };
-    }
-  }
-
-  execute(_delta?: number, _time?: number): void {
-    this.queries.needsDestination.results.forEach(entity => {
+  update(_delta: number, _time: number): void {
+    for (const entity of this.needsDestination) {
       try {
-        const position = entity.getComponent(Position)!;
-        const pathComp = entity.getMutableComponent(Path)!;
+        const { position, path: pathComp } = entity;
         const entityType = this.getEntityType(entity);
+        const entityId = this.world.id(entity);
+        if (entityId === undefined) continue;
 
-      if (!pathComp.currentPath) {
-        return;
-      }
+        if (!pathComp.currentPath) continue;
 
-      const finalDestination = this.findGoalDestination(entityType);
+        const finalDestination = this.findGoalDestination(entityType);
+        if (!finalDestination) continue;
 
-      if (!finalDestination) {
-        return;
-      }
+        const isFleeing = !!entity.fleeingToGoalTag;
 
-      // Check if this entity is fleeing to goal (skip intermediate destinations)
-      const isFleeing = entity.hasComponent(FleeingToGoalTag);
+        if (!pathComp.currentPath.length) {
+          if (this.pendingRequests.has(entityId)) continue;
 
-      // If we don't have a current path, we need to request one
-      if (!pathComp.currentPath.length) {
-        // Don't spam requests if we're already waiting for a response
-        if (this.pendingRequests.has(entity.id)) {
-          return;
+          const currentPos = { x: position.x, y: position.y };
+          let destinations: DestinationCandidate[] = [];
+          if (!isFleeing) {
+            destinations = this.gatherDestinations(currentPos, finalDestination, entityType, pathComp.direction);
+          }
+          if (!destinations.length) destinations.push(finalDestination);
+
+          this.addPendingRequest(entityId);
+          this.requestPath(entity, currentPos, { x: destinations[0].pos.x, y: destinations[0].pos.y }, 'current');
+
+          if (destinations.length < 1) pathComp.nextPath = [];
+
+        } else if (pathComp.nextPath && !pathComp.nextPath.length) {
+          const lastPos = pathComp.currentPath[pathComp.currentPath.length - 1];
+
+          let destinations: DestinationCandidate[] = [];
+          if (!isFleeing) {
+            destinations = this.gatherDestinations(lastPos, finalDestination, entityType, pathComp.direction);
+          }
+          if (!destinations.length) destinations.push(finalDestination);
+
+          this.requestPath(entity, lastPos, { x: destinations[0].pos.x, y: destinations[0].pos.y }, 'next');
+
+          if (destinations.length < 1) pathComp.nextPath = [];
         }
-
-        const currentPos = { x: position.x, y: position.y };
-        
-        // If fleeing, go directly to goal. Otherwise, use intermediate destinations.
-        let destinations: DestinationCandidate[] = [];
-        if (!isFleeing) {
-          destinations = this.gatherDestinations(currentPos, finalDestination, entityType, pathComp.direction);
-        }
-
-        if (!destinations.length) {
-          destinations.push(finalDestination);
-        }
-
-        this.addPendingRequest(entity.id);
-        this.requestPath(entity, currentPos, {
-          x: destinations[0].pos.x,
-          y: destinations[0].pos.y
-        }, 'current');
-
-        // If no destinations were found, we still want to clear the next path,
-        // so the entity doesn't get stuck waiting for a response that will never come.
-        // This allows the system to recover and try again later.
-        if (destinations.length < 1) {
-          pathComp.nextPath = [];
-        }
-        
-      // If we have a current path, but no next path, we need to request one
-      } else if (pathComp.nextPath && !pathComp.nextPath.length) {
-        const lastPos = pathComp.currentPath[pathComp.currentPath.length - 1];
-        
-        // If fleeing, go directly to goal. Otherwise, use intermediate destinations.
-        let destinations: DestinationCandidate[] = [];
-        if (!isFleeing) {
-          destinations = this.gatherDestinations(lastPos, finalDestination, entityType, pathComp.direction);
-        }
-
-        if (!destinations.length) {
-          destinations.push(finalDestination);
-        }
-
-        this.requestPath(entity, lastPos, {
-          x: destinations[0].pos.x,
-          y: destinations[0].pos.y
-        }, 'next');
-
-        if (destinations.length < 1) {
-          pathComp.nextPath = [];
-        }
-      }
       } catch (error) {
-        console.error('[DestinationSystem] Error processing entity:', entity.id, error);
-        // Clear pending request on error to allow retry
-        this.clearPendingRequest(entity.id);
+        console.error('[DestinationSystem] Error processing entity:', error);
+        const entityId = this.world.id(entity);
+        if (entityId !== undefined) this.clearPendingRequest(entityId);
       }
-    });
+    }
   }
 
   private clearPendingRequest(entityId: number): void {
@@ -166,46 +117,35 @@ export class DestinationSystem extends System {
   }
 
   private addPendingRequest(entityId: number): void {
-    // Clear any existing timeout
     this.clearPendingRequest(entityId);
-
-    // Set timeout to automatically clear after 5 seconds
     const timeout = setTimeout(() => {
       console.warn('[DestinationSystem] Pathfinding request timeout for entity', entityId);
       this.pendingRequests.delete(entityId);
     }, 5000);
-
     this.pendingRequests.set(entityId, timeout);
   }
 
-  private getEntityType(entity: ECSEntity): string {
-    if (entity.hasComponent(FireflyTag)) return 'firefly';
-    if (entity.hasComponent(MonsterTag)) return 'monster';
-    if (entity.hasComponent(WispTag)) return 'wisp';
-    if (entity.hasComponent(GoalTag)) return 'goal';
+  private getEntityType(entity: Entity): string {
+    if (entity.fireflyTag) return 'firefly';
+    if (entity.monsterTag) return 'monster';
+    if (entity.wispTag) return 'wisp';
+    if (entity.goalTag) return 'goal';
     return 'unknown';
   }
 
   private findGoalDestination(entityType: string): DestinationCandidate | null {
-    let goalDestination: DestinationCandidate | null = null;
-
-    this.queries.destinations.results.forEach(destination => {
-      const destComp = destination.getComponent(Destination)!;
-      const destType = this.getEntityType(destination);
-      const pos = destination.getComponent(Position)!;
-
-      if (destComp.for.includes(entityType) && destType === 'goal') {
-        goalDestination = {
-          entity: destination,
-          pos: pos,
+    for (const dest of this.destinations) {
+      if (dest.destination.for.includes(entityType) && dest.goalTag) {
+        return {
+          entity: dest,
+          pos: dest.position,
           score: 0,
           pathProximityFactor: 0,
           progressPercent: 0
         };
       }
-    });
-
-    return goalDestination;
+    }
+    return null;
   }
 
   private gatherDestinations(
@@ -221,29 +161,21 @@ export class DestinationSystem extends System {
 
     if (idealDist < 1) return [];
 
-    const mainDir = {
-      x: idealDX / idealDist,
-      y: idealDY / idealDist
-    };
-
+    const mainDir = { x: idealDX / idealDist, y: idealDY / idealDist };
     const candidates: DestinationCandidate[] = [];
 
-    this.queries.destinations.results.forEach(entity => {
-      const destComp = entity.getComponent(Destination)!;
-      const typeComp = this.getEntityType(entity);
-      const destPos = entity.getComponent(Position)!;
+    for (const entity of this.destinations) {
+      if (entity.goalTag) continue;
+      if (!entity.destination.for.includes(entityType)) continue;
 
-      if (typeComp === 'goal') return;
-      if (!destComp.for.includes(entityType)) return;
-
+      const destPos = entity.position;
       const distToDest = Math.hypot(destPos.x - current.x, destPos.y - current.y);
-      if (distToDest < 1) return;
+      if (distToDest < 1) continue;
 
       const vx = destPos.x - current.x;
       const vy = destPos.y - current.y;
       const progress = vx * mainDir.x + vy * mainDir.y;
-
-      if (progress <= 0) return;
+      if (progress <= 0) continue;
 
       const projPoint = {
         x: current.x + progress * mainDir.x,
@@ -254,18 +186,12 @@ export class DestinationSystem extends System {
       const progressPercent = progress / idealDist;
       const pathProximityFactor = 1 / (distanceFromPath + 0.5);
 
-      let score = (progressPercent * PHYSICS_CONFIG.PROGRESS_WEIGHT) + (pathProximityFactor * PHYSICS_CONFIG.PATH_PROXIMITY_WEIGHT);
-      
+      const score = (progressPercent * PHYSICS_CONFIG.PROGRESS_WEIGHT) + (pathProximityFactor * PHYSICS_CONFIG.PATH_PROXIMITY_WEIGHT);
+
       if (score >= minScoreThreshold) {
-        candidates.push({
-          entity: entity,
-          pos: destPos,
-          score: score,
-          pathProximityFactor: pathProximityFactor,
-          progressPercent: progressPercent
-        });
+        candidates.push({ entity, pos: destPos, score, pathProximityFactor, progressPercent });
       }
-    });
+    }
 
     const sortModifier = direction === 'r' ? 1 : -1;
     candidates.sort((a, b) => b.score - (a.score * sortModifier));
@@ -273,62 +199,38 @@ export class DestinationSystem extends System {
   }
 
   private requestPath(
-    entity: ECSEntity,
+    entity: Entity,
     start: { x: number; y: number },
     destination: { x: number; y: number },
     pathType: string
   ): void {
-    const startPoint = { x: start.x, y: start.y };
-    const endPoint = { x: destination.x, y: destination.y };
-
-    let radius = 0;
-    if (entity.hasComponent(Renderable)) {
-      const renderComp = entity.getComponent(Renderable)!;
-      radius = renderComp.radius;
-    }
+    const entityId = this.world.id(entity);
+    const radius = entity.renderable?.radius ?? 0;
 
     this.worker.postMessage({
       action: 'pathfind',
-      entityId: entity.id,
-      start: startPoint,
-      destination: endPoint,
+      entityId,
+      start: { x: start.x, y: start.y },
+      destination: { x: destination.x, y: destination.y },
       pathType,
       radius,
       wallBufferMultiplier: PHYSICS_CONFIG.WALL_BUFFER_MULTIPLIER
     });
   }
 
-  private applyPathToEntity(entity: ECSEntity, path: any[], pathType: string): void {
-    if (entity.hasComponent(Path)) {
-      const pathComp = entity.getMutableComponent(Path)!;
-      switch (pathType) {
-        case 'current':
-          pathComp.currentPath = path;
-          break;
-        case 'next':
-          pathComp.nextPath = path;
-          break;
-        default:
-          console.error('Invalid path type:', pathType);
-          break;
-      }
+  private applyPathToEntity(entity: Entity, path: any[], pathType: string): void {
+    if (!entity.path) return;
+    switch (pathType) {
+      case 'current':
+        entity.path.currentPath = path;
+        break;
+      case 'next':
+        entity.path.nextPath = path;
+        break;
     }
   }
 
-  private findEntityById(id: number): ECSEntity | null {
-    const results = [...this.queries.needsDestination.results, ...this.queries.destinations.results];
-    return results.find(e => e.id === id) || null;
+  private findEntityById(id: number): Entity | null {
+    return this.world.entity(id) ?? null;
   }
-
-  static queries = {
-    needsDestination: {
-      components: [Position, Velocity, Path],
-      listen: {
-        changed: [Path]
-      }
-    },
-    destinations: {
-      components: [Position, Destination]
-    }
-  };
 }

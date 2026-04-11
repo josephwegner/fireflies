@@ -1,7 +1,7 @@
-import { ECSEntity } from '@/types';
+import type { Entity } from '@/ecs/Entity';
 
 interface EntityPosition {
-  entity: ECSEntity;
+  entity: Entity;
   x: number;
   y: number;
 }
@@ -18,7 +18,7 @@ export class SpatialGrid {
     this.grid.clear();
   }
 
-  insert(entity: ECSEntity, x: number, y: number): void {
+  insert(entity: Entity, x: number, y: number): void {
     const cellKey = this.getCellKey(x, y);
     if (!this.grid.has(cellKey)) {
       this.grid.set(cellKey, []);
@@ -26,12 +26,12 @@ export class SpatialGrid {
     this.grid.get(cellKey)!.push({ entity, x, y });
   }
 
-  getNearby(x: number, y: number, radius: number): ECSEntity[] {
-    const nearbyEntities = new Set<ECSEntity>();
+  getNearby(x: number, y: number, radius: number): Entity[] {
+    const nearbyEntities = new Set<Entity>();
     const cellRadius = Math.ceil(radius / this.cellSize);
     const centerCellX = Math.floor(x / this.cellSize);
     const centerCellY = Math.floor(y / this.cellSize);
-    const radiusSquared = radius * radius; // Use squared distance to avoid sqrt
+    const radiusSquared = radius * radius;
 
     for (let dx = -cellRadius; dx <= cellRadius; dx++) {
       for (let dy = -cellRadius; dy <= cellRadius; dy++) {
@@ -39,7 +39,6 @@ export class SpatialGrid {
         const cellEntities = this.grid.get(key);
         if (cellEntities) {
           cellEntities.forEach(({ entity, x: ex, y: ey }) => {
-            // Only include entities actually within the radius
             const distSquared = (ex - x) * (ex - x) + (ey - y) * (ey - y);
             if (distSquared <= radiusSquared) {
               nearbyEntities.add(entity);

@@ -1,31 +1,20 @@
-import { World } from 'ecsy';
-import Phaser from 'phaser';
-import { Combat, Position, Velocity, Renderable } from '@/ecs/components';
-import { ECSEntity } from '@/types';
-import { SpatialGrid } from '@/utils';
+import type { Entity, GameWorld, Combat, Position, Velocity } from '@/ecs/Entity';
+import type { SpatialGrid } from '@/utils';
 
 export interface AttackContext {
-  attacker: ECSEntity;
+  attacker: Entity;
   combat: Combat;
-  world: World;
+  world: GameWorld;
   spatialGrid?: SpatialGrid;
-  target?: ECSEntity;
+  target?: Entity;
   position?: Position;
   velocity?: Velocity;
-  
-  // New fields for visual effects
-  scene?: Phaser.Scene;
-  spriteContainer?: Phaser.GameObjects.Container;
-  renderable?: Renderable;
   dt?: number;
 }
 
 export interface AttackHandler {
-  // Core attack logic
   execute(context: AttackContext): void;
   onAttackStart?(context: AttackContext): void;
-  
-  // Visual lifecycle methods (all optional)
   onCharging?(context: AttackContext): void;
   onRecovering?(context: AttackContext): void;
   cleanup?(context: AttackContext): void;

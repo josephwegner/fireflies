@@ -1,45 +1,36 @@
-import { System } from 'ecsy';
-import { Lodge, Renderable, WispTag } from '@/ecs/components';
-import { ECSEntity } from '@/types';
+import type { Query, With } from 'miniplex';
+import type { Entity, GameWorld } from '@/ecs/Entity';
+import type { GameSystem } from '@/ecs/GameSystem';
 
-export class WispVisualsSystem extends System {
-  static queries = {
-    wisps: {
-      components: [WispTag, Lodge, Renderable]
-    }
-  };
+type WispEntity = With<Entity, 'wispTag' | 'lodge' | 'renderable'>;
 
-  execute(delta: number, time: number): void {
-    const { wisps } = this.queries;
+export class WispVisualsSystem implements GameSystem {
+  private wisps: Query<WispEntity>;
 
-    wisps.results.forEach((entity: ECSEntity) => {
-      const lodge = entity.getComponent(Lodge)!;
-      const renderable = entity.getMutableComponent(Renderable)!;
+  constructor(world: GameWorld, _config: Record<string, any>) {
+    this.wisps = world.with('wispTag', 'lodge', 'renderable') as any;
+  }
 
-      // Calculate occupancy percentage
+  update(_delta: number, _time: number): void {
+    for (const entity of this.wisps) {
+      const { lodge, renderable } = entity;
+
       const tenantCount = lodge.tenants?.length || 0;
-      const maxTenants = lodge.maxTenants;
-      const occupancyRatio = tenantCount / maxTenants;
+      const occupancyRatio = tenantCount / lodge.maxTenants;
 
-      // Update sprite based on occupancy
-      let newSprite = 'wisp'; // Default empty wisp
-      
+      let newSprite = 'wisp';
+
       if (occupancyRatio >= 1.0) {
-        // Completely full
         newSprite = 'wisp-full';
-      } else if (occupancyRatio >= 2/3) {
-        // 2/3 full
+      } else if (occupancyRatio >= 2 / 3) {
         newSprite = 'wisp-23-full';
-      } else if (occupancyRatio >= 1/3) {
-        // 1/3 full
+      } else if (occupancyRatio >= 1 / 3) {
         newSprite = 'wisp-13-full';
       }
 
-      // Only update if sprite has changed
       if (renderable.sprite !== newSprite) {
         renderable.sprite = newSprite;
       }
-    });
+    }
   }
 }
-

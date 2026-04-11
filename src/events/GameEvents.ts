@@ -1,22 +1,28 @@
-import { ECSEntity } from '@/types';
+import type { Entity, AttackPattern } from '@/ecs/Entity';
+import { logger } from '@/utils/logger';
 
-// Define typed event payloads
 export interface GameEventPayloads {
-  [GameEvents.ENTITY_REACHED_GOAL]: { entity: ECSEntity; position: { x: number; y: number } };
-  [GameEvents.ENTITY_DIED]: { entity: ECSEntity; position: { x: number; y: number } };
-  [GameEvents.ENTITY_SPAWNED]: { entity: ECSEntity; type: string };
-  [GameEvents.TARGET_ACQUIRED]: { entity: ECSEntity; target: ECSEntity };
-  [GameEvents.TARGET_LOST]: { entity: ECSEntity; target: ECSEntity };
-  [GameEvents.PATH_COMPLETED]: { entity: ECSEntity; position: { x: number; y: number } };
-  [GameEvents.INTERACTION_OCCURRED]: { entity: ECSEntity; target: ECSEntity; type: string };
-  [GameEvents.ATTACK_STARTED]: { entity: ECSEntity; target: ECSEntity; attackType: string };
-  [GameEvents.ATTACK_HIT]: { attacker: ECSEntity; target: ECSEntity; damage: number; knockbackForce?: number };
-  [GameEvents.ATTACK_COMPLETED]: { entity: ECSEntity };
-  [GameEvents.KNOCKBACK_APPLIED]: { entity: ECSEntity; force: { x: number; y: number } };
-  [GameEvents.TENANT_ADDED_TO_LODGE]: { lodgeEntity: ECSEntity; tenantEntity: ECSEntity };
-  [GameEvents.TENANT_REMOVED_FROM_LODGE]: { lodgeEntity: ECSEntity; tenantEntity: ECSEntity };
+  [GameEvents.ENTITY_REACHED_GOAL]: { entity: Entity; position: { x: number; y: number } };
+  [GameEvents.ENTITY_DIED]: { entity: Entity; position: { x: number; y: number } };
+  [GameEvents.ENTITY_SPAWNED]: { entity: Entity; type: string };
+  [GameEvents.TARGET_ACQUIRED]: { entity: Entity; target: Entity };
+  [GameEvents.TARGET_LOST]: { entity: Entity; target: Entity };
+  [GameEvents.PATH_COMPLETED]: { entity: Entity; position: { x: number; y: number } };
+  [GameEvents.INTERACTION_OCCURRED]: { entity: Entity; target: Entity; type: string };
+  [GameEvents.ATTACK_STARTED]: { attacker: Entity; target: Entity };
+  [GameEvents.ATTACK_HIT]: { attacker: Entity; target: Entity; damage: number; knockbackForce?: number };
+  [GameEvents.ATTACK_COMPLETED]: { attacker: Entity };
+  [GameEvents.KNOCKBACK_APPLIED]: { entity: Entity; force: { x: number; y: number } };
+  [GameEvents.TENANT_ADDED_TO_LODGE]: { lodgeEntity: Entity; tenantEntity: Entity };
+  [GameEvents.TENANT_REMOVED_FROM_LODGE]: { lodgeEntity: Entity; tenantEntity: Entity };
   [GameEvents.ALL_MONSTERS_DEFEATED]: {};
-  [GameEvents.ENTITY_DAMAGED]: { entity: ECSEntity; damage: number };
+  [GameEvents.ENTITY_DAMAGED]: { entity: Entity; damage: number };
+
+  // Combat visual events (Phase 1: decouple combat from rendering)
+  [GameEvents.COMBAT_CHARGING]: { entity: Entity; attackPattern: AttackPattern; progress: number };
+  [GameEvents.COMBAT_ATTACK_BURST]: { entity: Entity; attackPattern: AttackPattern; position: { x: number; y: number } };
+  [GameEvents.COMBAT_RECOVERING]: { entity: Entity; attackPattern: AttackPattern; progress: number };
+  [GameEvents.COMBAT_CLEANUP]: { entity: Entity; attackPattern: AttackPattern };
 }
 
 type EventCallback<T = any> = (data: T) => void;
@@ -40,9 +46,13 @@ export class GameEvents {
   static readonly TENANT_REMOVED_FROM_LODGE = 'tenant:removedFromLodge';
   static readonly ALL_MONSTERS_DEFEATED = 'victory:allMonstersDefeated';
   static readonly ENTITY_DAMAGED = 'entity:damaged';
-  /**
-   * Subscribe to an event with type-safe payload
-   */
+
+  // Combat visual events
+  static readonly COMBAT_CHARGING = 'combat:visual:charging';
+  static readonly COMBAT_ATTACK_BURST = 'combat:visual:burst';
+  static readonly COMBAT_RECOVERING = 'combat:visual:recovering';
+  static readonly COMBAT_CLEANUP = 'combat:visual:cleanup';
+
   on<K extends keyof GameEventPayloads>(
     event: K,
     callback: EventCallback<GameEventPayloads[K]>
@@ -53,9 +63,6 @@ export class GameEvents {
     this.listeners.get(event)!.push(callback as EventCallback);
   }
 
-  /**
-   * Unsubscribe from an event
-   */
   off<K extends keyof GameEventPayloads>(
     event: K,
     callback: EventCallback<GameEventPayloads[K]>
@@ -69,23 +76,17 @@ export class GameEvents {
     }
   }
 
-  /**
-   * Emit an event with type-safe payload
-   */
   emit<K extends keyof GameEventPayloads>(
     event: K,
     data: GameEventPayloads[K]
   ): void {
-    console.log('[GameEvents]', event, data);
+    logger.debug('GameEvents', String(event));
     const callbacks = this.listeners.get(event);
     if (callbacks) {
       callbacks.forEach(callback => callback(data));
     }
   }
 
-  /**
-   * Subscribe to an event that will only fire once
-   */
   once<K extends keyof GameEventPayloads>(
     event: K,
     callback: EventCallback<GameEventPayloads[K]>
@@ -97,9 +98,6 @@ export class GameEvents {
     this.on(event, onceCallback);
   }
 
-  /**
-   * Remove all listeners for a specific event, or all events if no event specified
-   */
   clear<K extends keyof GameEventPayloads>(event?: K): void {
     if (event) {
       this.listeners.delete(event);
@@ -109,5 +107,4 @@ export class GameEvents {
   }
 }
 
-// Create a singleton instance
 export const gameEvents = new GameEvents();

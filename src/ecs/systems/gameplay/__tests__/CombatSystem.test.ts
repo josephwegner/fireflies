@@ -1,13 +1,12 @@
 import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
-import { World } from 'ecsy';
+import { World } from 'miniplex';
+import type { Entity, GameWorld, AttackPattern } from '@/ecs/Entity';
+import { CombatState } from '@/ecs/Entity';
 import { CombatSystem } from '../CombatSystem';
-import { Combat, CombatState, Health, Target, Position, Velocity, PhysicsBody, FireflyTag, MonsterTag, WispTag } from '@/ecs/components';
 import { gameEvents, GameEvents } from '@/events';
 import { ENTITY_CONFIG } from '@/config';
 import { AttackHandlerRegistry } from '../attacks/AttackHandlerRegistry';
-import { AttackPattern } from '@/ecs/components/AttackPattern';
 import { setup, getEntities, TestSetup, executeWithSpatialGrid } from '@/__tests__/helpers';
-import { ECSEntity } from '@/types';
 import { SpatialGrid } from '@/utils';
 import { createCombatFirefly, createCombatMonster } from '@/__tests__/helpers';
 
@@ -34,165 +33,145 @@ const MOCK_PULSE_PATTERN: AttackPattern = {
 };
 
 describe('CombatSystem', () => {
-  let world: World;
-  let system: CombatSystem;
+  let world: GameWorld;
+  let combatSystem: CombatSystem;
   let spatialGrid: SpatialGrid;
 
   afterEach(() => {
-    // Clean up all event listeners after each test
     gameEvents.clear();
   });
 
   beforeEach(() => {
-    world = new World();
-    world.registerComponent(Combat);
-    world.registerComponent(Health);
-    world.registerComponent(Target);
-    world.registerComponent(Position);
-    world.registerComponent(Velocity);
-    world.registerComponent(PhysicsBody);
-    world.registerComponent(FireflyTag);
-    world.registerComponent(MonsterTag);
-    world.registerComponent(WispTag);
+    world = new World<Entity>();
 
-    // Initialize attack handlers for combat system
     AttackHandlerRegistry.initialize();
 
-    // Create and pass spatial grid to CombatSystem
     spatialGrid = new SpatialGrid(100);
-    world.registerSystem(CombatSystem, { spatialGrid });
-    system = world.getSystem(CombatSystem) as CombatSystem;
-    
+    combatSystem = new CombatSystem(world, { spatialGrid });
+
     gameEvents.clear();
   });
 
-  // Helper to populate spatial grid before executing
   const populateGridAndExecute = (delta: number = 16) => {
     spatialGrid.clear();
-    const positionedEntities = (world.entityManager as any)._entities.filter(
-      (e: any) => e.hasComponent(Position)
-    );
-    positionedEntities.forEach((entity: any) => {
-      const pos = entity.getComponent(Position);
-      if (pos) {
-        spatialGrid.insert(entity, pos.x, pos.y);
-      }
-    });
-    world.execute(delta, delta);
+    for (const entity of world.with('position')) {
+      spatialGrid.insert(entity, entity.position.x, entity.position.y);
+    }
+    combatSystem.update(delta, delta);
   };
 
   describe('state transitions', () => {
     it('should transition from IDLE to CHARGING when target acquired', () => {
-      const attacker = world.createEntity();
-      const target = world.createEntity();
-      target.addComponent(Position, { x: 120, y: 100 });
-      target.addComponent(Health, { currentHealth: 100, maxHealth: 100 });
-      
-      attacker.addComponent(Position, { x: 100, y: 100 });
-      attacker.addComponent(Velocity, { vx: 0, vy: 0 });
-      attacker.addComponent(Health, { currentHealth: 100, maxHealth: 100 });
-      attacker.addComponent(Target, { target });
-      attacker.addComponent(Combat, {
-        state: CombatState.IDLE,
-        chargeTime: 0,
-        attackElapsed: 0,
-        recoveryElapsed: 0,
-        attackPattern: ENTITY_CONFIG.firefly.combat!,
-        hasHit: false
+      const target = world.add({
+        position: { x: 120, y: 100 },
+        health: { currentHealth: 100, maxHealth: 100, isDead: false }
+      });
+
+      const attacker = world.add({
+        position: { x: 100, y: 100 },
+        velocity: { vx: 0, vy: 0 },
+        health: { currentHealth: 100, maxHealth: 100, isDead: false },
+        target: { target },
+        combat: {
+          state: CombatState.IDLE,
+          chargeTime: 0,
+          attackElapsed: 0,
+          recoveryElapsed: 0,
+          attackPattern: ENTITY_CONFIG.firefly.combat! as AttackPattern,
+          hasHit: false
+        }
       });
 
       populateGridAndExecute(16);
 
-      const combat = attacker.getComponent(Combat)!;
-      expect(combat.state).toBe(CombatState.CHARGING);
+      expect(attacker.combat!.state).toBe(CombatState.CHARGING);
     });
 
     it('should transition from CHARGING to ATTACKING when charge completes', () => {
-      const attacker = world.createEntity();
-      const target = world.createEntity();
-      target.addComponent(Position, { x: 120, y: 100 });
-      target.addComponent(Health, { currentHealth: 100, maxHealth: 100 });
-      
-      attacker.addComponent(Position, { x: 100, y: 100 });
-      attacker.addComponent(Velocity, { vx: 0, vy: 0 });
-      attacker.addComponent(Health, { currentHealth: 100, maxHealth: 100 });
-      attacker.addComponent(Target, { target });
-      attacker.addComponent(Combat, {
-        state: CombatState.CHARGING,
-        chargeTime: 1750, // Almost fully charged (new timing: 1800ms total)
-        attackElapsed: 0,
-        recoveryElapsed: 0,
-        attackPattern: ENTITY_CONFIG.firefly.combat!,
-        hasHit: false
+      const target = world.add({
+        position: { x: 120, y: 100 },
+        health: { currentHealth: 100, maxHealth: 100, isDead: false }
       });
 
-      // Run a few frames to complete charge
+      const attacker = world.add({
+        position: { x: 100, y: 100 },
+        velocity: { vx: 0, vy: 0 },
+        health: { currentHealth: 100, maxHealth: 100, isDead: false },
+        target: { target },
+        combat: {
+          state: CombatState.CHARGING,
+          chargeTime: 1750,
+          attackElapsed: 0,
+          recoveryElapsed: 0,
+          attackPattern: ENTITY_CONFIG.firefly.combat! as AttackPattern,
+          hasHit: false
+        }
+      });
+
       for (let i = 0; i < 5; i++) {
         populateGridAndExecute(16);
       }
 
-      const combat = attacker.getComponent(Combat)!;
-      expect(combat.state).toBe(CombatState.ATTACKING);
+      expect(attacker.combat!.state).toBe(CombatState.ATTACKING);
     });
 
     it('should transition from ATTACKING to RECOVERING after attack duration', () => {
-      const attacker = world.createEntity();
-      const target = world.createEntity();
-      target.addComponent(Position, { x: 120, y: 100 });
-      target.addComponent(Health, { currentHealth: 100, maxHealth: 100 });
-      
-      attacker.addComponent(Position, { x: 100, y: 100 });
-      attacker.addComponent(Velocity, { vx: 0, vy: 0 });
-      attacker.addComponent(Health, { currentHealth: 100, maxHealth: 100 });
-      attacker.addComponent(Target, { target });
-      attacker.addComponent(Combat, {
-        state: CombatState.ATTACKING,
-        chargeTime: 1800,
-        attackElapsed: 450, // Almost done attacking (new timing: 500ms total)
-        recoveryElapsed: 0,
-        attackPattern: ENTITY_CONFIG.firefly.combat!,
-        hasHit: false
+      const target = world.add({
+        position: { x: 120, y: 100 },
+        health: { currentHealth: 100, maxHealth: 100, isDead: false }
       });
-      attacker.addComponent(FireflyTag);
 
-      // Run frames to complete attack
+      const attacker = world.add({
+        position: { x: 100, y: 100 },
+        velocity: { vx: 0, vy: 0 },
+        health: { currentHealth: 100, maxHealth: 100, isDead: false },
+        target: { target },
+        combat: {
+          state: CombatState.ATTACKING,
+          chargeTime: 1800,
+          attackElapsed: 450,
+          recoveryElapsed: 0,
+          attackPattern: ENTITY_CONFIG.firefly.combat! as AttackPattern,
+          hasHit: false
+        },
+        fireflyTag: true
+      });
+
       for (let i = 0; i < 5; i++) {
         populateGridAndExecute(16);
       }
 
-      const combat = attacker.getComponent(Combat)!;
-      expect(combat.state).toBe(CombatState.RECOVERING);
+      expect(attacker.combat!.state).toBe(CombatState.RECOVERING);
     });
 
     it('should transition from RECOVERING to IDLE after recovery', () => {
-      const attacker = world.createEntity();
-      const target = world.createEntity();
-      target.addComponent(Position, { x: 120, y: 100 });
-      target.addComponent(Health, { currentHealth: 100, maxHealth: 100 });
-      
-      attacker.addComponent(Position, { x: 100, y: 100 });
-      attacker.addComponent(Velocity, { vx: 0, vy: 0 });
-      attacker.addComponent(Health, { currentHealth: 100, maxHealth: 100 });
-      attacker.addComponent(Target, { target });
-      attacker.addComponent(Combat, {
-        state: CombatState.RECOVERING,
-        chargeTime: 1800,
-        attackElapsed: 500,
-        recoveryElapsed: 550, // Almost done recovering (new timing: 600ms total)
-        attackPattern: ENTITY_CONFIG.firefly.combat!,
-        hasHit: true
+      const target = world.add({
+        position: { x: 120, y: 100 },
+        health: { currentHealth: 100, maxHealth: 100, isDead: false }
       });
-      attacker.addComponent(FireflyTag);
 
-      // Run frames to complete recovery
+      const attacker = world.add({
+        position: { x: 100, y: 100 },
+        velocity: { vx: 0, vy: 0 },
+        health: { currentHealth: 100, maxHealth: 100, isDead: false },
+        target: { target },
+        combat: {
+          state: CombatState.RECOVERING,
+          chargeTime: 1800,
+          attackElapsed: 500,
+          recoveryElapsed: 550,
+          attackPattern: ENTITY_CONFIG.firefly.combat! as AttackPattern,
+          hasHit: true
+        },
+        fireflyTag: true
+      });
+
       for (let i = 0; i < 10; i++) {
         populateGridAndExecute(16);
       }
 
-      const combat = attacker.getComponent(Combat)!;
-      // After recovery, if target is still present and in range, should start charging again
-      expect(combat.state).toBe(CombatState.CHARGING);
-      expect(combat.chargeTime).toBeLessThan(200); // Should have started charging
+      expect(attacker.combat!.state).toBe(CombatState.CHARGING);
+      expect(attacker.combat!.chargeTime).toBeLessThan(200);
     });
   });
 
@@ -200,8 +179,8 @@ describe('CombatSystem', () => {
     let world: TestSetup['world'];
     let combatSystem: TestSetup['combatSystem'];
     let spatialGrid: TestSetup['spatialGrid'];
-    let firefly: ECSEntity;
-    let monster: ECSEntity;
+    let firefly: Entity;
+    let monster: Entity;
 
     beforeEach(() => {
       const setupResult = setup();
@@ -214,55 +193,57 @@ describe('CombatSystem', () => {
     });
 
     it('should apply dash velocity during ATTACKING phase', () => {
-      const attacker = world.createEntity();
-      const target = world.createEntity();
-      target.addComponent(Position, { x: 120, y: 100 }); // Within interaction radius (30)
-      target.addComponent(Health, { currentHealth: 100, maxHealth: 100 });
-      
-      attacker.addComponent(Position, { x: 100, y: 100 });
-      attacker.addComponent(Velocity, { vx: 0, vy: 0 });
-      attacker.addComponent(Health, { currentHealth: 100, maxHealth: 100 });
-      attacker.addComponent(Target, { target });
-      attacker.addComponent(Combat, {
-        state: CombatState.ATTACKING,
-        chargeTime: 1000,
-        attackElapsed: 0,
-        recoveryElapsed: 0,
-        attackPattern: ENTITY_CONFIG.firefly.combat!,
-        hasHit: false
+      const target = world.add({
+        position: { x: 120, y: 100 },
+        health: { currentHealth: 100, maxHealth: 100, isDead: false }
       });
-      attacker.addComponent(FireflyTag);
+
+      const attacker = world.add({
+        position: { x: 100, y: 100 },
+        velocity: { vx: 0, vy: 0 },
+        health: { currentHealth: 100, maxHealth: 100, isDead: false },
+        target: { target },
+        combat: {
+          state: CombatState.ATTACKING,
+          chargeTime: 1000,
+          attackElapsed: 0,
+          recoveryElapsed: 0,
+          attackPattern: ENTITY_CONFIG.firefly.combat! as AttackPattern,
+          hasHit: false
+        },
+        fireflyTag: true
+      });
 
       executeWithSpatialGrid(world, spatialGrid, 16);
+      combatSystem.update(16, 16);
 
-      const velocity = attacker.getComponent(Velocity)!;
-      // Should have dash velocity toward target
-      expect(velocity.vx).toBeGreaterThan(0);
+      expect(attacker.velocity!.vx).toBeGreaterThan(0);
     });
 
     it('should emit ATTACK_HIT when firefly collides with target', () => {
-      const target = world.createEntity();
-      // Place target very close for collision
-      target.addComponent(Position, { x: 102, y: 100 });
-      target.addComponent(Health, { currentHealth: 100, maxHealth: 100 });
-      target.addComponent(PhysicsBody, { mass: 1, isStatic: false, collisionRadius: 5 });
-      target.addComponent(MonsterTag); // Firefly attacks monsters
-      
-      const attacker = world.createEntity();
-      attacker.addComponent(Position, { x: 100, y: 100 });
-      attacker.addComponent(Velocity, { vx: 50, vy: 0 });
-      attacker.addComponent(Health, { currentHealth: 100, maxHealth: 100 });
-      attacker.addComponent(Target, { target });
-      attacker.addComponent(PhysicsBody, { mass: 1, isStatic: false, collisionRadius: 5 });
-      attacker.addComponent(Combat, {
-        state: CombatState.ATTACKING,
-        chargeTime: 1000,
-        attackElapsed: 0,
-        recoveryElapsed: 0,
-        attackPattern: ENTITY_CONFIG.firefly.combat!,
-        hasHit: false
+      const target = world.add({
+        position: { x: 102, y: 100 },
+        health: { currentHealth: 100, maxHealth: 100, isDead: false },
+        physicsBody: { mass: 1, isStatic: false, collisionRadius: 5 },
+        monsterTag: true
       });
-      attacker.addComponent(FireflyTag);
+
+      const attacker = world.add({
+        position: { x: 100, y: 100 },
+        velocity: { vx: 50, vy: 0 },
+        health: { currentHealth: 100, maxHealth: 100, isDead: false },
+        target: { target },
+        physicsBody: { mass: 1, isStatic: false, collisionRadius: 5 },
+        combat: {
+          state: CombatState.ATTACKING,
+          chargeTime: 1000,
+          attackElapsed: 0,
+          recoveryElapsed: 0,
+          attackPattern: ENTITY_CONFIG.firefly.combat! as AttackPattern,
+          hasHit: false
+        },
+        fireflyTag: true
+      });
 
       let attackHitFired = false;
       gameEvents.on(GameEvents.ATTACK_HIT, () => {
@@ -270,29 +251,22 @@ describe('CombatSystem', () => {
       });
 
       executeWithSpatialGrid(world, spatialGrid, 16);
+      combatSystem.update(16, 16);
 
       expect(attackHitFired).toBe(true);
     });
 
     it('should emit ATTACK_STARTED event when entering ATTACKING state', () => {
-      const target = world.createEntity();
-      target.addComponent(Position, { x: 110, y: 100 }); // Closer, well within range
-      target.addComponent(Health, { currentHealth: 100, maxHealth: 100, isDead: false });
-      target.addComponent(MonsterTag);
-      target.addComponent(PhysicsBody, { mass: 1, isStatic: false, collisionRadius: 8 });
-      
-      const attacker = world.createEntity();
-      attacker.addComponent(FireflyTag);
-      attacker.addComponent(PhysicsBody, { mass: 1, isStatic: false, collisionRadius: 5 });
-      attacker.addComponent(Position, { x: 100, y: 100 });
-      attacker.addComponent(Velocity, { vx: 0, vy: 0 });
-      attacker.addComponent(Health, { currentHealth: 100, maxHealth: 100, isDead: false });
-      attacker.addComponent(Target, { target });
-      
-      // Use a simpler attack pattern with faster timing for testing
+      const target = world.add({
+        position: { x: 110, y: 100 },
+        health: { currentHealth: 100, maxHealth: 100, isDead: false },
+        monsterTag: true,
+        physicsBody: { mass: 1, isStatic: false, collisionRadius: 8 }
+      });
+
       const testPattern = {
         handlerType: 'dash' as const,
-        chargeTime: 100, // Fast for testing
+        chargeTime: 100,
         attackDuration: 100,
         recoveryTime: 100,
         damage: 10,
@@ -300,14 +274,22 @@ describe('CombatSystem', () => {
         dashSpeed: 100,
         targetTags: ['monster']
       };
-      
-      attacker.addComponent(Combat, {
-        state: CombatState.CHARGING,
-        chargeTime: 80, // Near completion
-        attackElapsed: 0,
-        recoveryElapsed: 0,
-        attackPattern: testPattern,
-        hasHit: false
+
+      const attacker = world.add({
+        fireflyTag: true,
+        physicsBody: { mass: 1, isStatic: false, collisionRadius: 5 },
+        position: { x: 100, y: 100 },
+        velocity: { vx: 0, vy: 0 },
+        health: { currentHealth: 100, maxHealth: 100, isDead: false },
+        target: { target },
+        combat: {
+          state: CombatState.CHARGING,
+          chargeTime: 80,
+          attackElapsed: 0,
+          recoveryElapsed: 0,
+          attackPattern: testPattern,
+          hasHit: false
+        }
       });
 
       let attackStartedFired = false;
@@ -315,9 +297,9 @@ describe('CombatSystem', () => {
         attackStartedFired = true;
       });
 
-      // Run enough frames to trigger transition (80 + 3*16 = 128 > 100)
       for (let i = 0; i < 3; i++) {
         executeWithSpatialGrid(world, spatialGrid, 16);
+        combatSystem.update(16, 16);
       }
 
       expect(attackStartedFired).toBe(true);
@@ -328,49 +310,45 @@ describe('CombatSystem', () => {
     let world: TestSetup['world'];
     let combatSystem: TestSetup['combatSystem'];
     let spatialGrid: TestSetup['spatialGrid'];
-    let firefly: ECSEntity;
-    let monster: ECSEntity;
 
     beforeEach(() => {
       const setupResult = setup();
       world = setupResult.world;
       combatSystem = setupResult.combatSystem;
       spatialGrid = setupResult.spatialGrid;
-      const entities = getEntities(world);
-      firefly = entities.firefly;
-      monster = entities.monster;
     });
 
     it('should emit ATTACK_HIT for all enemies in pulse radius', () => {
-      const target1 = world.createEntity();
-      const target2 = world.createEntity();
-      
-      // Place targets within pulse radius (40) and interaction radius (40)
-      target1.addComponent(Position, { x: 110, y: 100 });
-      target1.addComponent(Health, { currentHealth: 100, maxHealth: 100 });
-      target1.addComponent(FireflyTag);
-      target1.addComponent(PhysicsBody, { mass: 1, isStatic: false, collisionRadius: 5 });
-      
-      target2.addComponent(Position, { x: 120, y: 100 });
-      target2.addComponent(Health, { currentHealth: 100, maxHealth: 100 });
-      target2.addComponent(FireflyTag);
-      target2.addComponent(PhysicsBody, { mass: 1, isStatic: false, collisionRadius: 5 });
-      
-      const attacker = world.createEntity();
-      attacker.addComponent(Position, { x: 100, y: 100 });
-      attacker.addComponent(Velocity, { vx: 0, vy: 0 });
-      attacker.addComponent(Health, { currentHealth: 100, maxHealth: 100 });
-      attacker.addComponent(PhysicsBody, { mass: 1, isStatic: false, collisionRadius: 8 });
-      attacker.addComponent(Target, { target: target1 });
-      attacker.addComponent(Combat, {
-        state: CombatState.ATTACKING,
-        chargeTime: 1500,
-        attackElapsed: 0,
-        recoveryElapsed: 0,
-        attackPattern: ENTITY_CONFIG.monster.combat!,
-        hasHit: false
+      const target1 = world.add({
+        position: { x: 110, y: 100 },
+        health: { currentHealth: 100, maxHealth: 100, isDead: false },
+        fireflyTag: true,
+        physicsBody: { mass: 1, isStatic: false, collisionRadius: 5 }
       });
-      attacker.addComponent(MonsterTag);
+
+      const target2 = world.add({
+        position: { x: 120, y: 100 },
+        health: { currentHealth: 100, maxHealth: 100, isDead: false },
+        fireflyTag: true,
+        physicsBody: { mass: 1, isStatic: false, collisionRadius: 5 }
+      });
+
+      world.add({
+        position: { x: 100, y: 100 },
+        velocity: { vx: 0, vy: 0 },
+        health: { currentHealth: 100, maxHealth: 100, isDead: false },
+        physicsBody: { mass: 1, isStatic: false, collisionRadius: 8 },
+        target: { target: target1 },
+        combat: {
+          state: CombatState.ATTACKING,
+          chargeTime: 1500,
+          attackElapsed: 0,
+          recoveryElapsed: 0,
+          attackPattern: ENTITY_CONFIG.monster.combat! as AttackPattern,
+          hasHit: false
+        },
+        monsterTag: true
+      });
 
       let hitCount = 0;
       gameEvents.on(GameEvents.ATTACK_HIT, () => {
@@ -378,134 +356,137 @@ describe('CombatSystem', () => {
       });
 
       executeWithSpatialGrid(world, spatialGrid, 16);
+      combatSystem.update(16, 16);
 
-      // Should hit both targets in radius
       expect(hitCount).toBeGreaterThan(0);
     });
 
     it('should continue moving toward target while charging', () => {
-      const attacker = world.createEntity();
-      const target = world.createEntity();
-      target.addComponent(Position, { x: 200, y: 100 });
-      target.addComponent(Health, { currentHealth: 100, maxHealth: 100 });
-      
-      attacker.addComponent(Position, { x: 100, y: 100 });
-      attacker.addComponent(Velocity, { vx: 0, vy: 0 });
-      attacker.addComponent(Health, { currentHealth: 100, maxHealth: 100 });
-      attacker.addComponent(Target, { target });
-      attacker.addComponent(Combat, {
-        state: CombatState.CHARGING,
-        chargeTime: 500,
-        attackElapsed: 0,
-        recoveryElapsed: 0,
-        attackPattern: ENTITY_CONFIG.monster.combat!,
-        hasHit: false
+      const target = world.add({
+        position: { x: 200, y: 100 },
+        health: { currentHealth: 100, maxHealth: 100, isDead: false }
       });
-      attacker.addComponent(MonsterTag);
 
-      const initialX = 100;
+      const attacker = world.add({
+        position: { x: 100, y: 100 },
+        velocity: { vx: 0, vy: 0 },
+        health: { currentHealth: 100, maxHealth: 100, isDead: false },
+        target: { target },
+        combat: {
+          state: CombatState.CHARGING,
+          chargeTime: 500,
+          attackElapsed: 0,
+          recoveryElapsed: 0,
+          attackPattern: ENTITY_CONFIG.monster.combat! as AttackPattern,
+          hasHit: false
+        },
+        monsterTag: true
+      });
 
       executeWithSpatialGrid(world, spatialGrid, 16);
+      combatSystem.update(16, 16);
 
-      const position = attacker.getComponent(Position)!;
-      // Monster should still be moving toward target while charging
-      // (This behavior is controlled by MovementSystem, but we verify it's not blocked)
-      expect(attacker.hasComponent(Combat)).toBe(true);
+      expect(!!attacker.combat).toBe(true);
     });
   });
 
   describe('targeting and range', () => {
     it('should remove Target when target dies', () => {
-      const attacker = world.createEntity();
-      const target = world.createEntity();
-      target.addComponent(Position, { x: 120, y: 100 });
-      target.addComponent(Health, { currentHealth: 0, maxHealth: 100, isDead: true });
-      
-      attacker.addComponent(Position, { x: 100, y: 100 });
-      attacker.addComponent(Velocity, { vx: 0, vy: 0 });
-      attacker.addComponent(Health, { currentHealth: 100, maxHealth: 100 });
-      attacker.addComponent(Target, { target });
-      attacker.addComponent(Combat, {
-        state: CombatState.CHARGING,
-        chargeTime: 500,
-        attackElapsed: 0,
-        recoveryElapsed: 0,
-        attackPattern: ENTITY_CONFIG.firefly.combat!,
-        hasHit: false
+      const target = world.add({
+        position: { x: 120, y: 100 },
+        health: { currentHealth: 0, maxHealth: 100, isDead: true }
+      });
+
+      const attacker = world.add({
+        position: { x: 100, y: 100 },
+        velocity: { vx: 0, vy: 0 },
+        health: { currentHealth: 100, maxHealth: 100, isDead: false },
+        target: { target },
+        combat: {
+          state: CombatState.CHARGING,
+          chargeTime: 500,
+          attackElapsed: 0,
+          recoveryElapsed: 0,
+          attackPattern: ENTITY_CONFIG.firefly.combat! as AttackPattern,
+          hasHit: false
+        }
       });
 
       populateGridAndExecute(16);
 
-      expect(attacker.hasComponent(Target)).toBe(false);
+      expect(attacker.target).toBeUndefined();
     });
 
     it('should remove Target when target moves out of range', () => {
-      const attacker = world.createEntity();
-      const target = world.createEntity();
-      // Place target far away (out of interaction radius)
-      target.addComponent(Position, { x: 500, y: 500 });
-      target.addComponent(Health, { currentHealth: 100, maxHealth: 100 });
-      
-      attacker.addComponent(Position, { x: 100, y: 100 });
-      attacker.addComponent(Velocity, { vx: 0, vy: 0 });
-      attacker.addComponent(Health, { currentHealth: 100, maxHealth: 100 });
-      attacker.addComponent(Target, { target });
-      attacker.addComponent(Combat, {
-        state: CombatState.CHARGING,
-        chargeTime: 500,
-        attackElapsed: 0,
-        recoveryElapsed: 0,
-        attackPattern: ENTITY_CONFIG.firefly.combat!,
-        hasHit: false
+      const target = world.add({
+        position: { x: 500, y: 500 },
+        health: { currentHealth: 100, maxHealth: 100, isDead: false }
       });
-      attacker.addComponent(FireflyTag);
+
+      const attacker = world.add({
+        position: { x: 100, y: 100 },
+        velocity: { vx: 0, vy: 0 },
+        health: { currentHealth: 100, maxHealth: 100, isDead: false },
+        target: { target },
+        combat: {
+          state: CombatState.CHARGING,
+          chargeTime: 500,
+          attackElapsed: 0,
+          recoveryElapsed: 0,
+          attackPattern: ENTITY_CONFIG.firefly.combat! as AttackPattern,
+          hasHit: false
+        },
+        fireflyTag: true
+      });
 
       populateGridAndExecute(16);
 
-      expect(attacker.hasComponent(Target)).toBe(false);
+      expect(attacker.target).toBeUndefined();
     });
 
     it('should reset combat state when target is lost', () => {
-      const attacker = world.createEntity();
-      const target = world.createEntity();
-      target.addComponent(Position, { x: 500, y: 500 }); // Far away
-      target.addComponent(Health, { currentHealth: 100, maxHealth: 100 });
-      
-      attacker.addComponent(Position, { x: 100, y: 100 });
-      attacker.addComponent(Velocity, { vx: 0, vy: 0 });
-      attacker.addComponent(Health, { currentHealth: 100, maxHealth: 100 });
-      attacker.addComponent(Target, { target });
-      attacker.addComponent(Combat, {
-        state: CombatState.CHARGING,
-        chargeTime: 500,
-        attackElapsed: 0,
-        recoveryElapsed: 0,
-        attackPattern: ENTITY_CONFIG.firefly.combat!,
-        hasHit: false
+      const target = world.add({
+        position: { x: 500, y: 500 },
+        health: { currentHealth: 100, maxHealth: 100, isDead: false }
       });
-      attacker.addComponent(FireflyTag);
+
+      const attacker = world.add({
+        position: { x: 100, y: 100 },
+        velocity: { vx: 0, vy: 0 },
+        health: { currentHealth: 100, maxHealth: 100, isDead: false },
+        target: { target },
+        combat: {
+          state: CombatState.CHARGING,
+          chargeTime: 500,
+          attackElapsed: 0,
+          recoveryElapsed: 0,
+          attackPattern: ENTITY_CONFIG.firefly.combat! as AttackPattern,
+          hasHit: false
+        },
+        fireflyTag: true
+      });
 
       populateGridAndExecute(16);
 
-      const combat = attacker.getComponent(Combat)!;
-      expect(combat.state).toBe(CombatState.IDLE);
-      expect(combat.chargeTime).toBe(0);
+      expect(attacker.combat!.state).toBe(CombatState.IDLE);
+      expect(attacker.combat!.chargeTime).toBe(0);
     });
   });
 
   describe('edge cases', () => {
     it('should handle entity without target component', () => {
-      const attacker = world.createEntity();
-      attacker.addComponent(Position, { x: 100, y: 100 });
-      attacker.addComponent(Velocity, { vx: 0, vy: 0 });
-      attacker.addComponent(Health, { currentHealth: 100, maxHealth: 100 });
-      attacker.addComponent(Combat, {
-        state: CombatState.IDLE,
-        chargeTime: 0,
-        attackElapsed: 0,
-        recoveryElapsed: 0,
-        attackPattern: ENTITY_CONFIG.firefly.combat!,
-        hasHit: false
+      world.add({
+        position: { x: 100, y: 100 },
+        velocity: { vx: 0, vy: 0 },
+        health: { currentHealth: 100, maxHealth: 100, isDead: false },
+        combat: {
+          state: CombatState.IDLE,
+          chargeTime: 0,
+          attackElapsed: 0,
+          recoveryElapsed: 0,
+          attackPattern: ENTITY_CONFIG.firefly.combat! as AttackPattern,
+          hasHit: false
+        }
       });
 
       expect(() => {
@@ -514,48 +495,51 @@ describe('CombatSystem', () => {
     });
 
     it('should handle dead attacker', () => {
-      const attacker = world.createEntity();
-      const target = world.createEntity();
-      target.addComponent(Position, { x: 120, y: 100 });
-      target.addComponent(Health, { currentHealth: 100, maxHealth: 100 });
-      
-      attacker.addComponent(Position, { x: 100, y: 100 });
-      attacker.addComponent(Velocity, { vx: 0, vy: 0 });
-      attacker.addComponent(Health, { currentHealth: 0, maxHealth: 100, isDead: true });
-      attacker.addComponent(Target, { target });
-      attacker.addComponent(Combat, {
-        state: CombatState.CHARGING,
-        chargeTime: 500,
-        attackElapsed: 0,
-        recoveryElapsed: 0,
-        attackPattern: ENTITY_CONFIG.firefly.combat!,
-        hasHit: false
+      const target = world.add({
+        position: { x: 120, y: 100 },
+        health: { currentHealth: 100, maxHealth: 100, isDead: false }
+      });
+
+      const attacker = world.add({
+        position: { x: 100, y: 100 },
+        velocity: { vx: 0, vy: 0 },
+        health: { currentHealth: 0, maxHealth: 100, isDead: true },
+        target: { target },
+        combat: {
+          state: CombatState.CHARGING,
+          chargeTime: 500,
+          attackElapsed: 0,
+          recoveryElapsed: 0,
+          attackPattern: ENTITY_CONFIG.firefly.combat! as AttackPattern,
+          hasHit: false
+        }
       });
 
       expect(() => {
         populateGridAndExecute(16);
       }).not.toThrow();
 
-      // Dead entities shouldn't attack
-      expect(attacker.hasComponent(Target)).toBe(false);
+      expect(attacker.target).toBeUndefined();
     });
 
     it('should handle missing position components', () => {
-      const attacker = world.createEntity();
-      const target = world.createEntity();
-      target.addComponent(Health, { currentHealth: 100, maxHealth: 100 });
-      
-      attacker.addComponent(Position, { x: 100, y: 100 });
-      attacker.addComponent(Velocity, { vx: 0, vy: 0 });
-      attacker.addComponent(Health, { currentHealth: 100, maxHealth: 100 });
-      attacker.addComponent(Target, { target });
-      attacker.addComponent(Combat, {
-        state: CombatState.CHARGING,
-        chargeTime: 500,
-        attackElapsed: 0,
-        recoveryElapsed: 0,
-        attackPattern: ENTITY_CONFIG.firefly.combat!,
-        hasHit: false
+      const target = world.add({
+        health: { currentHealth: 100, maxHealth: 100, isDead: false }
+      });
+
+      world.add({
+        position: { x: 100, y: 100 },
+        velocity: { vx: 0, vy: 0 },
+        health: { currentHealth: 100, maxHealth: 100, isDead: false },
+        target: { target },
+        combat: {
+          state: CombatState.CHARGING,
+          chargeTime: 500,
+          attackElapsed: 0,
+          recoveryElapsed: 0,
+          attackPattern: ENTITY_CONFIG.firefly.combat! as AttackPattern,
+          hasHit: false
+        }
       });
 
       expect(() => {
@@ -567,52 +551,49 @@ describe('CombatSystem', () => {
   describe('event emissions', () => {
     let world: TestSetup['world'];
     let combatSystem: TestSetup['combatSystem'];
-    let attacker: ECSEntity;
-    let target: ECSEntity;
+    let spatialGrid: TestSetup['spatialGrid'];
 
     beforeEach(() => {
       const setupResult = setup();
       world = setupResult.world;
       combatSystem = setupResult.combatSystem;
-      const entities = getEntities(world);
-      attacker = entities.firefly;
-      target = entities.monster;
+      spatialGrid = setupResult.spatialGrid;
     });
 
     it('should emit ATTACK_COMPLETED when attack finishes', () => {
-      const target = world.createEntity();
-      target.addComponent(Position, { x: 110, y: 100 });
-      target.addComponent(Health, { currentHealth: 100, maxHealth: 100, isDead: false });
-      target.addComponent(MonsterTag);
-      target.addComponent(PhysicsBody, { mass: 1, isStatic: false, collisionRadius: 8 });
-      
-      const attacker = world.createEntity();
-      attacker.addComponent(FireflyTag);
-      attacker.addComponent(PhysicsBody, { mass: 1, isStatic: false, collisionRadius: 5 });
-      attacker.addComponent(Position, { x: 100, y: 100 });
-      attacker.addComponent(Velocity, { vx: 0, vy: 0 });
-      attacker.addComponent(Health, { currentHealth: 100, maxHealth: 100, isDead: false });
-      attacker.addComponent(Target, { target });
-      
-      // Use faster timing for testing
+      const target = world.add({
+        position: { x: 110, y: 100 },
+        health: { currentHealth: 100, maxHealth: 100, isDead: false },
+        monsterTag: true,
+        physicsBody: { mass: 1, isStatic: false, collisionRadius: 8 }
+      });
+
       const testPattern = {
         handlerType: 'dash' as const,
         chargeTime: 100,
-        attackDuration: 100, // Fast for testing
+        attackDuration: 100,
         recoveryTime: 100,
         damage: 10,
         knockbackForce: 50,
         dashSpeed: 100,
         targetTags: ['monster']
       };
-      
-      attacker.addComponent(Combat, {
-        state: CombatState.ATTACKING,
-        chargeTime: 100,
-        attackElapsed: 80, // Near completion
-        recoveryElapsed: 0,
-        attackPattern: testPattern,
-        hasHit: true
+
+      world.add({
+        fireflyTag: true,
+        physicsBody: { mass: 1, isStatic: false, collisionRadius: 5 },
+        position: { x: 100, y: 100 },
+        velocity: { vx: 0, vy: 0 },
+        health: { currentHealth: 100, maxHealth: 100, isDead: false },
+        target: { target },
+        combat: {
+          state: CombatState.ATTACKING,
+          chargeTime: 100,
+          attackElapsed: 80,
+          recoveryElapsed: 0,
+          attackPattern: testPattern,
+          hasHit: true
+        }
       });
 
       let attackCompletedFired = false;
@@ -620,9 +601,9 @@ describe('CombatSystem', () => {
         attackCompletedFired = true;
       });
 
-      // Run enough frames (80 + 3*16 = 128 > 100)
       for (let i = 0; i < 3; i++) {
         executeWithSpatialGrid(world, spatialGrid, 16);
+        combatSystem.update(16, 16);
       }
 
       expect(attackCompletedFired).toBe(true);
@@ -639,38 +620,37 @@ describe('CombatSystem', () => {
       world = setupResult.world;
       combatSystem = setupResult.combatSystem;
       spatialGrid = setupResult.spatialGrid;
-      
-      // Set up spy on gameEvents.emit
+
       vi.spyOn(gameEvents, 'emit');
     });
 
     it('should hit entities matching targetTags', () => {
-      // Arrange
-      const target = world.createEntity();
-      target.addComponent(FireflyTag);
-      target.addComponent(Position, { x: 10, y: 10 });
-      target.addComponent(Health, { currentHealth: 100, maxHealth: 100 });
-      target.addComponent(PhysicsBody, { mass: 1, isStatic: false, collisionRadius: 5 });
-      
-      const attacker = world.createEntity();
-      attacker.addComponent(Combat, {
-        state: CombatState.ATTACKING,
-        chargeTime: 1000,
-        attackElapsed: 0,
-        recoveryElapsed: 0,
-        hasHit: false,
-        attackPattern: MOCK_PULSE_PATTERN,
+      const target = world.add({
+        fireflyTag: true,
+        position: { x: 10, y: 10 },
+        health: { currentHealth: 100, maxHealth: 100, isDead: false },
+        physicsBody: { mass: 1, isStatic: false, collisionRadius: 5 }
       });
-      attacker.addComponent(Position, { x: 0, y: 0 });
-      attacker.addComponent(Velocity, { vx: 0, vy: 0 });
-      attacker.addComponent(Health, { currentHealth: 100, maxHealth: 100 });
-      attacker.addComponent(PhysicsBody, { mass: 1, isStatic: false, collisionRadius: 5 });
-      attacker.addComponent(Target, { target });
 
-      // Act
+      const attacker = world.add({
+        combat: {
+          state: CombatState.ATTACKING,
+          chargeTime: 1000,
+          attackElapsed: 0,
+          recoveryElapsed: 0,
+          hasHit: false,
+          attackPattern: MOCK_PULSE_PATTERN,
+        },
+        position: { x: 0, y: 0 },
+        velocity: { vx: 0, vy: 0 },
+        health: { currentHealth: 100, maxHealth: 100, isDead: false },
+        physicsBody: { mass: 1, isStatic: false, collisionRadius: 5 },
+        target: { target }
+      });
+
       executeWithSpatialGrid(world, spatialGrid, 16);
+      combatSystem.update(16, 16);
 
-      // Assert
       expect(gameEvents.emit).toHaveBeenCalledWith(GameEvents.ATTACK_HIT, {
         attacker,
         target,
@@ -680,35 +660,35 @@ describe('CombatSystem', () => {
     });
 
     it('should not hit entities not matching targetTags', () => {
-      // Arrange
-      const target = world.createEntity();
-      target.addComponent(FireflyTag);
-      target.addComponent(Position, { x: 10, y: 10 });
-      target.addComponent(Health, { currentHealth: 100, maxHealth: 100 });
-      target.addComponent(PhysicsBody, { mass: 1, isStatic: false, collisionRadius: 5 });
-      
-      const attacker = world.createEntity();
-      attacker.addComponent(Combat, {
-        state: CombatState.ATTACKING,
-        chargeTime: 1000,
-        attackElapsed: 0,
-        recoveryElapsed: 0,
-        hasHit: false,
-        attackPattern: {
-          ...MOCK_PULSE_PATTERN,
-          targetTags: ['monster']
-        },
+      const target = world.add({
+        fireflyTag: true,
+        position: { x: 10, y: 10 },
+        health: { currentHealth: 100, maxHealth: 100, isDead: false },
+        physicsBody: { mass: 1, isStatic: false, collisionRadius: 5 }
       });
-      attacker.addComponent(Position, { x: 0, y: 0 });
-      attacker.addComponent(Velocity, { vx: 0, vy: 0 });
-      attacker.addComponent(Health, { currentHealth: 100, maxHealth: 100 });
-      attacker.addComponent(PhysicsBody, { mass: 1, isStatic: false, collisionRadius: 5 });
-      attacker.addComponent(Target, { target });
 
-      // Act
+      world.add({
+        combat: {
+          state: CombatState.ATTACKING,
+          chargeTime: 1000,
+          attackElapsed: 0,
+          recoveryElapsed: 0,
+          hasHit: false,
+          attackPattern: {
+            ...MOCK_PULSE_PATTERN,
+            targetTags: ['monster']
+          },
+        },
+        position: { x: 0, y: 0 },
+        velocity: { vx: 0, vy: 0 },
+        health: { currentHealth: 100, maxHealth: 100, isDead: false },
+        physicsBody: { mass: 1, isStatic: false, collisionRadius: 5 },
+        target: { target }
+      });
+
       executeWithSpatialGrid(world, spatialGrid, 16);
+      combatSystem.update(16, 16);
 
-      // Assert
       expect(gameEvents.emit).not.toHaveBeenCalledWith(
         GameEvents.ATTACK_HIT,
         expect.anything()
@@ -716,49 +696,49 @@ describe('CombatSystem', () => {
     });
 
     it('should hit multiple entities matching targetTags', () => {
-      // Arrange
-      const target1 = world
-        .createEntity()
-        .addComponent(FireflyTag)
-        .addComponent(Position, { x: 10, y: 10 })
-        .addComponent(Health, { currentHealth: 100, maxHealth: 100 })
-        .addComponent(PhysicsBody, { mass: 1, isStatic: false, collisionRadius: 5 });
-      const target2 = world
-        .createEntity()
-        .addComponent(WispTag)
-        .addComponent(Position, { x: 15, y: 15 })
-        .addComponent(Health, { currentHealth: 100, maxHealth: 100 })
-        .addComponent(PhysicsBody, { mass: 1, isStatic: false, collisionRadius: 5 });
-      const target3 = world
-        .createEntity()
-        .addComponent(MonsterTag)
-        .addComponent(Position, { x: 20, y: 20 })
-        .addComponent(Health, { currentHealth: 100, maxHealth: 100 })
-        .addComponent(PhysicsBody, { mass: 1, isStatic: false, collisionRadius: 5 });
-      
-      const attacker = world.createEntity();
-      attacker.addComponent(Combat, {
-        state: CombatState.ATTACKING,
-        chargeTime: 1000,
-        attackElapsed: 0,
-        recoveryElapsed: 0,
-        hasHit: false,
-        attackPattern: {
-          ...MOCK_PULSE_PATTERN,
-          targetTags: ['firefly', 'wisp']
-        },
+      const target1 = world.add({
+        fireflyTag: true,
+        position: { x: 10, y: 10 },
+        health: { currentHealth: 100, maxHealth: 100, isDead: false },
+        physicsBody: { mass: 1, isStatic: false, collisionRadius: 5 }
       });
-      attacker.addComponent(Position, { x: 0, y: 0 });
-      attacker.addComponent(Velocity, { vx: 0, vy: 0 });
-      attacker.addComponent(Health, { currentHealth: 100, maxHealth: 100 });
-      attacker.addComponent(PhysicsBody, { mass: 1, isStatic: false, collisionRadius: 5 });
-      attacker.addComponent(Target, { target: target1 });
 
-      // Act
+      const target2 = world.add({
+        wispTag: true,
+        position: { x: 15, y: 15 },
+        health: { currentHealth: 100, maxHealth: 100, isDead: false },
+        physicsBody: { mass: 1, isStatic: false, collisionRadius: 5 }
+      });
+
+      const target3 = world.add({
+        monsterTag: true,
+        position: { x: 20, y: 20 },
+        health: { currentHealth: 100, maxHealth: 100, isDead: false },
+        physicsBody: { mass: 1, isStatic: false, collisionRadius: 5 }
+      });
+
+      world.add({
+        combat: {
+          state: CombatState.ATTACKING,
+          chargeTime: 1000,
+          attackElapsed: 0,
+          recoveryElapsed: 0,
+          hasHit: false,
+          attackPattern: {
+            ...MOCK_PULSE_PATTERN,
+            targetTags: ['firefly', 'wisp']
+          },
+        },
+        position: { x: 0, y: 0 },
+        velocity: { vx: 0, vy: 0 },
+        health: { currentHealth: 100, maxHealth: 100, isDead: false },
+        physicsBody: { mass: 1, isStatic: false, collisionRadius: 5 },
+        target: { target: target1 }
+      });
+
       executeWithSpatialGrid(world, spatialGrid, 16);
+      combatSystem.update(16, 16);
 
-      // Assert
-      expect(gameEvents.emit).toHaveBeenCalledTimes(2);
       expect(gameEvents.emit).toHaveBeenCalledWith(GameEvents.ATTACK_HIT, expect.objectContaining({ target: target1 }));
       expect(gameEvents.emit).toHaveBeenCalledWith(GameEvents.ATTACK_HIT, expect.objectContaining({ target: target2 }));
       expect(gameEvents.emit).not.toHaveBeenCalledWith(
@@ -768,35 +748,35 @@ describe('CombatSystem', () => {
     });
 
     it('should not hit entities outside of range', () => {
-      // Arrange
-      const target = world.createEntity();
-      target.addComponent(FireflyTag);
-      target.addComponent(Position, { x: 100, y: 100 }); // Far away
-      target.addComponent(Health, { currentHealth: 100, maxHealth: 100 });
-      target.addComponent(PhysicsBody, { mass: 1, isStatic: false, collisionRadius: 5 });
-      
-      const attacker = world.createEntity();
-      attacker.addComponent(Combat, {
-        state: CombatState.ATTACKING,
-        chargeTime: 1000,
-        attackElapsed: 0,
-        recoveryElapsed: 0,
-        hasHit: false,
-        attackPattern: {
-          ...MOCK_PULSE_PATTERN,
-          radius: 10, // Smaller radius for this test
-        },
+      const target = world.add({
+        fireflyTag: true,
+        position: { x: 100, y: 100 },
+        health: { currentHealth: 100, maxHealth: 100, isDead: false },
+        physicsBody: { mass: 1, isStatic: false, collisionRadius: 5 }
       });
-      attacker.addComponent(Position, { x: 0, y: 0 });
-      attacker.addComponent(Velocity, { vx: 0, vy: 0 });
-      attacker.addComponent(Health, { currentHealth: 100, maxHealth: 100 });
-      attacker.addComponent(PhysicsBody, { mass: 1, isStatic: false, collisionRadius: 5 });
-      attacker.addComponent(Target, { target });
 
-      // Act
+      world.add({
+        combat: {
+          state: CombatState.ATTACKING,
+          chargeTime: 1000,
+          attackElapsed: 0,
+          recoveryElapsed: 0,
+          hasHit: false,
+          attackPattern: {
+            ...MOCK_PULSE_PATTERN,
+            radius: 10,
+          },
+        },
+        position: { x: 0, y: 0 },
+        velocity: { vx: 0, vy: 0 },
+        health: { currentHealth: 100, maxHealth: 100, isDead: false },
+        physicsBody: { mass: 1, isStatic: false, collisionRadius: 5 },
+        target: { target }
+      });
+
       executeWithSpatialGrid(world, spatialGrid, 16);
+      combatSystem.update(16, 16);
 
-      // Assert
       expect(gameEvents.emit).not.toHaveBeenCalledWith(
         GameEvents.ATTACK_HIT,
         expect.objectContaining({ target })
@@ -806,75 +786,73 @@ describe('CombatSystem', () => {
 
   describe('spatial grid integration', () => {
     it('should pass spatial grid to attack handlers via context', () => {
-      const attacker = world.createEntity();
-      const target = world.createEntity();
-      
-      target.addComponent(Position, { x: 10, y: 0 });
-      target.addComponent(Health, { currentHealth: 100, maxHealth: 100 });
-      target.addComponent(FireflyTag);
-      target.addComponent(PhysicsBody, { mass: 1, isStatic: false, collisionRadius: 5 });
-      
-      attacker.addComponent(Combat, {
-        state: CombatState.ATTACKING,
-        chargeTime: 1000,
-        attackElapsed: 0,
-        recoveryElapsed: 0,
-        hasHit: false,
-        attackPattern: MOCK_PULSE_PATTERN,
+      const target = world.add({
+        position: { x: 10, y: 0 },
+        health: { currentHealth: 100, maxHealth: 100, isDead: false },
+        fireflyTag: true,
+        physicsBody: { mass: 1, isStatic: false, collisionRadius: 5 }
       });
-      attacker.addComponent(Position, { x: 0, y: 0 });
-      attacker.addComponent(Velocity, { vx: 0, vy: 0 });
-      attacker.addComponent(Health, { currentHealth: 100, maxHealth: 100 });
-      attacker.addComponent(MonsterTag);
-      attacker.addComponent(PhysicsBody, { mass: 1, isStatic: false, collisionRadius: 5 });
-      attacker.addComponent(Target, { target });
 
-      // Don't add target to grid - if grid is used, no hit should occur
+      const attacker = world.add({
+        combat: {
+          state: CombatState.ATTACKING,
+          chargeTime: 1000,
+          attackElapsed: 0,
+          recoveryElapsed: 0,
+          hasHit: false,
+          attackPattern: MOCK_PULSE_PATTERN,
+        },
+        position: { x: 0, y: 0 },
+        velocity: { vx: 0, vy: 0 },
+        health: { currentHealth: 100, maxHealth: 100, isDead: false },
+        monsterTag: true,
+        physicsBody: { mass: 1, isStatic: false, collisionRadius: 5 },
+        target: { target }
+      });
+
       spatialGrid.clear();
       spatialGrid.insert(attacker, 0, 0);
 
       vi.spyOn(gameEvents, 'emit');
 
-      world.execute(16, 16);
+      combatSystem.update(16, 16);
 
-      // If spatial grid is passed and used, attack won't find the target
       expect(gameEvents.emit).not.toHaveBeenCalledWith(GameEvents.ATTACK_HIT, expect.anything());
     });
 
     it('should find targets when properly added to spatial grid', () => {
-      const attacker = world.createEntity();
-      const target = world.createEntity();
-      
-      target.addComponent(Position, { x: 10, y: 0 });
-      target.addComponent(Health, { currentHealth: 100, maxHealth: 100 });
-      target.addComponent(FireflyTag);
-      target.addComponent(PhysicsBody, { mass: 1, isStatic: false, collisionRadius: 5 });
-      
-      attacker.addComponent(Combat, {
-        state: CombatState.ATTACKING,
-        chargeTime: 1000,
-        attackElapsed: 0,
-        recoveryElapsed: 0,
-        hasHit: false,
-        attackPattern: MOCK_PULSE_PATTERN,
+      const target = world.add({
+        position: { x: 10, y: 0 },
+        health: { currentHealth: 100, maxHealth: 100, isDead: false },
+        fireflyTag: true,
+        physicsBody: { mass: 1, isStatic: false, collisionRadius: 5 }
       });
-      attacker.addComponent(Position, { x: 0, y: 0 });
-      attacker.addComponent(Velocity, { vx: 0, vy: 0 });
-      attacker.addComponent(Health, { currentHealth: 100, maxHealth: 100 });
-      attacker.addComponent(MonsterTag);
-      attacker.addComponent(PhysicsBody, { mass: 1, isStatic: false, collisionRadius: 5 });
-      attacker.addComponent(Target, { target });
 
-      // Properly populate grid
+      const attacker = world.add({
+        combat: {
+          state: CombatState.ATTACKING,
+          chargeTime: 1000,
+          attackElapsed: 0,
+          recoveryElapsed: 0,
+          hasHit: false,
+          attackPattern: MOCK_PULSE_PATTERN,
+        },
+        position: { x: 0, y: 0 },
+        velocity: { vx: 0, vy: 0 },
+        health: { currentHealth: 100, maxHealth: 100, isDead: false },
+        monsterTag: true,
+        physicsBody: { mass: 1, isStatic: false, collisionRadius: 5 },
+        target: { target }
+      });
+
       spatialGrid.clear();
       spatialGrid.insert(attacker, 0, 0);
       spatialGrid.insert(target, 10, 0);
 
       vi.spyOn(gameEvents, 'emit');
 
-      world.execute(16, 16);
+      combatSystem.update(16, 16);
 
-      // Now it should find and hit the target
       expect(gameEvents.emit).toHaveBeenCalledWith(GameEvents.ATTACK_HIT, {
         attacker,
         target,
@@ -885,17 +863,28 @@ describe('CombatSystem', () => {
   });
 
   describe('Visual Lifecycle Integration', () => {
+    let world: TestSetup['world'];
+    let combatSystem: TestSetup['combatSystem'];
+    let spatialGrid: TestSetup['spatialGrid'];
+
+    beforeEach(() => {
+      const setupResult = setup();
+      world = setupResult.world;
+      combatSystem = setupResult.combatSystem;
+      spatialGrid = setupResult.spatialGrid;
+    });
+
     it('should call handler.onCharging during CHARGING state', () => {
       const target = createCombatMonster(world, { x: 110, y: 100 });
       const attacker = createCombatFirefly(world, { x: 100, y: 100 });
-      
-      attacker.addComponent(Target, { target });
-      attacker.addComponent(Combat, {
+
+      world.addComponent(attacker, 'target', { target });
+      world.addComponent(attacker, 'combat', {
         state: CombatState.CHARGING,
         chargeTime: 500,
         attackElapsed: 0,
         recoveryElapsed: 0,
-        attackPattern: ENTITY_CONFIG.firefly.combat!,
+        attackPattern: ENTITY_CONFIG.firefly.combat! as AttackPattern,
         hasHit: false
       });
 
@@ -903,6 +892,7 @@ describe('CombatSystem', () => {
       const onChargingSpy = vi.spyOn(handler!, 'onCharging');
 
       executeWithSpatialGrid(world, spatialGrid, 16);
+      combatSystem.update(16, 16);
 
       expect(onChargingSpy).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -916,14 +906,14 @@ describe('CombatSystem', () => {
     it('should call handler.onRecovering during RECOVERING state', () => {
       const target = createCombatMonster(world, { x: 110, y: 100 });
       const attacker = createCombatFirefly(world, { x: 100, y: 100 });
-      
-      attacker.addComponent(Target, { target });
-      attacker.addComponent(Combat, {
+
+      world.addComponent(attacker, 'target', { target });
+      world.addComponent(attacker, 'combat', {
         state: CombatState.RECOVERING,
         chargeTime: 1800,
         attackElapsed: 500,
         recoveryElapsed: 100,
-        attackPattern: ENTITY_CONFIG.firefly.combat!,
+        attackPattern: ENTITY_CONFIG.firefly.combat! as AttackPattern,
         hasHit: true
       });
 
@@ -931,6 +921,7 @@ describe('CombatSystem', () => {
       const onRecoveringSpy = vi.spyOn(handler!, 'onRecovering');
 
       executeWithSpatialGrid(world, spatialGrid, 16);
+      combatSystem.update(16, 16);
 
       expect(onRecoveringSpy).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -942,21 +933,21 @@ describe('CombatSystem', () => {
     });
 
     it('should call handler.cleanup when Target is removed due to death', () => {
-      const target = createCombatMonster(world, { 
-        x: 110, 
-        y: 100, 
-        health: 0, 
-        isDead: true 
+      const target = createCombatMonster(world, {
+        x: 110,
+        y: 100,
+        health: 0,
+        isDead: true
       });
       const attacker = createCombatFirefly(world, { x: 100, y: 100 });
-      
-      attacker.addComponent(Target, { target });
-      attacker.addComponent(Combat, {
+
+      world.addComponent(attacker, 'target', { target });
+      world.addComponent(attacker, 'combat', {
         state: CombatState.CHARGING,
         chargeTime: 500,
         attackElapsed: 0,
         recoveryElapsed: 0,
-        attackPattern: ENTITY_CONFIG.firefly.combat!,
+        attackPattern: ENTITY_CONFIG.firefly.combat! as AttackPattern,
         hasHit: false
       });
 
@@ -964,22 +955,23 @@ describe('CombatSystem', () => {
       const cleanupSpy = vi.spyOn(handler!, 'cleanup');
 
       executeWithSpatialGrid(world, spatialGrid, 16);
+      combatSystem.update(16, 16);
 
       expect(cleanupSpy).toHaveBeenCalled();
-      expect(attacker.hasComponent(Target)).toBe(false);
+      expect(attacker.target).toBeUndefined();
     });
 
     it('should call handler.cleanup when transitioning from RECOVERING to IDLE', () => {
       const target = createCombatMonster(world, { x: 110, y: 100 });
       const attacker = createCombatFirefly(world, { x: 100, y: 100 });
-      
-      attacker.addComponent(Target, { target });
-      attacker.addComponent(Combat, {
+
+      world.addComponent(attacker, 'target', { target });
+      world.addComponent(attacker, 'combat', {
         state: CombatState.RECOVERING,
         chargeTime: 1800,
         attackElapsed: 500,
         recoveryElapsed: 580,
-        attackPattern: ENTITY_CONFIG.firefly.combat!,
+        attackPattern: ENTITY_CONFIG.firefly.combat! as AttackPattern,
         hasHit: true
       });
 
@@ -988,13 +980,11 @@ describe('CombatSystem', () => {
 
       for (let i = 0; i < 3; i++) {
         executeWithSpatialGrid(world, spatialGrid, 16);
+        combatSystem.update(16, 16);
       }
 
-      const combat = attacker.getComponent(Combat)!;
-      
       expect(cleanupSpy).toHaveBeenCalled();
-      expect(combat.state).toBe(CombatState.CHARGING);
+      expect(attacker.combat!.state).toBe(CombatState.CHARGING);
     });
   });
 });
-

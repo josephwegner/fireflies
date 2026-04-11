@@ -15,7 +15,7 @@ export interface EntityConfig {
     attackDuration: number;
     recoveryTime: number;
     damage: number;
-    handlerType: string; // 'dash', 'pulse', 'projectile', etc.
+    handlerType: 'dash' | 'pulse';
     dashSpeed?: number;
     radius?: number;
     knockbackForce?: number;

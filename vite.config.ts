@@ -30,7 +30,7 @@ export default defineConfig({
       output: {
         manualChunks: {
           phaser: ['phaser'],
-          ecsy: ['ecsy'],
+          miniplex: ['miniplex'],
           worker: ['./src/workers/pathfinding/worker.ts']
         }
       }

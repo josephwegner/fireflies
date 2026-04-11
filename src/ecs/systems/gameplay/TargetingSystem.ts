@@ -1,29 +1,24 @@
-import { System, Not } from 'ecsy';
-import { Targeting, Target } from '@/ecs/components';
-import { ECSEntity } from '@/types';
+import type { Query, With } from 'miniplex';
+import type { Entity, GameWorld } from '@/ecs/Entity';
+import type { GameSystem } from '@/ecs/GameSystem';
 import { gameEvents, GameEvents } from '@/events';
 
-export class TargetingSystem extends System {
-  execute(): void {
-    this.queries.needsTargeting.results.forEach(entity => {
-      const targeting = entity.getComponent(Targeting)!;
-      if (targeting.potentialTargets.length > 0) {
-        this.acquireTarget(entity, targeting.potentialTargets);
+type NeedsTargeting = With<Entity, 'targeting'>;
+
+export class TargetingSystem implements GameSystem {
+  private needsTargeting: Query<NeedsTargeting>;
+
+  constructor(private world: GameWorld, _config: Record<string, any>) {
+    this.needsTargeting = world.with('targeting').without('target');
+  }
+
+  update(_delta: number, _time: number): void {
+    for (const entity of this.needsTargeting) {
+      if (entity.targeting.potentialTargets.length > 0) {
+        const target = entity.targeting.potentialTargets[0];
+        this.world.addComponent(entity, 'target', { target });
+        gameEvents.emit(GameEvents.TARGET_ACQUIRED, { entity, target });
       }
-    });
-  }
-
-  acquireTarget(entity: ECSEntity, potentialTargets: ECSEntity[]): void {
-    const target = potentialTargets[0];
-    entity.addComponent(Target, { target });
-
-    // Emit target acquired event
-    gameEvents.emit(GameEvents.TARGET_ACQUIRED, { entity, target });
-  }
-
-  static queries = {
-    needsTargeting: {
-      components: [Targeting, Not(Target)]
     }
-  };
+  }
 }
