@@ -48,7 +48,9 @@ export class WorldManager {
   }
 
   private registerSystems(): void {
-    // Rendering systems (need scene reference)
+    // ── Rendering systems ──────────────────────────────────────────────
+    // Run first so sprites exist before gameplay systems emit events.
+    // RenderingSystem must be first — CombatVisualsSystem needs it to look up sprite containers.
     this.renderingSystem = new RenderingSystem(this.world, { scene: this.scene });
     this.systems.push(this.renderingSystem);
     this.systems.push(new WallRenderingSystem(this.world, { scene: this.scene }));
@@ -61,7 +63,18 @@ export class WorldManager {
     }));
     this.systems.push(new ParticleEffectsSystem(this.world, { scene: this.scene }));
 
-    // Gameplay systems
+    // ── Gameplay systems ───────────────────────────────────────────────
+    // Order matters here:
+    //   WallGeneration → runs once to build nav mesh
+    //   Interaction    → populates targeting.potentialTargets via spatial grid
+    //   Targeting      → picks a target from potentialTargets
+    //   Combat         → uses target to run attack state machine
+    //   Lodging        → checks spatial proximity for tenant arrival
+    //   Damage         → processes ATTACK_HIT events from combat
+    //   Movement       → moves entities along paths, emits PATH_COMPLETED
+    //   Destination    → requests new paths from worker when current path ends
+    //   FireflyGoal    → checks if fireflies reached the goal
+    //   Victory        → checks if all monsters are dead (event-driven)
     this.systems.push(new WallGenerationSystem(this.world, {
       worker: this.pathfindingWorker,
       map: this.map

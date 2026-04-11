@@ -3,7 +3,7 @@ import type { Entity, GameWorld, CombatState as CombatStateType } from '@/ecs/En
 import { CombatState } from '@/ecs/Entity';
 import type { GameSystem } from '@/ecs/GameSystem';
 import { gameEvents, GameEvents } from '@/events';
-import { Vector, SpatialGrid } from '@/utils';
+import { Vector, SpatialGrid, getEntityType } from '@/utils';
 import { ENTITY_CONFIG } from '@/config';
 import { AttackHandlerRegistry } from './attacks/AttackHandlerRegistry';
 import type { AttackContext } from './attacks/AttackHandler';
@@ -96,19 +96,11 @@ export class CombatSystem implements GameSystem {
     if (attacker.interaction) {
       interactionRadius = attacker.interaction.interactionRadius;
     } else {
-      const entityType = this.getEntityType(attacker);
+      const entityType = getEntityType(attacker);
       interactionRadius = (entityType && ENTITY_CONFIG[entityType]?.interactionRadius) || 30;
     }
 
     return distance <= interactionRadius;
-  }
-
-  private getEntityType(entity: Entity): string | undefined {
-    if (entity.fireflyTag) return 'firefly';
-    if (entity.monsterTag) return 'monster';
-    if (entity.wispTag) return 'wisp';
-    if (entity.goalTag) return 'goal';
-    return undefined;
   }
 
   private updateCombatState(

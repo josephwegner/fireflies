@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
 import { World } from 'miniplex';
 import type { Entity, GameWorld } from '@/ecs/Entity';
 import { DestinationSystem } from '../DestinationSystem';
+import { getEntityType } from '@/utils';
 import { PHYSICS_CONFIG } from '@/config';
 import {
   createTestFirefly,
@@ -51,37 +52,27 @@ describe('DestinationSystem', () => {
   describe('Entity Type Detection', () => {
     it('should detect firefly entities', () => {
       const entity = createTestFirefly(world);
-      system = new DestinationSystem(world, { worker: mockWorker });
-
-      expect((system as any).getEntityType(entity)).toBe('firefly');
+      expect(getEntityType(entity)).toBe('firefly');
     });
 
     it('should detect monster entities', () => {
       const entity = createTestMonster(world);
-      system = new DestinationSystem(world, { worker: mockWorker });
-
-      expect((system as any).getEntityType(entity)).toBe('monster');
+      expect(getEntityType(entity)).toBe('monster');
     });
 
     it('should detect wisp entities', () => {
       const entity = createTestWisp(world);
-      system = new DestinationSystem(world, { worker: mockWorker });
-
-      expect((system as any).getEntityType(entity)).toBe('wisp');
+      expect(getEntityType(entity)).toBe('wisp');
     });
 
     it('should detect goal entities', () => {
       const entity = createTestGoal(world);
-      system = new DestinationSystem(world, { worker: mockWorker });
-
-      expect((system as any).getEntityType(entity)).toBe('goal');
+      expect(getEntityType(entity)).toBe('goal');
     });
 
-    it('should return unknown for untagged entities', () => {
+    it('should return undefined for untagged entities', () => {
       const entity = world.add({});
-      system = new DestinationSystem(world, { worker: mockWorker });
-
-      expect((system as any).getEntityType(entity)).toBe('unknown');
+      expect(getEntityType(entity)).toBeUndefined();
     });
   });
 

@@ -2,6 +2,7 @@ import type { Query, With } from 'miniplex';
 import type { Entity, GameWorld } from '@/ecs/Entity';
 import type { GameSystem } from '@/ecs/GameSystem';
 import { PHYSICS_CONFIG } from '@/config';
+import { getEntityType } from '@/utils';
 
 interface DestinationCandidate {
   entity: Entity;
@@ -21,6 +22,13 @@ export class DestinationSystem implements GameSystem {
     this.needsDestination = world.with('position', 'velocity', 'path');
     this.destinations = world.with('position', 'destination');
     this.worker = config.worker;
+
+    this.needsDestination.onEntityRemoved.subscribe((entity) => {
+      const entityId = this.world.id(entity);
+      if (entityId !== undefined) {
+        this.clearPendingRequest(entityId);
+      }
+    });
 
     this.worker.onmessage = (event: MessageEvent) => {
       if (event.data.action === 'navmeshReady') return;
@@ -61,7 +69,7 @@ export class DestinationSystem implements GameSystem {
     for (const entity of this.needsDestination) {
       try {
         const { position, path: pathComp } = entity;
-        const entityType = this.getEntityType(entity);
+        const entityType = getEntityType(entity) || 'unknown';
         const entityId = this.world.id(entity);
         if (entityId === undefined) continue;
 
@@ -123,14 +131,6 @@ export class DestinationSystem implements GameSystem {
       this.pendingRequests.delete(entityId);
     }, 5000);
     this.pendingRequests.set(entityId, timeout);
-  }
-
-  private getEntityType(entity: Entity): string {
-    if (entity.fireflyTag) return 'firefly';
-    if (entity.monsterTag) return 'monster';
-    if (entity.wispTag) return 'wisp';
-    if (entity.goalTag) return 'goal';
-    return 'unknown';
   }
 
   private findGoalDestination(entityType: string): DestinationCandidate | null {
