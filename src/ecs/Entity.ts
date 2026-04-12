@@ -156,6 +156,25 @@ export interface FireflyGoal {
   currentCount: number;
 }
 
+export interface SpawnEntry {
+  unit: 'firefly' | 'monster';
+  delay?: number;
+  repeat?: number;
+  delayBetween?: number;
+}
+
+export interface SpawnerState {
+  currentIndex: number;
+  repeatsDone: number;
+  timer: number;
+  phase: 'spawning' | 'repeat_wait' | 'entry_delay' | 'done';
+}
+
+export interface Spawner {
+  queue: SpawnEntry[];
+  state: SpawnerState;
+}
+
 // ─── Entity Type ────────────────────────────────────────────────────────────
 
 export type Entity = {
@@ -179,6 +198,7 @@ export type Entity = {
   assignedDestination?: AssignedDestination;
   activationConfig?: ActivationConfig;
   fireflyGoal?: FireflyGoal;
+  spawner?: Spawner;
 
   // Tags (boolean flags)
   fireflyTag?: true;
@@ -186,6 +206,7 @@ export type Entity = {
   monsterTag?: true;
   goalTag?: true;
   wallTag?: true;
+  spawnerTag?: true;
   fleeingToGoalTag?: true;
 };
 

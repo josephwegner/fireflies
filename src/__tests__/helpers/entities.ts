@@ -1,5 +1,5 @@
 import { World } from 'miniplex';
-import type { Entity, GameWorld } from '@/ecs/Entity';
+import type { Entity, GameWorld, SpawnEntry } from '@/ecs/Entity';
 import { CombatState } from '@/ecs/Entity';
 import { ENTITY_CONFIG } from '@/config';
 import { TEST_POSITIONS, TEST_ENTITY_DEFAULTS } from './constants';
@@ -148,6 +148,27 @@ export function createIntermediateTestSetup(
   const wisp = createTestWisp(world, wispOptions);
   const goal = createTestGoal(world, goalOptions);
   return { entity, wisp, goal };
+}
+
+export interface TestSpawnerOptions {
+  x?: number;
+  y?: number;
+  queue?: SpawnEntry[];
+}
+
+export function createTestSpawner(
+  world: GameWorld,
+  options: TestSpawnerOptions = {}
+): Entity {
+  const { x = 200, y = 200, queue = [] } = options;
+  return world.add({
+    position: { x, y },
+    spawner: {
+      queue,
+      state: { currentIndex: 0, repeatsDone: 0, timer: 0, phase: queue.length > 0 ? 'spawning' as const : 'done' as const }
+    },
+    spawnerTag: true
+  });
 }
 
 export interface CombatEntityOptions extends TestEntityOptions {

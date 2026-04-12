@@ -17,6 +17,7 @@ import { DestinationSystem } from './systems/gameplay/DestinationSystem';
 import { WallGenerationSystem } from './systems/gameplay/WallGenerationSystem';
 import { FireflyGoalSystem } from './systems/gameplay/FireflyGoalSystem';
 import { VictorySystem } from './systems/gameplay/VictorySystem';
+import { SpawnerSystem } from './systems/gameplay/SpawnerSystem';
 
 // Rendering systems
 import { RenderingSystem } from './systems/rendering/RenderingSystem';
@@ -90,6 +91,7 @@ export class WorldManager {
     // ── Gameplay systems ───────────────────────────────────────────────
     // Order matters here:
     //   WallGeneration → runs once to build nav mesh
+    //   Spawner        → spawns new entities from spawner queues
     //   Interaction    → populates targeting.potentialTargets via spatial grid
     //   Targeting      → picks a target from potentialTargets
     //   Combat         → uses target to run attack state machine
@@ -103,6 +105,7 @@ export class WorldManager {
       worker: this.pathfindingWorker,
       map: this.map
     }));
+    this.systems.push(new SpawnerSystem(this.world, {}));
     this.systems.push(new InteractionSystem(this.world, { spatialGrid: this.spatialGrid }));
     this.systems.push(new TargetingSystem(this.world, {}));
     this.systems.push(new CombatSystem(this.world, { spatialGrid: this.spatialGrid }));

@@ -9,6 +9,7 @@ export class VictorySystem implements GameSystem {
   private monsters: Query<With<Entity, 'monsterTag' | 'health'>>;
   private lodges: Query<With<Entity, 'lodge' | 'position'>>;
   private fireflies: Query<With<Entity, 'fireflyTag' | 'position' | 'velocity' | 'path'>>;
+  private spawners: Query<With<Entity, 'spawner' | 'spawnerTag'>>;
   private victoryTriggered = false;
   private handleEntityDiedBound: (data: any) => void;
 
@@ -16,6 +17,7 @@ export class VictorySystem implements GameSystem {
     this.monsters = world.with('monsterTag', 'health');
     this.lodges = world.with('lodge', 'position');
     this.fireflies = world.with('fireflyTag', 'position', 'velocity', 'path');
+    this.spawners = world.with('spawner', 'spawnerTag');
 
     this.handleEntityDiedBound = this.handleEntityDied.bind(this);
     gameEvents.on(GameEvents.ENTITY_DIED, this.handleEntityDiedBound);
@@ -35,6 +37,12 @@ export class VictorySystem implements GameSystem {
     const livingMonsters = this.monsters.entities.filter(m => !m.health.isDead);
 
     if (this.monsters.entities.length > 0 && livingMonsters.length === 0) {
+      const hasActiveMonsterSpawner = this.spawners.entities.some(s => {
+        if (s.spawner.state.phase === 'done') return false;
+        return s.spawner.queue.slice(s.spawner.state.currentIndex).some(e => e.unit === 'monster');
+      });
+      if (hasActiveMonsterSpawner) return;
+
       this.triggerVictory();
     }
   }

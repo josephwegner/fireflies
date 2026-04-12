@@ -4,7 +4,8 @@ import {
   createFirefly,
   createWisp,
   createMonster,
-  createGoal
+  createGoal,
+  createSpawner
 } from '../factories';
 import type { Entity, GameWorld } from '@/ecs/Entity';
 import { ENTITY_CONFIG, PHYSICS_CONFIG } from '@/config';
@@ -260,6 +261,59 @@ describe('Entity Factories', () => {
       const entity = createGoal(world, 100, 200, 'firefly');
 
       expect(entity.physicsBody!.mass).toBe(ENTITY_CONFIG.goal.mass);
+    });
+  });
+
+  describe('createSpawner', () => {
+    it('should create entity with position, spawner, and spawnerTag', () => {
+      const queue = [{ unit: 'firefly' as const, delay: 100 }];
+      const entity = createSpawner(world, 100, 200, queue);
+
+      expect(entity.position).toEqual({ x: 100, y: 200 });
+      expect(entity.spawnerTag).toBe(true);
+      expect(entity.spawner).toBeDefined();
+    });
+
+    it('should store the queue in the spawner component', () => {
+      const queue = [
+        { unit: 'firefly' as const, delay: 200 },
+        { unit: 'monster' as const, repeat: 3, delayBetween: 500, delay: 100 }
+      ];
+      const entity = createSpawner(world, 100, 200, queue);
+
+      expect(entity.spawner!.queue).toBe(queue);
+    });
+
+    it('should initialize spawner state for immediate first spawn', () => {
+      const queue = [{ unit: 'firefly' as const }];
+      const entity = createSpawner(world, 100, 200, queue);
+
+      expect(entity.spawner!.state).toEqual({
+        currentIndex: 0,
+        repeatsDone: 0,
+        timer: 0,
+        phase: 'spawning'
+      });
+    });
+
+    it('should initialize as done with empty queue', () => {
+      const entity = createSpawner(world, 100, 200, []);
+
+      expect(entity.spawner!.state.phase).toBe('done');
+    });
+
+    it('should not have movement components', () => {
+      const entity = createSpawner(world, 100, 200, []);
+
+      expect(entity.velocity).toBeUndefined();
+      expect(entity.path).toBeUndefined();
+    });
+
+    it('should not have renderable or physicsBody', () => {
+      const entity = createSpawner(world, 100, 200, []);
+
+      expect(entity.renderable).toBeUndefined();
+      expect(entity.physicsBody).toBeUndefined();
     });
   });
 

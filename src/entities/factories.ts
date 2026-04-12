@@ -1,4 +1,4 @@
-import type { Entity, GameWorld } from '@/ecs/Entity';
+import type { Entity, GameWorld, SpawnEntry } from '@/ecs/Entity';
 import { CombatState } from '@/ecs/Entity';
 import { ENTITY_CONFIG, PHYSICS_CONFIG } from '@/config';
 
@@ -297,4 +297,25 @@ export function createGoal(
   }
 
   return world.add(entity as Entity);
+}
+
+export function createSpawner(
+  world: GameWorld,
+  x: number,
+  y: number,
+  queue: SpawnEntry[]
+): Entity {
+  return world.add({
+    position: { x, y },
+    spawner: {
+      queue,
+      state: {
+        currentIndex: 0,
+        repeatsDone: 0,
+        timer: 0,
+        phase: queue.length > 0 ? 'spawning' as const : 'done' as const
+      }
+    },
+    spawnerTag: true
+  });
 }

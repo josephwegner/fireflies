@@ -292,6 +292,110 @@ describe('VictorySystem', () => {
     });
   });
 
+  describe('spawner-aware victory', () => {
+    function createMonsterSpawner(phase: 'spawning' | 'repeat_wait' | 'entry_delay' | 'done' = 'spawning'): Entity {
+      return world.add({
+        spawner: {
+          queue: [{ unit: 'monster' as const }],
+          state: { currentIndex: 0, repeatsDone: 0, timer: 0, phase }
+        },
+        spawnerTag: true
+      });
+    }
+
+    it('should not trigger victory while a monster spawner is still active', () => {
+      const listener = vi.fn();
+      gameEvents.on(GameEvents.ALL_MONSTERS_DEFEATED, listener);
+
+      createMonster(true);
+      createMonsterSpawner('spawning');
+
+      gameEvents.emit(GameEvents.ENTITY_DIED, {
+        entity: {} as Entity,
+        position: { x: 0, y: 0 }
+      });
+
+      expect(listener).not.toHaveBeenCalled();
+    });
+
+    it('should not trigger victory while a monster spawner is in repeat_wait', () => {
+      const listener = vi.fn();
+      gameEvents.on(GameEvents.ALL_MONSTERS_DEFEATED, listener);
+
+      createMonster(true);
+      createMonsterSpawner('repeat_wait');
+
+      gameEvents.emit(GameEvents.ENTITY_DIED, {
+        entity: {} as Entity,
+        position: { x: 0, y: 0 }
+      });
+
+      expect(listener).not.toHaveBeenCalled();
+    });
+
+    it('should trigger victory when monster spawner is done and all monsters dead', () => {
+      const listener = vi.fn();
+      gameEvents.on(GameEvents.ALL_MONSTERS_DEFEATED, listener);
+
+      createMonster(true);
+      createMonsterSpawner('done');
+
+      gameEvents.emit(GameEvents.ENTITY_DIED, {
+        entity: {} as Entity,
+        position: { x: 0, y: 0 }
+      });
+
+      expect(listener).toHaveBeenCalledOnce();
+    });
+
+    it('should ignore firefly spawners when checking victory', () => {
+      const listener = vi.fn();
+      gameEvents.on(GameEvents.ALL_MONSTERS_DEFEATED, listener);
+
+      createMonster(true);
+      // Active firefly spawner should not block victory
+      world.add({
+        spawner: {
+          queue: [{ unit: 'firefly' as const }],
+          state: { currentIndex: 0, repeatsDone: 0, timer: 0, phase: 'spawning' as const }
+        },
+        spawnerTag: true
+      });
+
+      gameEvents.emit(GameEvents.ENTITY_DIED, {
+        entity: {} as Entity,
+        position: { x: 0, y: 0 }
+      });
+
+      expect(listener).toHaveBeenCalledOnce();
+    });
+
+    it('should check remaining entries when spawner is partially through queue', () => {
+      const listener = vi.fn();
+      gameEvents.on(GameEvents.ALL_MONSTERS_DEFEATED, listener);
+
+      createMonster(true);
+      // Spawner has processed firefly entries, only monster entries remain
+      world.add({
+        spawner: {
+          queue: [
+            { unit: 'firefly' as const },
+            { unit: 'monster' as const }
+          ],
+          state: { currentIndex: 1, repeatsDone: 0, timer: 0, phase: 'spawning' as const }
+        },
+        spawnerTag: true
+      });
+
+      gameEvents.emit(GameEvents.ENTITY_DIED, {
+        entity: {} as Entity,
+        position: { x: 0, y: 0 }
+      });
+
+      expect(listener).not.toHaveBeenCalled();
+    });
+  });
+
   describe('cleanup', () => {
     it('should unsubscribe from events on destroy', () => {
       const listener = vi.fn();
