@@ -50,14 +50,43 @@ export class LodgingSystem implements GameSystem {
         }
       }
 
+      // Clean dead/removed incoming entities
+      if (lodge.incoming && lodge.incoming.length > 0) {
+        lodge.incoming = lodge.incoming.filter(t =>
+          this.world.has(t) && !t.health?.isDead
+        );
+      }
+
+      this.processIncomingArrivals(lodgeEntity);
       this.addNewTenants(lodgeEntity);
+    }
+  }
+
+  private processIncomingArrivals(lodgeEntity: LodgeEntity): void {
+    const { lodge, position: lodgePos } = lodgeEntity;
+    if (!lodge.incoming || lodge.incoming.length === 0) return;
+
+    const arrivals: Entity[] = [];
+    for (const entity of lodge.incoming) {
+      if (!entity.position) continue;
+      const dx = entity.position.x - lodgePos.x;
+      const dy = entity.position.y - lodgePos.y;
+      const distance = Vector.length(dx, dy);
+      if (distance <= PHYSICS_CONFIG.PATH_ARRIVAL_THRESHOLD) {
+        arrivals.push(entity);
+      }
+    }
+
+    for (const entity of arrivals) {
+      this.addTenantToLodge(lodgeEntity, entity);
     }
   }
 
   private addNewTenants(lodgeEntity: LodgeEntity): void {
     const { lodge, position: lodgePos } = lodgeEntity;
+    const incomingCount = lodge.incoming ? lodge.incoming.length : 0;
 
-    if (lodge.tenants.length >= lodge.maxTenants) return;
+    if (lodge.tenants.length + incomingCount >= lodge.maxTenants) return;
 
     const nearbyEntities = this.spatialGrid.getNearby(
       lodgePos.x,
@@ -66,7 +95,7 @@ export class LodgingSystem implements GameSystem {
     );
 
     for (const entity of nearbyEntities) {
-      if (lodge.tenants.length >= lodge.maxTenants) return;
+      if (lodge.tenants.length + incomingCount >= lodge.maxTenants) return;
       if (entity === lodgeEntity) continue;
       if (!this.canLodge(entity, lodge.allowedTenants)) continue;
 
@@ -112,7 +141,7 @@ export class LodgingSystem implements GameSystem {
     this.world.addComponent(tenantEntity, 'velocity', { vx: 0, vy: 0 });
     this.world.addComponent(tenantEntity, 'path', {
       currentPath: [],
-      nextPath: [],
+      goalPath: [],
       direction: tenantType ? ENTITY_CONFIG[tenantType as keyof typeof ENTITY_CONFIG]?.direction ?? 'r' : 'r'
     });
 
@@ -124,7 +153,22 @@ export class LodgingSystem implements GameSystem {
 
   private addTenantToLodge(lodgeEntity: Entity, tenantEntity: Entity): void {
     const lodge = lodgeEntity.lodge!;
+
+    // Move from incoming to tenants
+    if (lodge.incoming) {
+      const incomingIdx = lodge.incoming.indexOf(tenantEntity);
+      if (incomingIdx !== -1) {
+        lodge.incoming.splice(incomingIdx, 1);
+      }
+    }
+
     lodge.tenants.push(tenantEntity);
+
+    // Remove assignment — tenant has arrived
+    if (tenantEntity.assignedDestination) {
+      this.world.removeComponent(tenantEntity, 'assignedDestination');
+    }
+
     gameEvents.emit(GameEvents.TENANT_ADDED_TO_LODGE, { lodgeEntity, tenantEntity });
   }
 

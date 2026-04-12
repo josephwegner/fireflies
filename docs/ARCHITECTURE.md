@@ -29,7 +29,7 @@ The game follows ECS patterns using Miniplex:
 │                                          │
 │   { position: { x, y },                 │
 │     velocity: { vx, vy },               │
-│     path: { currentPath, nextPath },     │
+│     path: { currentPath, goalPath },     │
 │     renderable: { type, sprite, ... },   │
 │     fireflyTag: true }                   │
 └──────────────────────────────────────────┘
@@ -121,7 +121,7 @@ export type Entity = {
   trail?: Trail;              // { enabled, config, points }
 
   // Gameplay
-  path?: PathData;            // { currentPath, nextPath, direction }
+  path?: PathData;            // { currentPath, goalPath, direction }
   destination?: Destination;  // { for: string[] }
   target?: Target;            // { target: Entity }
   targeting?: Targeting;      // { potentialTargets: Entity[] }

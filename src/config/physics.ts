@@ -9,10 +9,8 @@ export const PHYSICS_CONFIG = Object.freeze({
   PATH_ARRIVAL_MIN: 0.1,
   WALL_BUFFER_MULTIPLIER: 1.5,
 
-  // Destination Scoring (for pathfinding destination selection)
-  PATH_PROXIMITY_WEIGHT: 3,
-  PROGRESS_WEIGHT: 0.1,
-  MIN_SCORE_THRESHOLD: 0.1,
+  // Lodge Recruitment
+  BACKTRACKING_DISCOUNT: 0.3,
 
   // Spawning
   POSITION_JITTER: 0.3,

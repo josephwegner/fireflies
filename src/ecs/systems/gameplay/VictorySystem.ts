@@ -8,12 +8,14 @@ import { logger } from '@/utils/logger';
 export class VictorySystem implements GameSystem {
   private monsters: Query<With<Entity, 'monsterTag' | 'health'>>;
   private lodges: Query<With<Entity, 'lodge' | 'position'>>;
+  private fireflies: Query<With<Entity, 'fireflyTag' | 'position' | 'velocity' | 'path'>>;
   private victoryTriggered = false;
   private handleEntityDiedBound: (data: any) => void;
 
   constructor(private world: GameWorld, _config: Record<string, any>) {
     this.monsters = world.with('monsterTag', 'health');
     this.lodges = world.with('lodge', 'position');
+    this.fireflies = world.with('fireflyTag', 'position', 'velocity', 'path');
 
     this.handleEntityDiedBound = this.handleEntityDied.bind(this);
     gameEvents.on(GameEvents.ENTITY_DIED, this.handleEntityDiedBound);
@@ -42,6 +44,26 @@ export class VictorySystem implements GameSystem {
     logger.info('VictorySystem', 'All monsters defeated!');
     gameEvents.emit(GameEvents.ALL_MONSTERS_DEFEATED, {});
     this.evictAllFireflies();
+    this.fleeAllFireflies();
+  }
+
+  private fleeAllFireflies(): void {
+    for (const firefly of this.fireflies) {
+      if (firefly.fleeingToGoalTag) continue;
+
+      if (firefly.assignedDestination) {
+        this.world.removeComponent(firefly, 'assignedDestination');
+      }
+
+      firefly.path.currentPath = [];
+      firefly.path.goalPath = [];
+
+      this.world.addComponent(firefly, 'fleeingToGoalTag', true);
+    }
+
+    for (const lodgeEntity of this.lodges) {
+      lodgeEntity.lodge.incoming = [];
+    }
   }
 
   private evictAllFireflies(): void {
@@ -70,7 +92,7 @@ export class VictorySystem implements GameSystem {
         const config = ENTITY_CONFIG[tenantType as keyof typeof ENTITY_CONFIG];
         this.world.addComponent(tenant, 'path', {
           currentPath: [],
-          nextPath: [],
+          goalPath: [],
           direction: config?.direction ?? 'r'
         });
 

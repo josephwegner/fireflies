@@ -15,6 +15,7 @@ describe('Lodge Component', () => {
         lodge: {
           tenants: [],
           allowedTenants: [],
+          incoming: [],
           maxTenants: 2
         }
       });
@@ -29,6 +30,7 @@ describe('Lodge Component', () => {
         lodge: {
           tenants: [],
           allowedTenants: ['firefly', 'wisp'],
+          incoming: [],
           maxTenants: 5
         }
       });
@@ -43,6 +45,7 @@ describe('Lodge Component', () => {
         lodge: {
           tenants: [],
           allowedTenants: ['firefly'],
+          incoming: [],
           maxTenants: 1
         }
       });
@@ -58,6 +61,7 @@ describe('Lodge Component', () => {
         lodge: {
           tenants: [],
           allowedTenants: ['firefly'],
+          incoming: [],
           maxTenants: 2
         }
       });
@@ -88,6 +92,7 @@ describe('Lodge Component', () => {
         lodge: {
           tenants: [],
           allowedTenants: ['firefly'],
+          incoming: [],
           maxTenants: 3
         }
       });
@@ -106,6 +111,7 @@ describe('Lodge Component', () => {
         lodge: {
           tenants: [],
           allowedTenants: [],
+          incoming: [],
           maxTenants: 5
         }
       });
@@ -118,6 +124,7 @@ describe('Lodge Component', () => {
         lodge: {
           tenants: [],
           allowedTenants: ['firefly'],
+          incoming: [],
           maxTenants: 0
         }
       });
@@ -129,11 +136,11 @@ describe('Lodge Component', () => {
   describe('Component queries', () => {
     it('should be queryable by systems', () => {
       const entity1 = world.add({
-        lodge: { tenants: [], allowedTenants: [], maxTenants: 2 }
+        lodge: { tenants: [], allowedTenants: [], incoming: [], maxTenants: 2 }
       });
 
       const entity2 = world.add({
-        lodge: { tenants: [], allowedTenants: [], maxTenants: 2 }
+        lodge: { tenants: [], allowedTenants: [], incoming: [], maxTenants: 2 }
       });
 
       expect(!!entity1.lodge).toBe(true);
@@ -142,7 +149,7 @@ describe('Lodge Component', () => {
 
     it('should differentiate lodges from non-lodges', () => {
       const lodge = world.add({
-        lodge: { tenants: [], allowedTenants: [], maxTenants: 2 }
+        lodge: { tenants: [], allowedTenants: [], incoming: [], maxTenants: 2 }
       });
 
       const nonLodge = world.add({
@@ -160,6 +167,7 @@ describe('Lodge Component', () => {
         lodge: {
           tenants: [],
           allowedTenants: ['firefly'],
+          incoming: [],
           maxTenants: 100
         }
       });
@@ -172,6 +180,7 @@ describe('Lodge Component', () => {
         lodge: {
           tenants: [],
           allowedTenants: ['firefly', 'wisp', 'monster'],
+          incoming: [],
           maxTenants: 2
         }
       });

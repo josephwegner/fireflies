@@ -22,7 +22,7 @@ describe('Edge Cases and Negative Tests', () => {
       world.add({
         position: { x: NaN, y: NaN },
         velocity: { vx: 1, vy: 1 },
-        path: { currentPath: [], nextPath: [], direction: 'r' }
+        path: { currentPath: [], goalPath: [], direction: 'r' }
       });
 
       expect(() => system.update(16, 16)).not.toThrow();
@@ -32,7 +32,7 @@ describe('Edge Cases and Negative Tests', () => {
       world.add({
         position: { x: Infinity, y: -Infinity },
         velocity: { vx: 1, vy: 1 },
-        path: { currentPath: [], nextPath: [], direction: 'r' }
+        path: { currentPath: [], goalPath: [], direction: 'r' }
       });
 
       expect(() => system.update(16, 16)).not.toThrow();
@@ -44,7 +44,7 @@ describe('Edge Cases and Negative Tests', () => {
         velocity: { vx: 1, vy: 1 },
         path: {
           currentPath: [{ x: 1e10 + 100, y: 1e10 + 100 }],
-          nextPath: [],
+          goalPath: [],
           direction: 'r'
         }
       });
@@ -58,7 +58,7 @@ describe('Edge Cases and Negative Tests', () => {
         velocity: { vx: 1, vy: 1 },
         path: {
           currentPath: [{ x: -50, y: -50 }],
-          nextPath: [],
+          goalPath: [],
           direction: 'r'
         }
       });
@@ -73,7 +73,7 @@ describe('Edge Cases and Negative Tests', () => {
       const entity = world.add({
         position: { x: 0, y: 0 },
         velocity: { vx: 10, vy: 10 },
-        path: { currentPath: [], nextPath: [], direction: 'r' }
+        path: { currentPath: [], goalPath: [], direction: 'r' }
       });
 
       system.update(0, 0);
@@ -88,7 +88,7 @@ describe('Edge Cases and Negative Tests', () => {
         velocity: { vx: 1, vy: 1 },
         path: {
           currentPath: [{ x: 10, y: 10 }],
-          nextPath: [],
+          goalPath: [],
           direction: 'r'
         }
       });
@@ -106,7 +106,7 @@ describe('Edge Cases and Negative Tests', () => {
             { x: 10, y: 10 },
             { x: 10, y: 10 }
           ],
-          nextPath: [],
+          goalPath: [],
           direction: 'r'
         }
       });
@@ -120,7 +120,7 @@ describe('Edge Cases and Negative Tests', () => {
         velocity: { vx: 0, vy: 0 },
         path: {
           currentPath: [{ x: 10, y: 10 }],
-          nextPath: [],
+          goalPath: [],
           direction: 'r'
         }
       });
@@ -134,7 +134,7 @@ describe('Edge Cases and Negative Tests', () => {
       world.add({
         position: { x: 0, y: 0 },
         velocity: { vx: 1000, vy: 1000 },
-        path: { currentPath: [], nextPath: [], direction: 'r' }
+        path: { currentPath: [], goalPath: [], direction: 'r' }
       });
 
       expect(() => system.update(16, 16)).not.toThrow();
@@ -146,7 +146,7 @@ describe('Edge Cases and Negative Tests', () => {
         velocity: { vx: 0, vy: 0 },
         path: {
           currentPath: [{ x: 10, y: 10 }],
-          nextPath: [],
+          goalPath: [],
           direction: 'r'
         }
       });
@@ -243,7 +243,7 @@ describe('Edge Cases and Negative Tests', () => {
         velocity: { vx: 1, vy: 1 },
         path: {
           currentPath: [{ x: 10, y: 10 }],
-          nextPath: [],
+          goalPath: [],
           direction: 'r'
         },
         targeting: { potentialTargets: [targetEntity] }
@@ -267,7 +267,7 @@ describe('Edge Cases and Negative Tests', () => {
         world.add({
           position: { x: i, y: i },
           velocity: { vx: 1, vy: 1 },
-          path: { currentPath: [], nextPath: [], direction: 'r' }
+          path: { currentPath: [], goalPath: [], direction: 'r' }
         });
       }
 

@@ -75,7 +75,7 @@ export interface Trail {
 
 export interface PathData {
   currentPath: { x: number; y: number }[];
-  nextPath: { x: number; y: number }[];
+  goalPath: { x: number; y: number }[];
   direction: string;
 }
 
@@ -133,8 +133,13 @@ export interface Combat {
 
 export interface Lodge {
   tenants: Entity[];
+  incoming: Entity[];
   allowedTenants: readonly string[];
   maxTenants: number;
+}
+
+export interface AssignedDestination {
+  target: Entity;
 }
 
 export interface ActivationEffect {
@@ -171,6 +176,7 @@ export type Entity = {
   health?: Health;
   combat?: Combat;
   lodge?: Lodge;
+  assignedDestination?: AssignedDestination;
   activationConfig?: ActivationConfig;
   fireflyGoal?: FireflyGoal;
 

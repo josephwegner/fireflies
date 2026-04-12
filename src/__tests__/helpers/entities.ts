@@ -8,7 +8,7 @@ export interface TestEntityOptions {
   x?: number;
   y?: number;
   currentPath?: Array<{ x: number; y: number }>;
-  nextPath?: Array<{ x: number; y: number }>;
+  goalPath?: Array<{ x: number; y: number }>;
   direction?: string;
   vx?: number;
   vy?: number;
@@ -29,7 +29,7 @@ export function createTestFirefly(
     x = TEST_POSITIONS.FIREFLY_DEFAULT.x,
     y = TEST_POSITIONS.FIREFLY_DEFAULT.y,
     currentPath = [],
-    nextPath = [],
+    goalPath = [],
     direction = TEST_ENTITY_DEFAULTS.DIRECTION,
     vx = 0,
     vy = 0,
@@ -39,7 +39,7 @@ export function createTestFirefly(
   return world.add({
     position: { x, y },
     velocity: { vx, vy },
-    path: { currentPath, nextPath, direction },
+    path: { currentPath, goalPath, direction },
     renderable: {
       type: 'firefly',
       sprite: 'firefly',
@@ -65,7 +65,7 @@ export function createTestMonster(
     x = 100,
     y = 100,
     currentPath = [],
-    nextPath = [],
+    goalPath = [],
     direction = 'l',
     vx = 0,
     vy = 0,
@@ -75,7 +75,7 @@ export function createTestMonster(
   return world.add({
     position: { x, y },
     velocity: { vx, vy },
-    path: { currentPath, nextPath, direction },
+    path: { currentPath, goalPath, direction },
     renderable: {
       type: 'monster',
       sprite: 'monster',
@@ -106,7 +106,8 @@ export function createTestWisp(
   return world.add({
     position: { x, y },
     destination: { for: forTypes },
-    wispTag: true
+    wispTag: true,
+    lodge: { tenants: [], incoming: [], allowedTenants: forTypes, maxTenants: 1 }
   });
 }
 

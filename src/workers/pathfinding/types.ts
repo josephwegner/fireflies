@@ -5,6 +5,7 @@ export interface Point {
 
 export interface PathfindMessage {
   action: 'pathfind';
+  requestId: string;
   entityId: number;
   start: Point;
   destination: Point;
@@ -26,6 +27,7 @@ export interface NavMeshReadyResponse {
 }
 
 export interface PathfindResponse {
+  requestId: string;
   entityId: number;
   path: Point[];
   pathType: string;
@@ -36,6 +38,7 @@ export interface ErrorResponse {
   error: string;
   stack?: string;
   entityId?: number;
+  requestId?: string;
 }
 
 export type WorkerResponse = NavMeshReadyResponse | PathfindResponse | ErrorResponse;

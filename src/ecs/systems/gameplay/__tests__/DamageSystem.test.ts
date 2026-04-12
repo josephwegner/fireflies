@@ -457,7 +457,7 @@ describe('DamageSystem', () => {
           type: 'wisp', sprite: 'wisp', color: 0x0000ff, radius: 10,
           alpha: 1, scale: 1, tint: 0xFFFFFF, rotation: 0, rotationSpeed: 0, depth: 50, offsetY: 0
         },
-        lodge: { allowedTenants: ['firefly'], maxTenants: 2, tenants: [firefly1, firefly2] }
+        lodge: { allowedTenants: ['firefly'], maxTenants: 2, tenants: [firefly1, firefly2], incoming: [] }
       });
 
       const monster = world.add({
@@ -504,7 +504,7 @@ describe('DamageSystem', () => {
           type: 'wisp', sprite: 'wisp', color: 0x0000ff, radius: 10,
           alpha: 1, scale: 1, tint: 0xFFFFFF, rotation: 0, rotationSpeed: 0, depth: 50, offsetY: 0
         },
-        lodge: { allowedTenants: ['firefly'], maxTenants: 1, tenants: [firefly] }
+        lodge: { allowedTenants: ['firefly'], maxTenants: 1, tenants: [firefly], incoming: [] }
       });
 
       const monster = world.add({
@@ -546,7 +546,7 @@ describe('DamageSystem', () => {
           type: 'wisp', sprite: 'wisp', color: 0x0000ff, radius: 10,
           alpha: 1, scale: 1, tint: 0xFFFFFF, rotation: 0, rotationSpeed: 0, depth: 50, offsetY: 0
         },
-        lodge: { allowedTenants: ['firefly'], maxTenants: 1, tenants: [firefly] }
+        lodge: { allowedTenants: ['firefly'], maxTenants: 1, tenants: [firefly], incoming: [] }
       });
 
       const monster = world.add({
@@ -594,7 +594,7 @@ describe('DamageSystem', () => {
           type: 'wisp', sprite: 'wisp', color: 0x0000ff, radius: 10,
           alpha: 1, scale: 1, tint: 0xFFFFFF, rotation: 0, rotationSpeed: 0, depth: 50, offsetY: 0
         },
-        lodge: { allowedTenants: ['firefly', 'monster'], maxTenants: 2, tenants: [firefly, lodgedMonster] }
+        lodge: { allowedTenants: ['firefly', 'monster'], maxTenants: 2, tenants: [firefly, lodgedMonster], incoming: [] }
       });
 
       const targetMonster = world.add({
@@ -645,7 +645,7 @@ describe('DamageSystem', () => {
           type: 'wisp', sprite: 'wisp', color: 0x0000ff, radius: 10,
           alpha: 1, scale: 1, tint: 0xFFFFFF, rotation: 0, rotationSpeed: 0, depth: 50, offsetY: 0
         },
-        lodge: { allowedTenants: ['firefly'], maxTenants: 2, tenants: [livingFirefly, deadFirefly] }
+        lodge: { allowedTenants: ['firefly'], maxTenants: 2, tenants: [livingFirefly, deadFirefly], incoming: [] }
       });
 
       const monster = world.add({
@@ -683,7 +683,7 @@ describe('DamageSystem', () => {
           type: 'wisp', sprite: 'wisp', color: 0x0000ff, radius: 10,
           alpha: 1, scale: 1, tint: 0xFFFFFF, rotation: 0, rotationSpeed: 0, depth: 50, offsetY: 0
         },
-        lodge: { allowedTenants: ['firefly'], maxTenants: 1, tenants: [firefly] }
+        lodge: { allowedTenants: ['firefly'], maxTenants: 1, tenants: [firefly], incoming: [] }
       });
 
       const monster = world.add({
@@ -716,7 +716,7 @@ describe('DamageSystem', () => {
           type: 'wisp', sprite: 'wisp', color: 0x0000ff, radius: 10,
           alpha: 1, scale: 1, tint: 0xFFFFFF, rotation: 0, rotationSpeed: 0, depth: 50, offsetY: 0
         },
-        lodge: { allowedTenants: ['firefly'], maxTenants: 1, tenants: [] }
+        lodge: { allowedTenants: ['firefly'], maxTenants: 1, tenants: [], incoming: [] }
       });
 
       const monster = world.add({

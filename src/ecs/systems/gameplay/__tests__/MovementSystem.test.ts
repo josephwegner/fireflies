@@ -19,7 +19,7 @@ describe('MovementSystem', () => {
       velocity: { vx: 0, vy: 0 },
       path: {
         currentPath: [{ x: 10, y: 10 }],
-        nextPath: [],
+        goalPath: [],
         direction: 'r'
       }
     });
@@ -36,7 +36,7 @@ describe('MovementSystem', () => {
       velocity: { vx: 0, vy: 0 },
       path: {
         currentPath: [{ x: 10, y: 10 }],
-        nextPath: [],
+        goalPath: [],
         direction: 'r'
       }
     });
@@ -52,14 +52,14 @@ describe('MovementSystem', () => {
       velocity: { vx: 0, vy: 0 },
       path: {
         currentPath: [],
-        nextPath: [{ x: 20, y: 20 }],
+        goalPath: [{ x: 20, y: 20 }],
         direction: 'r'
       }
     });
 
     system.update(16, 16);
 
-    expect(entity.path!.nextPath.length).toBe(1);
+    expect(entity.path!.goalPath.length).toBe(1);
   });
 
   it('should apply friction to velocity', () => {
@@ -68,7 +68,7 @@ describe('MovementSystem', () => {
       velocity: { vx: 10, vy: 10 },
       path: {
         currentPath: [],
-        nextPath: [],
+        goalPath: [],
         direction: 'r'
       }
     });
@@ -88,7 +88,7 @@ describe('MovementSystem', () => {
       velocity: { vx: PHYSICS_CONFIG.MIN_VELOCITY / 2, vy: PHYSICS_CONFIG.MIN_VELOCITY / 2 },
       path: {
         currentPath: [],
-        nextPath: [],
+        goalPath: [],
         direction: 'r'
       }
     });
@@ -109,7 +109,7 @@ describe('MovementSystem', () => {
           { x: 10, y: 10 },
           { x: 15, y: 15 }
         ],
-        nextPath: [],
+        goalPath: [],
         direction: 'r'
       }
     });
@@ -128,7 +128,7 @@ describe('MovementSystem', () => {
       velocity: { vx: 5, vy: 5 },
       path: {
         currentPath: [],
-        nextPath: [],
+        goalPath: [],
         direction: 'r'
       }
     });
@@ -153,7 +153,7 @@ describe('MovementSystem', () => {
       velocity: { vx: 0, vy: 0 },
       path: {
         currentPath: [{ x: 100, y: 0 }],
-        nextPath: [],
+        goalPath: [],
         direction: 'r'
       }
     });
@@ -170,7 +170,7 @@ describe('MovementSystem', () => {
       velocity: { vx: 5, vy: 5 },
       path: {
         currentPath: [{ x: 10, y: 10 }],
-        nextPath: [],
+        goalPath: [],
         direction: 'r'
       }
     });
@@ -190,7 +190,7 @@ describe('MovementSystem', () => {
         velocity: { vx: 0, vy: 0 },
         path: {
           currentPath: [{ x: 100, y: 100 }],
-          nextPath: [],
+          goalPath: [],
           direction: 'r'
         },
         target: { target: targetEntity }
@@ -210,7 +210,7 @@ describe('MovementSystem', () => {
         velocity: { vx: 50, vy: 50 },
         path: {
           currentPath: [{ x: 100, y: 100 }],
-          nextPath: [],
+          goalPath: [],
           direction: 'r'
         },
         target: { target: targetEntity }
@@ -233,7 +233,7 @@ describe('MovementSystem', () => {
         velocity: { vx: 10, vy: 10 },
         path: {
           currentPath: [{ x: 100, y: 100 }],
-          nextPath: [],
+          goalPath: [],
           direction: 'r'
         },
         target: { target: targetEntity }
@@ -254,7 +254,7 @@ describe('MovementSystem', () => {
         velocity: { vx: 0, vy: 0 },
         path: {
           currentPath: [{ x: 100, y: 100 }],
-          nextPath: [],
+          goalPath: [],
           direction: 'r'
         },
         target: { target: targetEntity }

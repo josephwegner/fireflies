@@ -38,14 +38,14 @@ describe('LodgingSystem', () => {
           type: 'wisp', sprite: 'wisp', color: 0x0000ff, radius: 10,
           alpha: 1, scale: 1, tint: 0xFFFFFF, rotation: 0, rotationSpeed: 0, depth: 50, offsetY: 0
         },
-        lodge: { allowedTenants: ['firefly'], maxTenants: 1, tenants: [] },
+        lodge: { allowedTenants: ['firefly'], maxTenants: 1, tenants: [], incoming: [] },
         wispTag: true
       });
 
       world.add({
         position: { x: 100, y: 100 },
         velocity: { vx: 0, vy: 0 },
-        path: { currentPath: [], nextPath: [], direction: 'r' },
+        path: { currentPath: [], goalPath: [], direction: 'r' },
         renderable: {
           type: 'firefly', sprite: 'firefly', color: 0xffff00, radius: 5,
           alpha: 1, scale: 1, tint: 0xFFFFFF, rotation: 0, rotationSpeed: 0, depth: 50, offsetY: 0
@@ -65,14 +65,14 @@ describe('LodgingSystem', () => {
           type: 'wisp', sprite: 'wisp', color: 0x0000ff, radius: 10,
           alpha: 1, scale: 1, tint: 0xFFFFFF, rotation: 0, rotationSpeed: 0, depth: 50, offsetY: 0
         },
-        lodge: { allowedTenants: ['firefly'], maxTenants: 1, tenants: [] },
+        lodge: { allowedTenants: ['firefly'], maxTenants: 1, tenants: [], incoming: [] },
         wispTag: true
       });
 
       world.add({
         position: { x: 200, y: 200 },
         velocity: { vx: 0, vy: 0 },
-        path: { currentPath: [], nextPath: [], direction: 'r' },
+        path: { currentPath: [], goalPath: [], direction: 'r' },
         renderable: {
           type: 'firefly', sprite: 'firefly', color: 0xffff00, radius: 5,
           alpha: 1, scale: 1, tint: 0xFFFFFF, rotation: 0, rotationSpeed: 0, depth: 50, offsetY: 0
@@ -92,14 +92,14 @@ describe('LodgingSystem', () => {
           type: 'wisp', sprite: 'wisp', color: 0x0000ff, radius: 10,
           alpha: 1, scale: 1, tint: 0xFFFFFF, rotation: 0, rotationSpeed: 0, depth: 50, offsetY: 0
         },
-        lodge: { allowedTenants: ['firefly'], maxTenants: 1, tenants: [] },
+        lodge: { allowedTenants: ['firefly'], maxTenants: 1, tenants: [], incoming: [] },
         wispTag: true
       });
 
       world.add({
         position: { x: 100, y: 100 },
         velocity: { vx: 0, vy: 0 },
-        path: { currentPath: [], nextPath: [], direction: 'r' },
+        path: { currentPath: [], goalPath: [], direction: 'r' },
         renderable: {
           type: 'firefly', sprite: 'firefly', color: 0xffff00, radius: 5,
           alpha: 1, scale: 1, tint: 0xFFFFFF, rotation: 0, rotationSpeed: 0, depth: 50, offsetY: 0
@@ -110,7 +110,7 @@ describe('LodgingSystem', () => {
       world.add({
         position: { x: 100, y: 100 },
         velocity: { vx: 0, vy: 0 },
-        path: { currentPath: [], nextPath: [], direction: 'r' },
+        path: { currentPath: [], goalPath: [], direction: 'r' },
         renderable: {
           type: 'firefly', sprite: 'firefly', color: 0xffff00, radius: 5,
           alpha: 1, scale: 1, tint: 0xFFFFFF, rotation: 0, rotationSpeed: 0, depth: 50, offsetY: 0
@@ -130,14 +130,14 @@ describe('LodgingSystem', () => {
           type: 'wisp', sprite: 'wisp', color: 0x0000ff, radius: 10,
           alpha: 1, scale: 1, tint: 0xFFFFFF, rotation: 0, rotationSpeed: 0, depth: 50, offsetY: 0
         },
-        lodge: { allowedTenants: ['monster'], maxTenants: 1, tenants: [] },
+        lodge: { allowedTenants: ['monster'], maxTenants: 1, tenants: [], incoming: [] },
         wispTag: true
       });
 
       world.add({
         position: { x: 100, y: 100 },
         velocity: { vx: 0, vy: 0 },
-        path: { currentPath: [], nextPath: [], direction: 'r' },
+        path: { currentPath: [], goalPath: [], direction: 'r' },
         renderable: {
           type: 'firefly', sprite: 'firefly', color: 0xffff00, radius: 5,
           alpha: 1, scale: 1, tint: 0xFFFFFF, rotation: 0, rotationSpeed: 0, depth: 50, offsetY: 0
@@ -157,7 +157,7 @@ describe('LodgingSystem', () => {
           type: 'wisp', sprite: 'wisp', color: 0x0000ff, radius: 10,
           alpha: 1, scale: 1, tint: 0xFFFFFF, rotation: 0, rotationSpeed: 0, depth: 50, offsetY: 0
         },
-        lodge: { allowedTenants: ['wisp'], maxTenants: 1, tenants: [] },
+        lodge: { allowedTenants: ['wisp'], maxTenants: 1, tenants: [], incoming: [] },
         wispTag: true
       });
 
@@ -242,14 +242,14 @@ describe('LodgingSystem', () => {
           type: 'wisp', sprite: 'wisp', color: 0x0000ff, radius: 10,
           alpha: 1, scale: 1, tint: 0xFFFFFF, rotation: 0, rotationSpeed: 0, depth: 50, offsetY: 0
         },
-        lodge: { allowedTenants: ['firefly'], maxTenants: 1, tenants: [] },
+        lodge: { allowedTenants: ['firefly'], maxTenants: 1, tenants: [], incoming: [] },
         wispTag: true
       });
 
       const firefly = world.add({
         position: { x: 100, y: 100 },
         velocity: { vx: 0, vy: 0 },
-        path: { currentPath: [], nextPath: [], direction: 'r' },
+        path: { currentPath: [], goalPath: [], direction: 'r' },
         renderable: {
           type: 'firefly', sprite: 'firefly', color: 0xffff00, radius: 5,
           alpha: 1, scale: 1, tint: 0xFFFFFF, rotation: 0, rotationSpeed: 0, depth: 50, offsetY: 0
@@ -273,14 +273,14 @@ describe('LodgingSystem', () => {
           type: 'wisp', sprite: 'wisp', color: 0x0000ff, radius: 10,
           alpha: 1, scale: 1, tint: 0xFFFFFF, rotation: 0, rotationSpeed: 0, depth: 50, offsetY: 0
         },
-        lodge: { allowedTenants: ['firefly'], maxTenants: 1, tenants: [] },
+        lodge: { allowedTenants: ['firefly'], maxTenants: 1, tenants: [], incoming: [] },
         wispTag: true
       });
 
       const firefly = world.add({
         position: { x: 100, y: 100 },
         velocity: { vx: 5, vy: 5 },
-        path: { currentPath: [], nextPath: [], direction: 'r' },
+        path: { currentPath: [], goalPath: [], direction: 'r' },
         renderable: {
           type: 'firefly', sprite: 'firefly', color: 0xffff00, radius: 5,
           alpha: 1, scale: 1, tint: 0xFFFFFF, rotation: 0, rotationSpeed: 0, depth: 50, offsetY: 0
@@ -302,7 +302,7 @@ describe('LodgingSystem', () => {
           type: 'wisp', sprite: 'wisp', color: 0x0000ff, radius: 10,
           alpha: 1, scale: 1, tint: ENTITY_CONFIG.wisp.color, rotation: 0, rotationSpeed: 0, depth: 50, offsetY: 0
         },
-        lodge: { allowedTenants: ['firefly'], maxTenants: 1, tenants: [] },
+        lodge: { allowedTenants: ['firefly'], maxTenants: 1, tenants: [], incoming: [] },
         activationConfig: {
           onActivate: [
             { componentName: 'renderable', config: { tint: ENTITY_CONFIG.wisp.activeColor } }
@@ -317,7 +317,7 @@ describe('LodgingSystem', () => {
       world.add({
         position: { x: 100, y: 100 },
         velocity: { vx: 0, vy: 0 },
-        path: { currentPath: [], nextPath: [], direction: 'r' },
+        path: { currentPath: [], goalPath: [], direction: 'r' },
         renderable: {
           type: 'firefly', sprite: 'firefly', color: 0xffff00, radius: 5,
           alpha: 1, scale: 1, tint: 0xFFFFFF, rotation: 0, rotationSpeed: 0, depth: 50, offsetY: 0
@@ -339,14 +339,14 @@ describe('LodgingSystem', () => {
           type: 'wisp', sprite: 'wisp', color: 0x0000ff, radius: 10,
           alpha: 1, scale: 1, tint: originalColor, rotation: 0, rotationSpeed: 0, depth: 50, offsetY: 0
         },
-        lodge: { allowedTenants: ['firefly'], maxTenants: 2, tenants: [] },
+        lodge: { allowedTenants: ['firefly'], maxTenants: 2, tenants: [], incoming: [] },
         wispTag: true
       });
 
       world.add({
         position: { x: 100, y: 100 },
         velocity: { vx: 0, vy: 0 },
-        path: { currentPath: [], nextPath: [], direction: 'r' },
+        path: { currentPath: [], goalPath: [], direction: 'r' },
         renderable: {
           type: 'firefly', sprite: 'firefly', color: 0xffff00, radius: 5,
           alpha: 1, scale: 1, tint: 0xFFFFFF, rotation: 0, rotationSpeed: 0, depth: 50, offsetY: 0
@@ -370,14 +370,14 @@ describe('LodgingSystem', () => {
           type: 'wisp', sprite: 'wisp', color: 0x0000ff, radius: 10,
           alpha: 1, scale: 1, tint: 0xFFFFFF, rotation: 0, rotationSpeed: 0, depth: 50, offsetY: 0
         },
-        lodge: { allowedTenants: ['firefly'], maxTenants: 1, tenants: [] },
+        lodge: { allowedTenants: ['firefly'], maxTenants: 1, tenants: [], incoming: [] },
         wispTag: true
       });
 
       world.add({
         position: { x: 100 + threshold, y: 100 },
         velocity: { vx: 0, vy: 0 },
-        path: { currentPath: [], nextPath: [], direction: 'r' },
+        path: { currentPath: [], goalPath: [], direction: 'r' },
         renderable: {
           type: 'firefly', sprite: 'firefly', color: 0xffff00, radius: 5,
           alpha: 1, scale: 1, tint: 0xFFFFFF, rotation: 0, rotationSpeed: 0, depth: 50, offsetY: 0
@@ -397,7 +397,7 @@ describe('LodgingSystem', () => {
           type: 'wisp', sprite: 'wisp', color: 0x0000ff, radius: 10,
           alpha: 1, scale: 1, tint: 0xFFFFFF, rotation: 0, rotationSpeed: 0, depth: 50, offsetY: 0
         },
-        lodge: { allowedTenants: ['firefly'], maxTenants: 1, tenants: [] },
+        lodge: { allowedTenants: ['firefly'], maxTenants: 1, tenants: [], incoming: [] },
         wispTag: true
       });
 
@@ -405,7 +405,7 @@ describe('LodgingSystem', () => {
       world.add({
         position: { x: 100 + offset, y: 100 + offset },
         velocity: { vx: 0, vy: 0 },
-        path: { currentPath: [], nextPath: [], direction: 'r' },
+        path: { currentPath: [], goalPath: [], direction: 'r' },
         renderable: {
           type: 'firefly', sprite: 'firefly', color: 0xffff00, radius: 5,
           alpha: 1, scale: 1, tint: 0xFFFFFF, rotation: 0, rotationSpeed: 0, depth: 50, offsetY: 0
@@ -427,7 +427,7 @@ describe('LodgingSystem', () => {
           type: 'wisp', sprite: 'wisp', color: 0x0000ff, radius: 10,
           alpha: 1, scale: 1, tint: 0xFFFFFF, rotation: 0, rotationSpeed: 0, depth: 50, offsetY: 0
         },
-        lodge: { allowedTenants: ['firefly'], maxTenants: 1, tenants: [] },
+        lodge: { allowedTenants: ['firefly'], maxTenants: 1, tenants: [], incoming: [] },
         wispTag: true
       });
 
@@ -437,14 +437,14 @@ describe('LodgingSystem', () => {
           type: 'wisp', sprite: 'wisp', color: 0x0000ff, radius: 10,
           alpha: 1, scale: 1, tint: 0xFFFFFF, rotation: 0, rotationSpeed: 0, depth: 50, offsetY: 0
         },
-        lodge: { allowedTenants: ['firefly'], maxTenants: 1, tenants: [] },
+        lodge: { allowedTenants: ['firefly'], maxTenants: 1, tenants: [], incoming: [] },
         wispTag: true
       });
 
       world.add({
         position: { x: 100, y: 100 },
         velocity: { vx: 0, vy: 0 },
-        path: { currentPath: [], nextPath: [], direction: 'r' },
+        path: { currentPath: [], goalPath: [], direction: 'r' },
         renderable: {
           type: 'firefly', sprite: 'firefly', color: 0xffff00, radius: 5,
           alpha: 1, scale: 1, tint: 0xFFFFFF, rotation: 0, rotationSpeed: 0, depth: 50, offsetY: 0
@@ -455,7 +455,7 @@ describe('LodgingSystem', () => {
       world.add({
         position: { x: 200, y: 200 },
         velocity: { vx: 0, vy: 0 },
-        path: { currentPath: [], nextPath: [], direction: 'r' },
+        path: { currentPath: [], goalPath: [], direction: 'r' },
         renderable: {
           type: 'firefly', sprite: 'firefly', color: 0xffff00, radius: 5,
           alpha: 1, scale: 1, tint: 0xFFFFFF, rotation: 0, rotationSpeed: 0, depth: 50, offsetY: 0
@@ -476,14 +476,14 @@ describe('LodgingSystem', () => {
           type: 'wisp', sprite: 'wisp', color: 0x0000ff, radius: 10,
           alpha: 1, scale: 1, tint: 0xFFFFFF, rotation: 0, rotationSpeed: 0, depth: 50, offsetY: 0
         },
-        lodge: { allowedTenants: ['firefly'], maxTenants: 3, tenants: [] },
+        lodge: { allowedTenants: ['firefly'], maxTenants: 3, tenants: [], incoming: [] },
         wispTag: true
       });
 
       world.add({
         position: { x: 100, y: 100 },
         velocity: { vx: 0, vy: 0 },
-        path: { currentPath: [], nextPath: [], direction: 'r' },
+        path: { currentPath: [], goalPath: [], direction: 'r' },
         renderable: {
           type: 'firefly', sprite: 'firefly', color: 0xffff00, radius: 5,
           alpha: 1, scale: 1, tint: 0xFFFFFF, rotation: 0, rotationSpeed: 0, depth: 50, offsetY: 0
@@ -494,7 +494,7 @@ describe('LodgingSystem', () => {
       world.add({
         position: { x: 100, y: 100 },
         velocity: { vx: 0, vy: 0 },
-        path: { currentPath: [], nextPath: [], direction: 'r' },
+        path: { currentPath: [], goalPath: [], direction: 'r' },
         renderable: {
           type: 'firefly', sprite: 'firefly', color: 0xffff00, radius: 5,
           alpha: 1, scale: 1, tint: 0xFFFFFF, rotation: 0, rotationSpeed: 0, depth: 50, offsetY: 0
@@ -508,6 +508,205 @@ describe('LodgingSystem', () => {
     });
   });
 
+  describe('Incoming management', () => {
+    it('should move arriving entity from incoming to tenants', () => {
+      const firefly = world.add({
+        position: { x: 100, y: 100 },
+        velocity: { vx: 0, vy: 0 },
+        path: { currentPath: [], goalPath: [], direction: 'r' },
+        renderable: {
+          type: 'firefly', sprite: 'firefly', color: 0xffff00, radius: 5,
+          alpha: 1, scale: 1, tint: 0xFFFFFF, rotation: 0, rotationSpeed: 0, depth: 50, offsetY: 0
+        },
+        assignedDestination: undefined as any,
+        fireflyTag: true
+      });
+
+      const wisp = world.add({
+        position: { x: 100, y: 100 },
+        renderable: {
+          type: 'wisp', sprite: 'wisp', color: 0x0000ff, radius: 10,
+          alpha: 1, scale: 1, tint: 0xFFFFFF, rotation: 0, rotationSpeed: 0, depth: 50, offsetY: 0
+        },
+        lodge: { allowedTenants: ['firefly'], maxTenants: 1, tenants: [], incoming: [firefly] },
+        wispTag: true
+      });
+
+      world.addComponent(firefly, 'assignedDestination', { target: wisp });
+
+      populateGridAndExecute();
+
+      expect(wisp.lodge!.tenants).toContain(firefly);
+      expect(wisp.lodge!.incoming).not.toContain(firefly);
+    });
+
+    it('should remove assignedDestination from tenant on arrival', () => {
+      const firefly = world.add({
+        position: { x: 100, y: 100 },
+        velocity: { vx: 0, vy: 0 },
+        path: { currentPath: [], goalPath: [], direction: 'r' },
+        renderable: {
+          type: 'firefly', sprite: 'firefly', color: 0xffff00, radius: 5,
+          alpha: 1, scale: 1, tint: 0xFFFFFF, rotation: 0, rotationSpeed: 0, depth: 50, offsetY: 0
+        },
+        fireflyTag: true
+      });
+
+      const wisp = world.add({
+        position: { x: 100, y: 100 },
+        renderable: {
+          type: 'wisp', sprite: 'wisp', color: 0x0000ff, radius: 10,
+          alpha: 1, scale: 1, tint: 0xFFFFFF, rotation: 0, rotationSpeed: 0, depth: 50, offsetY: 0
+        },
+        lodge: { allowedTenants: ['firefly'], maxTenants: 1, tenants: [], incoming: [firefly] },
+        wispTag: true
+      });
+
+      world.addComponent(firefly, 'assignedDestination', { target: wisp });
+
+      populateGridAndExecute();
+
+      expect(firefly.assignedDestination).toBeUndefined();
+    });
+
+    it('should clean dead entities from incoming', () => {
+      const firefly = world.add({
+        position: { x: 500, y: 500 },
+        velocity: { vx: 0, vy: 0 },
+        path: { currentPath: [], goalPath: [], direction: 'r' },
+        renderable: {
+          type: 'firefly', sprite: 'firefly', color: 0xffff00, radius: 5,
+          alpha: 1, scale: 1, tint: 0xFFFFFF, rotation: 0, rotationSpeed: 0, depth: 50, offsetY: 0
+        },
+        health: { currentHealth: 0, maxHealth: 50, isDead: true },
+        fireflyTag: true
+      });
+
+      const wisp = world.add({
+        position: { x: 100, y: 100 },
+        renderable: {
+          type: 'wisp', sprite: 'wisp', color: 0x0000ff, radius: 10,
+          alpha: 1, scale: 1, tint: 0xFFFFFF, rotation: 0, rotationSpeed: 0, depth: 50, offsetY: 0
+        },
+        lodge: { allowedTenants: ['firefly'], maxTenants: 1, tenants: [], incoming: [firefly] },
+        wispTag: true
+      });
+
+      populateGridAndExecute();
+
+      expect(wisp.lodge!.incoming).toHaveLength(0);
+    });
+
+    it('should clean removed entities from incoming', () => {
+      const firefly = world.add({
+        position: { x: 500, y: 500 },
+        velocity: { vx: 0, vy: 0 },
+        path: { currentPath: [], goalPath: [], direction: 'r' },
+        renderable: {
+          type: 'firefly', sprite: 'firefly', color: 0xffff00, radius: 5,
+          alpha: 1, scale: 1, tint: 0xFFFFFF, rotation: 0, rotationSpeed: 0, depth: 50, offsetY: 0
+        },
+        fireflyTag: true
+      });
+
+      const wisp = world.add({
+        position: { x: 100, y: 100 },
+        renderable: {
+          type: 'wisp', sprite: 'wisp', color: 0x0000ff, radius: 10,
+          alpha: 1, scale: 1, tint: 0xFFFFFF, rotation: 0, rotationSpeed: 0, depth: 50, offsetY: 0
+        },
+        lodge: { allowedTenants: ['firefly'], maxTenants: 1, tenants: [], incoming: [firefly] },
+        wispTag: true
+      });
+
+      world.remove(firefly);
+
+      populateGridAndExecute();
+
+      expect(wisp.lodge!.incoming).toHaveLength(0);
+    });
+
+    it('should count incoming toward capacity', () => {
+      const incomingFirefly = world.add({
+        position: { x: 500, y: 500 },
+        velocity: { vx: 0, vy: 0 },
+        path: { currentPath: [{ x: 100, y: 100 }], goalPath: [], direction: 'r' },
+        renderable: {
+          type: 'firefly', sprite: 'firefly', color: 0xffff00, radius: 5,
+          alpha: 1, scale: 1, tint: 0xFFFFFF, rotation: 0, rotationSpeed: 0, depth: 50, offsetY: 0
+        },
+        fireflyTag: true
+      });
+
+      const nearbyFirefly = world.add({
+        position: { x: 100, y: 100 },
+        velocity: { vx: 0, vy: 0 },
+        path: { currentPath: [], goalPath: [], direction: 'r' },
+        renderable: {
+          type: 'firefly', sprite: 'firefly', color: 0xffff00, radius: 5,
+          alpha: 1, scale: 1, tint: 0xFFFFFF, rotation: 0, rotationSpeed: 0, depth: 50, offsetY: 0
+        },
+        fireflyTag: true
+      });
+
+      const wisp = world.add({
+        position: { x: 100, y: 100 },
+        renderable: {
+          type: 'wisp', sprite: 'wisp', color: 0x0000ff, radius: 10,
+          alpha: 1, scale: 1, tint: 0xFFFFFF, rotation: 0, rotationSpeed: 0, depth: 50, offsetY: 0
+        },
+        lodge: { allowedTenants: ['firefly'], maxTenants: 1, tenants: [], incoming: [incomingFirefly] },
+        wispTag: true
+      });
+
+      populateGridAndExecute();
+
+      expect(wisp.lodge!.tenants).toHaveLength(0);
+      expect(wisp.lodge!.incoming).toContain(incomingFirefly);
+    });
+
+    it('should free capacity slot when incoming entity dies, allowing new tenant', () => {
+      const deadFirefly = world.add({
+        position: { x: 500, y: 500 },
+        velocity: { vx: 0, vy: 0 },
+        path: { currentPath: [], goalPath: [], direction: 'r' },
+        renderable: {
+          type: 'firefly', sprite: 'firefly', color: 0xffff00, radius: 5,
+          alpha: 1, scale: 1, tint: 0xFFFFFF, rotation: 0, rotationSpeed: 0, depth: 50, offsetY: 0
+        },
+        health: { currentHealth: 0, maxHealth: 50, isDead: true },
+        fireflyTag: true
+      });
+
+      const nearbyFirefly = world.add({
+        position: { x: 100, y: 100 },
+        velocity: { vx: 0, vy: 0 },
+        path: { currentPath: [], goalPath: [], direction: 'r' },
+        renderable: {
+          type: 'firefly', sprite: 'firefly', color: 0xffff00, radius: 5,
+          alpha: 1, scale: 1, tint: 0xFFFFFF, rotation: 0, rotationSpeed: 0, depth: 50, offsetY: 0
+        },
+        fireflyTag: true
+      });
+
+      const wisp = world.add({
+        position: { x: 100, y: 100 },
+        renderable: {
+          type: 'wisp', sprite: 'wisp', color: 0x0000ff, radius: 10,
+          alpha: 1, scale: 1, tint: 0xFFFFFF, rotation: 0, rotationSpeed: 0, depth: 50, offsetY: 0
+        },
+        lodge: { allowedTenants: ['firefly'], maxTenants: 1, tenants: [], incoming: [deadFirefly] },
+        wispTag: true
+      });
+
+      populateGridAndExecute();
+
+      expect(wisp.lodge!.incoming).toHaveLength(0);
+      expect(wisp.lodge!.tenants).toHaveLength(1);
+      expect(wisp.lodge!.tenants[0]).toBe(nearbyFirefly);
+    });
+  });
+
   describe('Edge cases', () => {
     it('should handle lodge without Position component gracefully', () => {
       world.add({
@@ -515,7 +714,7 @@ describe('LodgingSystem', () => {
           type: 'wisp', sprite: 'wisp', color: 0x0000ff, radius: 10,
           alpha: 1, scale: 1, tint: 0xFFFFFF, rotation: 0, rotationSpeed: 0, depth: 50, offsetY: 0
         },
-        lodge: { allowedTenants: ['firefly'], maxTenants: 1, tenants: [] },
+        lodge: { allowedTenants: ['firefly'], maxTenants: 1, tenants: [], incoming: [] },
         wispTag: true
       });
 
@@ -529,14 +728,14 @@ describe('LodgingSystem', () => {
           type: 'wisp', sprite: 'wisp', color: 0x0000ff, radius: 10,
           alpha: 1, scale: 1, tint: 0xFFFFFF, rotation: 0, rotationSpeed: 0, depth: 50, offsetY: 0
         },
-        lodge: { allowedTenants: ['firefly'], maxTenants: 1, tenants: [] },
+        lodge: { allowedTenants: ['firefly'], maxTenants: 1, tenants: [], incoming: [] },
         wispTag: true
       });
 
       world.add({
         position: { x: 100, y: 100 },
         velocity: { vx: 0, vy: 0 },
-        path: { currentPath: [], nextPath: [], direction: 'r' }
+        path: { currentPath: [], goalPath: [], direction: 'r' }
       });
 
       expect(() => populateGridAndExecute()).not.toThrow();
@@ -553,7 +752,7 @@ describe('LodgingSystem', () => {
           type: 'wisp', sprite: 'wisp', color: 0x0000ff, radius: 10,
           alpha: 1, scale: 1, tint: 0xFFFFFF, rotation: 0, rotationSpeed: 0, depth: 50, offsetY: 0
         },
-        lodge: { allowedTenants: ['firefly'], maxTenants: 1, tenants: [] },
+        lodge: { allowedTenants: ['firefly'], maxTenants: 1, tenants: [], incoming: [] },
         wispTag: true
       });
 
@@ -569,7 +768,7 @@ describe('LodgingSystem', () => {
           type: 'wisp', sprite: 'wisp', color: 0x0000ff, radius: 10,
           alpha: 1, scale: 1, tint: 0xFFFFFF, rotation: 0, rotationSpeed: 0, depth: 50, offsetY: 0
         },
-        lodge: { allowedTenants: ['firefly'], maxTenants: 1, tenants: [] },
+        lodge: { allowedTenants: ['firefly'], maxTenants: 1, tenants: [], incoming: [] },
         wispTag: true
       });
 
@@ -585,14 +784,14 @@ describe('LodgingSystem', () => {
           type: 'wisp', sprite: 'wisp', color: 0x0000ff, radius: 10,
           alpha: 1, scale: 1, tint: 0xFFFFFF, rotation: 0, rotationSpeed: 0, depth: 50, offsetY: 0
         },
-        lodge: { allowedTenants: ['firefly'], maxTenants: 1, tenants: [] },
+        lodge: { allowedTenants: ['firefly'], maxTenants: 1, tenants: [], incoming: [] },
         wispTag: true
       });
 
       world.add({
         position: { x: 100, y: 100 },
         velocity: { vx: 0, vy: 0 },
-        path: { currentPath: [], nextPath: [], direction: 'r' },
+        path: { currentPath: [], goalPath: [], direction: 'r' },
         renderable: {
           type: 'firefly', sprite: 'firefly', color: 0xffff00, radius: 5,
           alpha: 1, scale: 1, tint: 0xFFFFFF, rotation: 0, rotationSpeed: 0, depth: 50, offsetY: 0
@@ -613,14 +812,14 @@ describe('LodgingSystem', () => {
           type: 'wisp', sprite: 'wisp', color: 0x0000ff, radius: 10,
           alpha: 1, scale: 1, tint: 0xFFFFFF, rotation: 0, rotationSpeed: 0, depth: 50, offsetY: 0
         },
-        lodge: { allowedTenants: ['firefly'], maxTenants: 2, tenants: [] },
+        lodge: { allowedTenants: ['firefly'], maxTenants: 2, tenants: [], incoming: [] },
         wispTag: true
       });
 
       const normalFirefly = world.add({
         position: { x: 100, y: 100 },
         velocity: { vx: 0, vy: 0 },
-        path: { currentPath: [], nextPath: [], direction: 'r' },
+        path: { currentPath: [], goalPath: [], direction: 'r' },
         renderable: {
           type: 'firefly', sprite: 'firefly', color: 0xffff00, radius: 5,
           alpha: 1, scale: 1, tint: 0xFFFFFF, rotation: 0, rotationSpeed: 0, depth: 50, offsetY: 0
@@ -631,7 +830,7 @@ describe('LodgingSystem', () => {
       world.add({
         position: { x: 100, y: 100 },
         velocity: { vx: 0, vy: 0 },
-        path: { currentPath: [], nextPath: [], direction: 'r' },
+        path: { currentPath: [], goalPath: [], direction: 'r' },
         renderable: {
           type: 'firefly', sprite: 'firefly', color: 0xffff00, radius: 5,
           alpha: 1, scale: 1, tint: 0xFFFFFF, rotation: 0, rotationSpeed: 0, depth: 50, offsetY: 0
@@ -651,7 +850,7 @@ describe('LodgingSystem', () => {
     it('should only process entities with Lodge and Position components', () => {
       world.add({
         position: { x: 100, y: 100 },
-        lodge: { allowedTenants: ['firefly'], maxTenants: 1, tenants: [] }
+        lodge: { allowedTenants: ['firefly'], maxTenants: 1, tenants: [], incoming: [] }
       });
 
       world.add({
@@ -659,7 +858,7 @@ describe('LodgingSystem', () => {
           type: 'wisp', sprite: 'wisp', color: 0x0000ff, radius: 10,
           alpha: 1, scale: 1, tint: 0xFFFFFF, rotation: 0, rotationSpeed: 0, depth: 50, offsetY: 0
         },
-        lodge: { allowedTenants: ['firefly'], maxTenants: 1, tenants: [] }
+        lodge: { allowedTenants: ['firefly'], maxTenants: 1, tenants: [], incoming: [] }
       });
 
       world.add({

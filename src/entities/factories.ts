@@ -13,7 +13,7 @@ export function createFirefly(world: GameWorld, x: number, y: number): Entity {
     velocity: { vx: 0, vy: 0 },
     path: {
       currentPath: [],
-      nextPath: [],
+      goalPath: [],
       direction: config.direction!
     },
     renderable: {
@@ -123,6 +123,7 @@ export function createWisp(world: GameWorld, x: number, y: number): Entity {
     wispTag: true,
     lodge: {
       tenants: [],
+      incoming: [],
       allowedTenants: ['firefly'],
       maxTenants: 1
     },
@@ -201,7 +202,7 @@ export function createMonster(world: GameWorld, x: number, y: number): Entity {
     velocity: { vx: 0, vy: 0 },
     path: {
       currentPath: [],
-      nextPath: [],
+      goalPath: [],
       direction: config.direction!
     },
     renderable: {

@@ -39,8 +39,8 @@ export class MovementSystem implements GameSystem {
             entity.path.currentPath.shift();
 
             if (entity.path.currentPath.length === 0) {
-              entity.path.currentPath = entity.path.nextPath;
-              entity.path.nextPath = [];
+              entity.path.currentPath = entity.path.goalPath;
+              entity.path.goalPath = [];
 
               if (entity.path.currentPath.length === 0) {
                 gameEvents.emit(GameEvents.PATH_COMPLETED, { entity, position: { x: position.x, y: position.y } });

@@ -8,7 +8,8 @@ describe('Asset Manifest', () => {
     expect(keys).toContain('firefly');
     expect(keys).toContain('wisp');
     expect(keys).toContain('monster');
-    expect(keys).toContain('goal');
+    expect(keys).toContain('greattree');
+    expect(keys).toContain('fireflywell');
   });
 
   it('all assets should have valid properties', () => {

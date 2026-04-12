@@ -50,7 +50,7 @@ describe('Entity Factories', () => {
       const entity = createFirefly(world, 100, 200);
 
       expect(entity.path!.currentPath).toEqual([]);
-      expect(entity.path!.nextPath).toEqual([]);
+      expect(entity.path!.goalPath).toEqual([]);
       expect(entity.path!.direction).toBe(ENTITY_CONFIG.firefly.direction);
     });
 
@@ -190,7 +190,7 @@ describe('Entity Factories', () => {
       const entity = createMonster(world, 100, 200);
 
       expect(entity.path!.currentPath).toEqual([]);
-      expect(entity.path!.nextPath).toEqual([]);
+      expect(entity.path!.goalPath).toEqual([]);
       expect(entity.path!.direction).toBe(ENTITY_CONFIG.monster.direction);
     });
 

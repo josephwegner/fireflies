@@ -32,7 +32,7 @@ describe('VictorySystem', () => {
     });
 
     const lodge = world.add({
-      lodge: { tenants: [firefly], allowedTenants: ['firefly'], maxTenants: 1 },
+      lodge: { tenants: [firefly], incoming: [], allowedTenants: ['firefly'], maxTenants: 1 },
       position: { x: 100, y: 100 }
     });
 
@@ -101,6 +101,96 @@ describe('VictorySystem', () => {
     });
   });
 
+  function createFreeFirefly(opts?: { x?: number; y?: number }): Entity {
+    return world.add({
+      fireflyTag: true,
+      position: { x: opts?.x ?? 200, y: opts?.y ?? 200 },
+      velocity: { vx: 1, vy: 0 },
+      path: { currentPath: [{ x: 300, y: 300 }], goalPath: [{ x: 400, y: 400 }], direction: 'r' },
+      renderable: {
+        type: 'firefly', sprite: 'firefly', color: 0xffff00, radius: 4,
+        alpha: 1, scale: 1, tint: 0xFFFFFF, rotation: 0, rotationSpeed: 0,
+        depth: 50, offsetY: 0
+      }
+    });
+  }
+
+  describe('flee all fireflies on victory', () => {
+    it('should add fleeingToGoalTag to free-roaming fireflies', () => {
+      createMonster(true);
+      const firefly = createFreeFirefly();
+
+      gameEvents.emit(GameEvents.ENTITY_DIED, {
+        entity: {} as Entity,
+        position: { x: 0, y: 0 }
+      });
+
+      expect(firefly.fleeingToGoalTag).toBe(true);
+    });
+
+    it('should clear paths on free-roaming fireflies', () => {
+      createMonster(true);
+      const firefly = createFreeFirefly();
+
+      gameEvents.emit(GameEvents.ENTITY_DIED, {
+        entity: {} as Entity,
+        position: { x: 0, y: 0 }
+      });
+
+      expect(firefly.path!.currentPath).toEqual([]);
+      expect(firefly.path!.goalPath).toEqual([]);
+    });
+
+    it('should remove assignedDestination from fireflies headed to a lodge', () => {
+      createMonster(true);
+      const firefly = createFreeFirefly();
+      const wisp = world.add({
+        lodge: { tenants: [], incoming: [firefly], allowedTenants: ['firefly'], maxTenants: 1 },
+        position: { x: 300, y: 300 }
+      });
+      world.addComponent(firefly, 'assignedDestination', { target: wisp });
+
+      gameEvents.emit(GameEvents.ENTITY_DIED, {
+        entity: {} as Entity,
+        position: { x: 0, y: 0 }
+      });
+
+      expect(firefly.fleeingToGoalTag).toBe(true);
+      expect(firefly.assignedDestination).toBeUndefined();
+    });
+
+    it('should clear lodge incoming lists', () => {
+      createMonster(true);
+      const firefly = createFreeFirefly();
+      const wisp = world.add({
+        lodge: { tenants: [], incoming: [firefly], allowedTenants: ['firefly'], maxTenants: 1 },
+        position: { x: 300, y: 300 }
+      });
+
+      gameEvents.emit(GameEvents.ENTITY_DIED, {
+        entity: {} as Entity,
+        position: { x: 0, y: 0 }
+      });
+
+      expect(wisp.lodge!.incoming).toHaveLength(0);
+    });
+
+    it('should not double-tag already fleeing fireflies', () => {
+      createMonster(true);
+      const firefly = createFreeFirefly();
+      world.addComponent(firefly, 'fleeingToGoalTag', true);
+
+      expect(() => {
+        gameEvents.emit(GameEvents.ENTITY_DIED, {
+          entity: {} as Entity,
+          position: { x: 0, y: 0 }
+        });
+      }).not.toThrow();
+
+      expect(firefly.fleeingToGoalTag).toBe(true);
+    });
+  });
+
   describe('firefly eviction', () => {
     it('should evict fireflies from lodges on victory', () => {
       createMonster(true);
@@ -141,7 +231,7 @@ describe('VictorySystem', () => {
       }});
 
       const lodge = world.add({
-        lodge: { tenants: [wisp], allowedTenants: ['wisp'], maxTenants: 1 },
+        lodge: { tenants: [wisp], incoming: [], allowedTenants: ['wisp'], maxTenants: 1 },
         position: { x: 100, y: 100 }
       });
 
@@ -172,7 +262,7 @@ describe('VictorySystem', () => {
 
       const bareFirefly = world.add({ fireflyTag: true });
       const lodge = world.add({
-        lodge: { tenants: [bareFirefly], allowedTenants: ['firefly'], maxTenants: 1 },
+        lodge: { tenants: [bareFirefly], incoming: [], allowedTenants: ['firefly'], maxTenants: 1 },
         position: { x: 100, y: 100 }
       });
 

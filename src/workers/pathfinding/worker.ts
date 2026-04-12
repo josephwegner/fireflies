@@ -25,6 +25,12 @@ self.onmessage = function(e: MessageEvent<WorkerMessage>) {
       case 'pathfind':
         if (!baseMapPaths) {
           console.error('[Worker] No baseMapPaths available - navmesh not built yet!');
+          self.postMessage({
+            action: 'error',
+            error: 'navmesh not built',
+            entityId: e.data.entityId,
+            requestId: e.data.requestId
+          });
           return;
         }
 
@@ -39,6 +45,12 @@ self.onmessage = function(e: MessageEvent<WorkerMessage>) {
 
           if (!navMesh) {
             console.error('[Worker] Failed to generate navmesh');
+            self.postMessage({
+              action: 'error',
+              error: 'navmesh generation failed',
+              entityId: e.data.entityId,
+              requestId: e.data.requestId
+            });
             return;
           }
 
@@ -67,9 +79,17 @@ self.onmessage = function(e: MessageEvent<WorkerMessage>) {
           }));
 
           self.postMessage({
+            requestId: e.data.requestId,
             entityId: e.data.entityId,
             path: formattedPath,
             pathType: e.data.pathType
+          });
+        } else {
+          self.postMessage({
+            action: 'error',
+            error: 'no path found',
+            entityId: e.data.entityId,
+            requestId: e.data.requestId
           });
         }
         break;
@@ -84,7 +104,8 @@ self.onmessage = function(e: MessageEvent<WorkerMessage>) {
       action: 'error',
       error: err.message,
       stack: err.stack,
-      entityId: 'entityId' in e.data ? e.data.entityId : undefined // Include entityId so we can clear pending request
+      entityId: 'entityId' in e.data ? e.data.entityId : undefined,
+      requestId: 'requestId' in e.data ? e.data.requestId : undefined
     });
   }
 };
