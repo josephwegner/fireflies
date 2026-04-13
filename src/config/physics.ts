@@ -13,7 +13,7 @@ export const PHYSICS_CONFIG = Object.freeze({
   BACKTRACKING_DISCOUNT: 0.3,
 
   // Spawning
-  POSITION_JITTER: 0.3,
+  POSITION_JITTER: 20,
 
   // Combat
   WALL_COLLISION_THRESHOLD: 0.1,

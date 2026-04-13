@@ -32,10 +32,13 @@ export class GameScene extends Phaser.Scene {
 
     const energyManager = new EnergyManager(LEVEL_1_CONFIG.initialEnergy);
 
+    const debug = new URLSearchParams(window.location.search).has('debug');
+
     this.pathfindingWorker = this.createWorker();
     this.worldManager = new WorldManager(this, this.pathfindingWorker, LEVEL_1_MAP, {
       energyManager,
-      levelConfig: LEVEL_1_CONFIG
+      levelConfig: LEVEL_1_CONFIG,
+      debug
     });
 
     loadLevel(this.worldManager.world);

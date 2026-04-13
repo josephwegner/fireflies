@@ -3,7 +3,8 @@ import { GAME_CONFIG } from '@/config';
 import {
   createWisp,
   createGoal,
-  createSpawner
+  createSpawner,
+  createRedirect
 } from '@/entities/factories';
 
 export const LEVEL_1_CONFIG = {
@@ -32,7 +33,7 @@ export function loadLevel(world: GameWorld): void {
 
   // Firefly spawner
   createSpawner(world, 1 * TILE + TILE / 2, 4 * TILE + TILE / 2, [
-    { unit: 'firefly', repeat: 5, delayBetween: 500, delay: 0 },
+    { unit: 'firefly', repeat: 20, delayBetween: 500, delay: 0 },
   ]);
 
   // Wisps
@@ -49,4 +50,15 @@ export function loadLevel(world: GameWorld): void {
   // Goals
   createGoal(world, 17 * TILE + TILE / 2, 4 * TILE + TILE / 2, 'firefly');
   createGoal(world, 1 * TILE + TILE / 2, 4 * TILE + TILE / 2, 'monster');
+
+  // Redirects — split fireflies at diamond forks
+  createRedirect(world, 3 * TILE + TILE / 2, 4 * TILE + TILE / 2, [
+    { x: 4 * TILE + TILE / 2, y: 3 * TILE + TILE / 2, weight: 1 },
+    { x: 3 * TILE + TILE / 2, y: 6 * TILE + TILE / 2, weight: 1 },
+  ], ['firefly']);
+
+  createRedirect(world, 9 * TILE + TILE / 2, 4 * TILE + TILE / 2, [
+    { x: 10 * TILE + TILE / 2, y: 3 * TILE + TILE / 2, weight: 1 },
+    { x: 10 * TILE + TILE / 2, y: 6 * TILE + TILE / 2, weight: 1 },
+  ], ['firefly'], TILE * 2);
 }

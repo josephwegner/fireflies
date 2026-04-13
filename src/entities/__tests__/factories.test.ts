@@ -5,10 +5,11 @@ import {
   createWisp,
   createMonster,
   createGoal,
-  createSpawner
+  createSpawner,
+  createRedirect
 } from '../factories';
 import type { Entity, GameWorld } from '@/ecs/Entity';
-import { ENTITY_CONFIG, PHYSICS_CONFIG } from '@/config';
+import { ENTITY_CONFIG, PHYSICS_CONFIG, GAME_CONFIG } from '@/config';
 
 describe('Entity Factories', () => {
   let world: GameWorld;
@@ -314,6 +315,61 @@ describe('Entity Factories', () => {
 
       expect(entity.renderable).toBeUndefined();
       expect(entity.physicsBody).toBeUndefined();
+    });
+  });
+
+  describe('createRedirect', () => {
+    it('should create entity with position, redirect, and redirectTag', () => {
+      const exits = [
+        { x: 200, y: 100, weight: 1 },
+        { x: 200, y: 300, weight: 1 }
+      ];
+      const entity = createRedirect(world, 100, 200, exits, ['firefly']);
+
+      expect(entity.position).toEqual({ x: 100, y: 200 });
+      expect(entity.redirectTag).toBe(true);
+      expect(entity.redirect).toBeDefined();
+    });
+
+    it('should store exits and for types', () => {
+      const exits = [
+        { x: 200, y: 100, weight: 2 },
+        { x: 200, y: 300, weight: 1 }
+      ];
+      const entity = createRedirect(world, 100, 200, exits, ['firefly', 'monster']);
+
+      expect(entity.redirect!.exits).toBe(exits);
+      expect(entity.redirect!.for).toEqual(['firefly', 'monster']);
+    });
+
+    it('should use default radius of TILE_SIZE * 3 when not specified', () => {
+      const exits = [{ x: 200, y: 100, weight: 1 }];
+      const entity = createRedirect(world, 100, 200, exits, ['firefly']);
+
+      expect(entity.redirect!.radius).toBe(GAME_CONFIG.TILE_SIZE * 3);
+    });
+
+    it('should accept custom radius', () => {
+      const exits = [{ x: 200, y: 100, weight: 1 }];
+      const entity = createRedirect(world, 100, 200, exits, ['firefly'], 50);
+
+      expect(entity.redirect!.radius).toBe(50);
+    });
+
+    it('should not have renderable or physicsBody', () => {
+      const exits = [{ x: 200, y: 100, weight: 1 }];
+      const entity = createRedirect(world, 100, 200, exits, ['firefly']);
+
+      expect(entity.renderable).toBeUndefined();
+      expect(entity.physicsBody).toBeUndefined();
+    });
+
+    it('should not have movement components', () => {
+      const exits = [{ x: 200, y: 100, weight: 1 }];
+      const entity = createRedirect(world, 100, 200, exits, ['firefly']);
+
+      expect(entity.velocity).toBeUndefined();
+      expect(entity.path).toBeUndefined();
     });
   });
 

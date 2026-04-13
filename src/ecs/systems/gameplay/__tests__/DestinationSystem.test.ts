@@ -734,4 +734,61 @@ describe('DestinationSystem', () => {
     });
   });
 
+  describe('RedirectTarget handling', () => {
+    it('should pathfind to redirectTarget when entity has no currentPath', () => {
+      const firefly = createTestFirefly(world, { x: 100, y: 200 });
+      createTestGoal(world, { x: 500, y: 200 });
+
+      world.addComponent(firefly, 'redirectTarget', { x: 250, y: 100 });
+
+      system = new DestinationSystem(world, { worker: mockWorker });
+      system.update(16, 16);
+
+      const navMessages = getPostMessagesByType('current');
+      expect(navMessages.length).toBe(1);
+      expect(navMessages[0].destination).toEqual({ x: 250, y: 100 });
+    });
+
+    it('should clear redirectTarget after consuming it', () => {
+      const firefly = createTestFirefly(world, { x: 100, y: 200 });
+      createTestGoal(world, { x: 500, y: 200 });
+
+      world.addComponent(firefly, 'redirectTarget', { x: 250, y: 100 });
+
+      system = new DestinationSystem(world, { worker: mockWorker });
+      system.update(16, 16);
+
+      expect(firefly.redirectTarget).toBeUndefined();
+    });
+
+    it('should route goalPath from lastWaypoint to goal after redirect', () => {
+      const firefly = createTestFirefly(world, {
+        x: 100, y: 200,
+        currentPath: [{ x: 250, y: 100 }]
+      });
+      createTestGoal(world, { x: 500, y: 200 });
+
+      system = new DestinationSystem(world, { worker: mockWorker });
+      system.update(16, 16);
+
+      const goalPathMessages = getPostMessagesByType('next');
+      expect(goalPathMessages.length).toBe(1);
+      expect(goalPathMessages[0].start).toEqual({ x: 250, y: 100 });
+      expect(goalPathMessages[0].destination).toEqual({ x: 500, y: 200 });
+    });
+
+    it('should prefer redirectTarget over goal even when not fleeing', () => {
+      const firefly = createTestFirefly(world, { x: 100, y: 200 });
+      createTestGoal(world, { x: 500, y: 200 });
+
+      world.addComponent(firefly, 'redirectTarget', { x: 300, y: 300 });
+
+      system = new DestinationSystem(world, { worker: mockWorker });
+      system.update(16, 16);
+
+      const navMessages = getPostMessagesByType('current');
+      expect(navMessages[0].destination).toEqual({ x: 300, y: 300 });
+    });
+  });
+
 });

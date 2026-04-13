@@ -1,6 +1,6 @@
-import type { Entity, GameWorld, SpawnEntry } from '@/ecs/Entity';
+import type { Entity, GameWorld, SpawnEntry, RedirectExit } from '@/ecs/Entity';
 import { CombatState } from '@/ecs/Entity';
-import { ENTITY_CONFIG, PHYSICS_CONFIG } from '@/config';
+import { ENTITY_CONFIG, PHYSICS_CONFIG, GAME_CONFIG } from '@/config';
 
 export function createFirefly(world: GameWorld, x: number, y: number): Entity {
   const config = ENTITY_CONFIG.firefly;
@@ -297,6 +297,25 @@ export function createGoal(
   }
 
   return world.add(entity as Entity);
+}
+
+export function createRedirect(
+  world: GameWorld,
+  x: number,
+  y: number,
+  exits: RedirectExit[],
+  forTypes: string[],
+  radius: number = GAME_CONFIG.TILE_SIZE * 3
+): Entity {
+  return world.add({
+    position: { x, y },
+    redirect: {
+      exits,
+      radius,
+      for: forTypes
+    },
+    redirectTag: true
+  });
 }
 
 export function createSpawner(

@@ -18,6 +18,7 @@ import { WallGenerationSystem } from './systems/gameplay/WallGenerationSystem';
 import { FireflyGoalSystem } from './systems/gameplay/FireflyGoalSystem';
 import { VictorySystem } from './systems/gameplay/VictorySystem';
 import { SpawnerSystem } from './systems/gameplay/SpawnerSystem';
+import { RedirectSystem } from './systems/gameplay/RedirectSystem';
 
 // Rendering systems
 import { RenderingSystem } from './systems/rendering/RenderingSystem';
@@ -26,6 +27,7 @@ import { ForestDecorationSystem } from './systems/rendering/ForestDecorationSyst
 import { TrailSystem } from './systems/rendering/TrailSystem';
 import { WispVisualsSystem } from './systems/rendering/WispVisualsSystem';
 import { CombatVisualsSystem } from './systems/rendering/CombatVisualsSystem';
+import { DebugRedirectSystem } from './systems/rendering/DebugRedirectSystem';
 import { ParticleEffectsSystem } from './systems/effects/ParticleEffectsSystem';
 
 // UI systems
@@ -38,6 +40,7 @@ import { AttackHandlerRegistry } from './systems/gameplay/attacks/AttackHandlerR
 interface WorldManagerConfig {
   energyManager: EnergyManager;
   levelConfig: { initialEnergy: number; store: Record<string, { cost: number }> };
+  debug?: boolean;
 }
 
 export class WorldManager {
@@ -74,6 +77,10 @@ export class WorldManager {
       renderingSystem: this.renderingSystem
     }));
     this.systems.push(new ParticleEffectsSystem(this.world, { scene: this.scene }));
+
+    if (this.config.debug) {
+      this.systems.push(new DebugRedirectSystem(this.world, { scene: this.scene }));
+    }
 
     // ── UI systems ────────────────────────────────────────────────────
     this.systems.push(new UISystem(this.world, {
@@ -112,6 +119,7 @@ export class WorldManager {
     this.systems.push(new LodgingSystem(this.world, { spatialGrid: this.spatialGrid }));
     this.systems.push(new DamageSystem(this.world, {}));
     this.systems.push(new MovementSystem(this.world, {}));
+    this.systems.push(new RedirectSystem(this.world, {}));
     this.systems.push(new DestinationSystem(this.world, { worker: this.pathfindingWorker }));
     this.systems.push(new FireflyGoalSystem(this.world, {}));
     this.systems.push(new VictorySystem(this.world, {}));

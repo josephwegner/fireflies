@@ -175,6 +175,18 @@ export interface Spawner {
   state: SpawnerState;
 }
 
+export interface RedirectExit {
+  x: number;
+  y: number;
+  weight: number;
+}
+
+export interface Redirect {
+  exits: RedirectExit[];
+  radius: number;
+  for: string[];
+}
+
 // ─── Entity Type ────────────────────────────────────────────────────────────
 
 export type Entity = {
@@ -199,6 +211,8 @@ export type Entity = {
   activationConfig?: ActivationConfig;
   fireflyGoal?: FireflyGoal;
   spawner?: Spawner;
+  redirect?: Redirect;
+  redirectTarget?: { x: number; y: number };
 
   // Tags (boolean flags)
   fireflyTag?: true;
@@ -207,6 +221,7 @@ export type Entity = {
   goalTag?: true;
   wallTag?: true;
   spawnerTag?: true;
+  redirectTag?: true;
   fleeingToGoalTag?: true;
 };
 

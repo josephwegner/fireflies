@@ -122,10 +122,17 @@ export class DestinationSystem implements GameSystem {
         const assigned = mover.assignedDestination;
 
         if (!mover.path.currentPath.length) {
-          if (this.navigationRequestForEntity.has(entityId)) continue;
+          if (mover.redirectTarget) {
+            this.cancelNavigationRequest(entityId);
+          } else if (this.navigationRequestForEntity.has(entityId)) {
+            continue;
+          }
 
           let destination: { x: number; y: number };
-          if (isFleeing) {
+          if (mover.redirectTarget) {
+            destination = { x: mover.redirectTarget.x, y: mover.redirectTarget.y };
+            this.world.removeComponent(mover, 'redirectTarget');
+          } else if (isFleeing) {
             destination = { x: goal.position.x, y: goal.position.y };
           } else if (assigned) {
             destination = { x: assigned.target.position!.x, y: assigned.target.position!.y };
@@ -226,6 +233,18 @@ export class DestinationSystem implements GameSystem {
       radius,
       wallBufferMultiplier: PHYSICS_CONFIG.WALL_BUFFER_MULTIPLIER
     });
+  }
+
+  private cancelNavigationRequest(entityId: number): void {
+    const navReqId = this.navigationRequestForEntity.get(entityId);
+    if (navReqId) {
+      const pending = this.pendingRequests.get(navReqId);
+      if (pending) {
+        clearTimeout(pending.timeout);
+        this.pendingRequests.delete(navReqId);
+      }
+      this.navigationRequestForEntity.delete(entityId);
+    }
   }
 
   private handleRequestResponse(requestId: string, path: any[] | null, data: any): void {
@@ -340,18 +359,9 @@ export class DestinationSystem implements GameSystem {
         entity.path.goalPath = [];
       }
 
-      // Cancel any pending nav request for this entity
       const entityId = this.world.id(entity);
       if (entityId !== undefined) {
-        const navReqId = this.navigationRequestForEntity.get(entityId);
-        if (navReqId) {
-          const pending = this.pendingRequests.get(navReqId);
-          if (pending) {
-            clearTimeout(pending.timeout);
-            this.pendingRequests.delete(navReqId);
-          }
-          this.navigationRequestForEntity.delete(entityId);
-        }
+        this.cancelNavigationRequest(entityId);
       }
 
       break;

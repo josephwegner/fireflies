@@ -1,7 +1,7 @@
 import { World } from 'miniplex';
-import type { Entity, GameWorld, SpawnEntry } from '@/ecs/Entity';
+import type { Entity, GameWorld, SpawnEntry, RedirectExit } from '@/ecs/Entity';
 import { CombatState } from '@/ecs/Entity';
-import { ENTITY_CONFIG } from '@/config';
+import { ENTITY_CONFIG, GAME_CONFIG } from '@/config';
 import { TEST_POSITIONS, TEST_ENTITY_DEFAULTS } from './constants';
 
 export interface TestEntityOptions {
@@ -168,6 +168,36 @@ export function createTestSpawner(
       state: { currentIndex: 0, repeatsDone: 0, timer: 0, phase: queue.length > 0 ? 'spawning' as const : 'done' as const }
     },
     spawnerTag: true
+  });
+}
+
+export interface TestRedirectOptions {
+  x?: number;
+  y?: number;
+  exits?: RedirectExit[];
+  for?: string[];
+  radius?: number;
+}
+
+export function createTestRedirect(
+  world: GameWorld,
+  options: TestRedirectOptions = {}
+): Entity {
+  const {
+    x = 200,
+    y = 200,
+    exits = [
+      { x: 200, y: 100, weight: 1 },
+      { x: 200, y: 300, weight: 1 }
+    ],
+    for: forTypes = ['firefly'],
+    radius = GAME_CONFIG.TILE_SIZE * 3
+  } = options;
+
+  return world.add({
+    position: { x, y },
+    redirect: { exits, radius, for: forTypes },
+    redirectTag: true
   });
 }
 
