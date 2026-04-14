@@ -3,7 +3,9 @@ import { WorldManager } from '@/ecs/WorldManager';
 import { AssetLoader } from '@/assets';
 import { GAME_CONFIG } from '@/config';
 import { EnergyManager } from '@/ui/EnergyManager';
-import { LEVEL_1_MAP, LEVEL_1_CONFIG, loadLevel } from '@/levels/level1';
+import { parseTmx } from '@/levels/parseTmx';
+import { loadLevelFromData } from '@/levels/loadLevel';
+import level1Tmx from '../../maps/demo.tmx?raw';
 
 export class GameScene extends Phaser.Scene {
   private worldManager!: WorldManager;
@@ -30,18 +32,20 @@ export class GameScene extends Phaser.Scene {
       this.setupViewport(STORE_DRAWER_WIDTH, STATUS_BAR_HEIGHT, mapCenterX, mapCenterY);
     });
 
-    const energyManager = new EnergyManager(LEVEL_1_CONFIG.initialEnergy);
+    const levelData = parseTmx(level1Tmx);
+    const levelConfig = { initialEnergy: levelData.config.initialEnergy, store: GAME_CONFIG.STORE };
+    const energyManager = new EnergyManager(levelConfig.initialEnergy);
 
     const debug = new URLSearchParams(window.location.search).has('debug');
 
     this.pathfindingWorker = this.createWorker();
-    this.worldManager = new WorldManager(this, this.pathfindingWorker, LEVEL_1_MAP, {
+    this.worldManager = new WorldManager(this, this.pathfindingWorker, levelData.map, {
       energyManager,
-      levelConfig: LEVEL_1_CONFIG,
+      levelConfig,
       debug
     });
 
-    loadLevel(this.worldManager.world);
+    loadLevelFromData(this.worldManager.world, levelData);
   }
 
   private setupViewport(

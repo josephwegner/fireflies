@@ -41,23 +41,30 @@ vi.mock('@/ecs/WorldManager', () => {
   };
 });
 
-vi.mock('@/levels/level1', () => ({
-  LEVEL_1_MAP: [
-    [0, 0, 0],
-    [0, 1, 0],
-    [0, 0, 0]
-  ],
-  LEVEL_1_CONFIG: {
-    initialEnergy: 200,
-    store: { wisp: { cost: 100 } }
-  },
-  loadLevel: vi.fn()
+vi.mock('@/levels/parseTmx', () => ({
+  parseTmx: vi.fn(() => ({
+    map: [
+      [0, 0, 0],
+      [0, 1, 0],
+      [0, 0, 0]
+    ],
+    config: { initialEnergy: 200 },
+    entities: []
+  }))
+}));
+
+vi.mock('@/levels/loadLevel', () => ({
+  loadLevelFromData: vi.fn()
+}));
+
+vi.mock('../../maps/demo.tmx?raw', () => ({
+  default: '<map></map>'
 }));
 
 import { GameScene } from '../GameScene';
 import { AssetLoader } from '@/assets';
 import { WorldManager } from '@/ecs/WorldManager';
-import { loadLevel } from '@/levels/level1';
+import { loadLevelFromData } from '@/levels/loadLevel';
 
 class TestableGameScene extends GameScene {
   constructor() {
@@ -160,7 +167,10 @@ describe('GameScene', () => {
       scene.create();
 
       const worldManagerInstance = (WorldManager as any).mock.results[0].value;
-      expect(loadLevel).toHaveBeenCalledWith(worldManagerInstance.world);
+      expect(loadLevelFromData).toHaveBeenCalledWith(
+        worldManagerInstance.world,
+        expect.objectContaining({ entities: expect.any(Array) })
+      );
     });
 
     it('should complete without errors', () => {
@@ -196,7 +206,7 @@ describe('GameScene', () => {
     it('should successfully complete full create() lifecycle', () => {
       expect(() => scene.create()).not.toThrow();
       expect(WorldManager).toHaveBeenCalled();
-      expect(loadLevel).toHaveBeenCalled();
+      expect(loadLevelFromData).toHaveBeenCalled();
     });
 
     it('should be able to run update() after create() without errors', () => {

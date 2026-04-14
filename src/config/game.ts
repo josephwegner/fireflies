@@ -16,6 +16,11 @@ export const GAME_CONFIG = Object.freeze({
   WALL_SMOOTHING_TENSION: 0.5,
   WALL_SMOOTHING_POINTS_PER_SEGMENT: 5,
 
+  // Store
+  STORE: Object.freeze({
+    wisp: { cost: 100 }
+  }),
+
   // Victory condition
   FIREFLIES_TO_WIN: 2,
 

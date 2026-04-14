@@ -45,6 +45,8 @@ export type WorkerResponse = NavMeshReadyResponse | PathfindResponse | ErrorResp
 
 export interface NavMesh {
   findPath(start: Point, end: Point): Point[] | null;
+  isPointInMesh(point: Point): boolean;
+  findClosestMeshPoint(point: Point, maxAllowableDist?: number): { distance: number; polygon: unknown; point: Point | null };
 }
 
 export type MultiPolygon = number[][][];

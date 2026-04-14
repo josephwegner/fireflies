@@ -1,0 +1,125 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<map version="1.10" tiledversion="1.12.1" orientation="orthogonal" renderorder="right-down" width="20" height="11" tilewidth="48" tileheight="48" infinite="0" nextlayerid="4" nextobjectid="23">
+ <properties>
+  <property name="firefliesToWin" type="int" value="2"/>
+  <property name="initialEnergy" type="int" value="200"/>
+ </properties>
+ <tileset firstgid="1" source="main_tiles.tsx"/>
+ <layer id="1" name="Tile Layer 1" width="20" height="11">
+  <data encoding="csv">
+1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+1,1,1,1,1,1,2,1,1,1,1,1,1,1,2,1,1,1,1,1,
+1,1,1,1,1,2,2,2,1,1,1,1,1,2,2,2,1,1,1,1,
+1,2,2,1,2,2,1,2,1,1,1,2,2,2,1,2,2,1,1,1,
+1,2,2,2,2,2,1,2,2,2,2,2,2,2,1,2,2,2,2,1,
+1,2,2,2,1,1,1,1,1,1,2,2,1,1,1,1,1,2,2,1,
+1,2,2,2,2,2,1,2,2,2,2,2,2,2,1,2,2,2,2,1,
+1,2,1,2,2,2,1,2,1,1,1,2,2,2,1,2,2,1,1,1,
+1,1,1,1,1,2,2,2,1,1,1,1,1,2,2,2,1,1,1,1,
+1,1,1,1,1,1,2,1,1,1,1,1,1,1,2,1,1,1,1,1,
+1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1
+</data>
+ </layer>
+ <objectgroup id="2" name="entities">
+  <object id="1" type="spawner" x="57.3256" y="258.255">
+   <properties>
+    <property name="queue" value="[{&quot;unit&quot;:&quot;firefly&quot;,&quot;repeat&quot;:5,&quot;delayBetween&quot;:1000}]"/>
+   </properties>
+   <point/>
+  </object>
+  <object id="2" type="spawner" x="837.085" y="258.081">
+   <properties>
+    <property name="queue" value="[{&quot;unit&quot;:&quot;monster&quot;,&quot;repeat&quot;:5,&quot;delayBetween&quot;:1000}]"/>
+   </properties>
+   <point/>
+  </object>
+  <object id="5" name="firefly-mid-redirect" type="redirect" x="494.273" y="256.901">
+   <properties>
+    <property name="for" value="firefly"/>
+    <property name="radius" type="int" value="100"/>
+   </properties>
+   <point/>
+  </object>
+  <object id="6" type="redirect_exit" x="573.185" y="196.91">
+   <properties>
+    <property name="for" type="object" value="5"/>
+   </properties>
+   <point/>
+  </object>
+  <object id="7" type="redirect_exit" x="574.449" y="334.984">
+   <properties>
+    <property name="for" type="object" value="5"/>
+   </properties>
+   <point/>
+  </object>
+  <object id="9" name="monster-mid-redirect" type="redirect" x="549.818" y="267.615">
+   <properties>
+    <property name="for" value="monster"/>
+    <property name="radius" type="int" value="100"/>
+   </properties>
+   <point/>
+  </object>
+  <object id="10" type="redirect_exit" x="479.859" y="217.89">
+   <properties>
+    <property name="for" type="object" value="9"/>
+   </properties>
+   <point/>
+  </object>
+  <object id="11" type="redirect_exit" x="487.739" y="305.684">
+   <properties>
+    <property name="for" type="object" value="9"/>
+   </properties>
+   <point/>
+  </object>
+  <object id="12" type="goal" x="869.592" y="264.123">
+   <properties>
+    <property name="for" value="firefly"/>
+   </properties>
+   <point/>
+  </object>
+  <object id="15" type="goal" x="87.5926" y="261.201">
+   <properties>
+    <property name="for" value="monster"/>
+   </properties>
+   <point/>
+  </object>
+  <object id="16" name="firefly-spawn-redirect" type="redirect" x="124.251" y="261.815">
+   <properties>
+    <property name="for" value="firefly"/>
+    <property name="radius" type="int" value="100"/>
+   </properties>
+   <point/>
+  </object>
+  <object id="17" type="redirect_exit" x="189.705" y="220.768">
+   <properties>
+    <property name="for" type="object" value="16"/>
+   </properties>
+   <point/>
+  </object>
+  <object id="18" type="redirect_exit" x="180.83" y="316.175">
+   <properties>
+    <property name="for" type="object" value="16"/>
+   </properties>
+   <point/>
+  </object>
+  <object id="19" name="monster-spawn-redirect" type="redirect" x="826.492" y="256.268">
+   <properties>
+    <property name="for" value="monster"/>
+    <property name="radius" type="int" value="100"/>
+   </properties>
+   <point/>
+  </object>
+  <object id="20" type="redirect_exit" x="768.735" y="192.725">
+   <properties>
+    <property name="for" type="object" value="19"/>
+   </properties>
+   <point/>
+  </object>
+  <object id="21" type="redirect_exit" x="767.588" y="338.708">
+   <properties>
+    <property name="for" type="object" value="19"/>
+   </properties>
+   <point/>
+  </object>
+ </objectgroup>
+</map>

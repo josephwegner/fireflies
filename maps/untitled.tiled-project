@@ -1,0 +1,144 @@
+{
+    "automappingRulesFile": "",
+    "commands": [
+    ],
+    "compatibilityVersion": 1100,
+    "extensionsPath": "extensions",
+    "folders": [
+        "."
+    ],
+    "properties": [
+    ],
+    "propertyTypes": [
+        {
+            "color": "#ff009bb3",
+            "drawFill": true,
+            "id": 2,
+            "members": [
+                {
+                    "name": "for",
+                    "type": "string",
+                    "value": ""
+                }
+            ],
+            "name": "goal",
+            "type": "class",
+            "useAs": [
+                "property",
+                "map",
+                "layer",
+                "object",
+                "tile",
+                "tileset",
+                "wangcolor",
+                "wangset",
+                "project"
+            ]
+        },
+        {
+            "color": "#ffa0a0a4",
+            "drawFill": true,
+            "id": 4,
+            "members": [
+                {
+                    "name": "for",
+                    "type": "string",
+                    "value": ""
+                },
+                {
+                    "name": "radius",
+                    "type": "int",
+                    "value": 288
+                }
+            ],
+            "name": "redirect",
+            "type": "class",
+            "useAs": [
+                "property",
+                "map",
+                "layer",
+                "object",
+                "tile",
+                "tileset",
+                "wangcolor",
+                "wangset",
+                "project"
+            ]
+        },
+        {
+            "color": "#ffa0a0a4",
+            "drawFill": true,
+            "id": 5,
+            "members": [
+                {
+                    "name": "for",
+                    "type": "object",
+                    "value": 0
+                },
+                {
+                    "name": "weight",
+                    "type": "int",
+                    "value": 0
+                }
+            ],
+            "name": "redirect_exit",
+            "type": "class",
+            "useAs": [
+                "property",
+                "map",
+                "layer",
+                "object",
+                "tile",
+                "tileset",
+                "wangcolor",
+                "wangset",
+                "project"
+            ]
+        },
+        {
+            "color": "#ff34b335",
+            "drawFill": true,
+            "id": 1,
+            "members": [
+                {
+                    "name": "queue",
+                    "type": "string",
+                    "value": ""
+                }
+            ],
+            "name": "spawner",
+            "type": "class",
+            "useAs": [
+                "property",
+                "map",
+                "layer",
+                "object",
+                "tile",
+                "tileset",
+                "wangcolor",
+                "wangset",
+                "project"
+            ]
+        },
+        {
+            "color": "#ffa0a0a4",
+            "drawFill": true,
+            "id": 3,
+            "members": [
+            ],
+            "name": "wisp",
+            "type": "class",
+            "useAs": [
+                "property",
+                "map",
+                "layer",
+                "object",
+                "tile",
+                "tileset",
+                "wangcolor",
+                "wangset",
+                "project"
+            ]
+        }
+    ]
+}

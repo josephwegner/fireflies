@@ -56,7 +56,7 @@ export class RedirectSystem implements GameSystem {
         tracking.add(redirectId);
 
         const exit = this.pickWeightedExit(redirect.redirect.exits);
-        const jitter = PHYSICS_CONFIG.POSITION_JITTER;
+        const jitter = PHYSICS_CONFIG.POSITION_JITTER / 4;
         this.world.addComponent(mover, 'redirectTarget', {
           x: exit.x + (Math.random() * 2 - 1) * jitter,
           y: exit.y + (Math.random() * 2 - 1) * jitter

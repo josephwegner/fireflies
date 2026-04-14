@@ -1,18 +1,24 @@
 import { Point, NavMesh } from './types';
 
+function snapToMesh(navMesh: NavMesh, point: Point): Point {
+  if (navMesh.isPointInMesh(point)) return point;
+  const vec = {
+    ...point,
+    distance(other: Point) {
+      const dx = point.x - other.x;
+      const dy = point.y - other.y;
+      return Math.sqrt(dx * dx + dy * dy);
+    }
+  };
+  const closest = navMesh.findClosestMeshPoint(vec as any, 20);
+  return closest.point ?? point;
+}
+
 export function pathfind(navMesh: NavMesh, start: Point, destination: Point): Point[] | null {
   try {
-    // Convert points to the format expected by navmesh
-    const startPoint: Point = {
-      x: start.x,
-      y: start.y
-    };
-    const endPoint: Point = {
-      x: destination.x,
-      y: destination.y
-    };
+    const startPoint = snapToMesh(navMesh, start);
+    const endPoint = snapToMesh(navMesh, destination);
 
-    // Find path using the navmesh
     const path = navMesh.findPath(startPoint, endPoint);
 
     if (!path) {

@@ -33,7 +33,7 @@ describe('RedirectSystem', () => {
       system.update(16, 0);
 
       expect(firefly.redirectTarget).toBeDefined();
-      const jitter = PHYSICS_CONFIG.POSITION_JITTER;
+      const jitter = PHYSICS_CONFIG.POSITION_JITTER / 4;
       expect(firefly.redirectTarget!.x).toBeGreaterThanOrEqual(200 - jitter);
       expect(firefly.redirectTarget!.x).toBeLessThanOrEqual(200 + jitter);
       expect(firefly.redirectTarget!.y).toBeGreaterThanOrEqual(100 - jitter);
@@ -134,7 +134,7 @@ describe('RedirectSystem', () => {
         radius: 50
       });
 
-      const jitter = PHYSICS_CONFIG.POSITION_JITTER;
+      const jitter = PHYSICS_CONFIG.POSITION_JITTER / 4;
       const isUpper = (y: number) => y < 200;
       const counts = { upper: 0, lower: 0 };
       const randomSpy = vi.spyOn(Math, 'random');
@@ -239,7 +239,7 @@ describe('RedirectSystem', () => {
 
       expect(results.length).toBe(10);
 
-      const jitter = PHYSICS_CONFIG.POSITION_JITTER;
+      const jitter = PHYSICS_CONFIG.POSITION_JITTER / 4;
       for (const result of results) {
         expect(result.x).toBeGreaterThanOrEqual(200 - jitter);
         expect(result.x).toBeLessThanOrEqual(200 + jitter);
@@ -279,7 +279,7 @@ describe('RedirectSystem', () => {
       firefly.position!.x = 305;
       system.update(16, 0);
       expect(firefly.redirectTarget).toBeDefined();
-      expect(firefly.redirectTarget!.x).toBeGreaterThanOrEqual(350 - PHYSICS_CONFIG.POSITION_JITTER);
+      expect(firefly.redirectTarget!.x).toBeGreaterThanOrEqual(350 - PHYSICS_CONFIG.POSITION_JITTER / 4);
     });
   });
 
