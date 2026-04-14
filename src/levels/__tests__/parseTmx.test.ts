@@ -80,6 +80,22 @@ describe('parseTmx', () => {
 
       expect(result.config.initialEnergy).toBe(0);
     });
+
+    it('should read firefliesToWin from map properties', () => {
+      const result = parseTmx(makeTmx({
+        mapProperties: `<properties>
+          <property name="firefliesToWin" type="int" value="5"/>
+        </properties>`
+      }));
+
+      expect(result.config.firefliesToWin).toBe(5);
+    });
+
+    it('should default firefliesToWin to 1 when not specified', () => {
+      const result = parseTmx(makeTmx());
+
+      expect(result.config.firefliesToWin).toBe(1);
+    });
   });
 
   describe('entity coordinate offset', () => {

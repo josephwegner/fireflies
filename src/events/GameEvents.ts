@@ -18,6 +18,11 @@ export interface GameEventPayloads {
   [GameEvents.ALL_MONSTERS_DEFEATED]: {};
   [GameEvents.ENTITY_DAMAGED]: { entity: Entity; damage: number };
 
+  // Level flow events
+  [GameEvents.LEVEL_WON]: { firefliesCollected: number };
+  [GameEvents.LEVEL_LOST]: { reason: 'monster_reached_goal' | 'insufficient_fireflies' };
+  [GameEvents.GAME_STARTED]: {};
+
   // Combat visual events (Phase 1: decouple combat from rendering)
   [GameEvents.COMBAT_CHARGING]: { entity: Entity; attackPattern: AttackPattern; progress: number };
   [GameEvents.COMBAT_ATTACK_BURST]: { entity: Entity; attackPattern: AttackPattern; position: { x: number; y: number } };
@@ -52,6 +57,11 @@ export class GameEvents {
   static readonly TENANT_REMOVED_FROM_LODGE = 'tenant:removedFromLodge';
   static readonly ALL_MONSTERS_DEFEATED = 'victory:allMonstersDefeated';
   static readonly ENTITY_DAMAGED = 'entity:damaged';
+
+  // Level flow events
+  static readonly LEVEL_WON = 'level:won';
+  static readonly LEVEL_LOST = 'level:lost';
+  static readonly GAME_STARTED = 'game:started';
 
   // Combat visual events
   static readonly COMBAT_CHARGING = 'combat:visual:charging';

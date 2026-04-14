@@ -5,14 +5,28 @@ import { GAME_CONFIG } from '@/config';
 import { EnergyManager } from '@/ui/EnergyManager';
 import { parseTmx } from '@/levels/parseTmx';
 import { loadLevelFromData } from '@/levels/loadLevel';
-import level1Tmx from '../../maps/demo.tmx?raw';
+import { LEVELS } from '@/levels/levelRegistry';
+import { gameEvents, GameEvents } from '@/events';
 
 export class GameScene extends Phaser.Scene {
   private worldManager!: WorldManager;
   private pathfindingWorker!: Worker;
+  private levelIndex = 0;
 
   constructor() {
     super('GameScene');
+  }
+
+  init(data?: { levelIndex?: number }): void {
+    const params = new URLSearchParams(window.location.search);
+    const levelParam = params.get('level');
+    if (data?.levelIndex !== undefined) {
+      this.levelIndex = data.levelIndex;
+    } else if (levelParam) {
+      this.levelIndex = Math.max(0, Math.min(parseInt(levelParam) - 1, LEVELS.length - 1));
+    } else {
+      this.levelIndex = 0;
+    }
   }
 
   preload(): void {
@@ -32,8 +46,13 @@ export class GameScene extends Phaser.Scene {
       this.setupViewport(STORE_DRAWER_WIDTH, STATUS_BAR_HEIGHT, mapCenterX, mapCenterY);
     });
 
-    const levelData = parseTmx(level1Tmx);
-    const levelConfig = { initialEnergy: levelData.config.initialEnergy, store: GAME_CONFIG.STORE };
+    const tmx = LEVELS[this.levelIndex];
+    const levelData = parseTmx(tmx);
+    const levelConfig = {
+      initialEnergy: levelData.config.initialEnergy,
+      firefliesToWin: levelData.config.firefliesToWin,
+      store: GAME_CONFIG.STORE
+    };
     const energyManager = new EnergyManager(levelConfig.initialEnergy);
 
     const debug = new URLSearchParams(window.location.search).has('debug');
@@ -42,10 +61,33 @@ export class GameScene extends Phaser.Scene {
     this.worldManager = new WorldManager(this, this.pathfindingWorker, levelData.map, {
       energyManager,
       levelConfig,
+      levelIndex: this.levelIndex,
+      onNextLevel: () => {
+        this.worldManager.destroy();
+        gameEvents.clear();
+        this.scene.restart({ levelIndex: this.levelIndex + 1 });
+      },
+      onRetry: () => {
+        this.worldManager.destroy();
+        gameEvents.clear();
+        this.scene.restart({ levelIndex: this.levelIndex });
+      },
       debug
     });
 
     loadLevelFromData(this.worldManager.world, levelData);
+
+    gameEvents.once(GameEvents.GAME_STARTED, () => {
+      this.worldManager.setPaused(false);
+    });
+
+    gameEvents.once(GameEvents.LEVEL_WON, () => {
+      this.worldManager.setPaused(true);
+    });
+
+    gameEvents.once(GameEvents.LEVEL_LOST, () => {
+      this.worldManager.setPaused(true);
+    });
   }
 
   private setupViewport(

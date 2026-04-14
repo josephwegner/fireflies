@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<map version="1.10" tiledversion="1.12.1" orientation="orthogonal" renderorder="right-down" width="20" height="11" tilewidth="48" tileheight="48" infinite="0" nextlayerid="4" nextobjectid="27">
+ <properties>
+  <property name="firefliesToWin" type="int" value="1"/>
+  <property name="initialEnergy" type="int" value="200"/>
+ </properties>
+ <tileset firstgid="1" source="main_tiles.tsx"/>
+ <layer id="1" name="Tile Layer 1" width="20" height="11">
+  <data encoding="csv">
+1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+1,1,2,2,1,1,1,1,1,1,1,1,1,1,1,1,2,2,1,1,
+1,1,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,1,1,
+1,1,2,2,1,1,1,1,1,1,1,1,1,1,1,1,2,2,1,1,
+1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1
+</data>
+ </layer>
+ <objectgroup id="2" name="entities">
+  <object id="23" type="spawner" x="813.71" y="268.519">
+   <properties>
+    <property name="queue" value="[{&quot;unit&quot;:&quot;monster&quot;,&quot;repeat&quot;:0}]"/>
+   </properties>
+   <point/>
+  </object>
+  <object id="24" type="spawner" x="119.444" y="265.741">
+   <properties>
+    <property name="queue" value="[{&quot;unit&quot;:&quot;firefly&quot;,&quot;repeat&quot;:0}]"/>
+   </properties>
+   <point/>
+  </object>
+  <object id="25" type="goal" x="128.704" y="264.815">
+   <properties>
+    <property name="for" value="monster"/>
+   </properties>
+   <point/>
+  </object>
+  <object id="26" type="goal" x="842.567" y="269.71">
+   <properties>
+    <property name="for" value="firefly"/>
+   </properties>
+   <point/>
+  </object>
+ </objectgroup>
+</map>

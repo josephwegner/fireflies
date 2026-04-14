@@ -24,7 +24,7 @@ describe('loadLevelFromData', () => {
   it('should call createSpawner for spawner entities', () => {
     const data: LevelData = {
       map: [[0]],
-      config: { initialEnergy: 200 },
+      config: { initialEnergy: 200, firefliesToWin: 2 },
       entities: [
         { type: 'spawner', x: 100, y: 200, queue: [{ unit: 'firefly', repeat: 10, delayBetween: 500 }] }
       ]
@@ -41,7 +41,7 @@ describe('loadLevelFromData', () => {
   it('should call createGoal for goal entities', () => {
     const data: LevelData = {
       map: [[0]],
-      config: { initialEnergy: 200 },
+      config: { initialEnergy: 200, firefliesToWin: 2 },
       entities: [
         { type: 'goal', x: 500, y: 300, for: 'firefly' }
       ]
@@ -55,7 +55,7 @@ describe('loadLevelFromData', () => {
   it('should call createWisp for wisp entities', () => {
     const data: LevelData = {
       map: [[0]],
-      config: { initialEnergy: 200 },
+      config: { initialEnergy: 200, firefliesToWin: 2 },
       entities: [
         { type: 'wisp', x: 200, y: 150 }
       ]
@@ -69,7 +69,7 @@ describe('loadLevelFromData', () => {
   it('should call createRedirect for redirect entities', () => {
     const data: LevelData = {
       map: [[0]],
-      config: { initialEnergy: 200 },
+      config: { initialEnergy: 200, firefliesToWin: 2 },
       entities: [
         {
           type: 'redirect', x: 300, y: 400, for: 'firefly',
@@ -92,7 +92,7 @@ describe('loadLevelFromData', () => {
   it('should handle multiple entities of different types', () => {
     const data: LevelData = {
       map: [[0]],
-      config: { initialEnergy: 200 },
+      config: { initialEnergy: 200, firefliesToWin: 2 },
       entities: [
         { type: 'spawner', x: 10, y: 20, queue: [{ unit: 'firefly', repeat: 5, delayBetween: 300 }] },
         { type: 'goal', x: 50, y: 60, for: 'monster' },
@@ -112,7 +112,7 @@ describe('loadLevelFromData', () => {
   it('should handle empty entity list', () => {
     const data: LevelData = {
       map: [[0]],
-      config: { initialEnergy: 200 },
+      config: { initialEnergy: 200, firefliesToWin: 2 },
       entities: []
     };
 

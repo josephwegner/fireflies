@@ -8,6 +8,7 @@ import {
 
 export interface LevelConfig {
   initialEnergy: number;
+  firefliesToWin: number;
 }
 
 export type EntityDescriptor =

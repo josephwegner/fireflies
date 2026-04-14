@@ -28,10 +28,11 @@ function parseTileLayer(doc: Document, width: number): number[][] {
   return rows;
 }
 
-function parseMapProperties(mapEl: Element): { initialEnergy: number } {
+function parseMapProperties(mapEl: Element): { initialEnergy: number; firefliesToWin: number } {
   const props = readProperties(mapEl);
   return {
-    initialEnergy: parseInt(props.get('initialEnergy') ?? '0') || 0
+    initialEnergy: parseInt(props.get('initialEnergy') ?? '0') || 0,
+    firefliesToWin: parseInt(props.get('firefliesToWin') ?? '1') || 1
   };
 }
 

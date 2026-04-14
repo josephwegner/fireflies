@@ -19,6 +19,7 @@ import { FireflyGoalSystem } from './systems/gameplay/FireflyGoalSystem';
 import { VictorySystem } from './systems/gameplay/VictorySystem';
 import { SpawnerSystem } from './systems/gameplay/SpawnerSystem';
 import { RedirectSystem } from './systems/gameplay/RedirectSystem';
+import { DefeatSystem } from './systems/gameplay/DefeatSystem';
 
 // Rendering systems
 import { RenderingSystem } from './systems/rendering/RenderingSystem';
@@ -33,21 +34,28 @@ import { ParticleEffectsSystem } from './systems/effects/ParticleEffectsSystem';
 // UI systems
 import { UISystem } from './systems/ui/UISystem';
 import { PlacementSystem } from './systems/ui/PlacementSystem';
+import { OverlaySystem } from './systems/ui/OverlaySystem';
 
 // Attack handlers
 import { AttackHandlerRegistry } from './systems/gameplay/attacks/AttackHandlerRegistry';
 
 interface WorldManagerConfig {
   energyManager: EnergyManager;
-  levelConfig: { initialEnergy: number; store: Record<string, { cost: number }> };
+  levelConfig: { initialEnergy: number; firefliesToWin: number; store: Record<string, { cost: number }> };
+  levelIndex: number;
+  onNextLevel: () => void;
+  onRetry: () => void;
   debug?: boolean;
 }
 
 export class WorldManager {
   readonly world: GameWorld;
   readonly spatialGrid: SpatialGrid;
-  private systems: GameSystem[] = [];
+  private renderingSystems: GameSystem[] = [];
+  private uiSystems: GameSystem[] = [];
+  private gameplaySystems: GameSystem[] = [];
   private renderingSystem!: RenderingSystem;
+  private _paused = true;
 
   constructor(
     private scene: Phaser.Scene,
@@ -62,75 +70,83 @@ export class WorldManager {
     this.registerSystems();
   }
 
+  get paused(): boolean { return this._paused; }
+  setPaused(paused: boolean): void { this._paused = paused; }
+
   private registerSystems(): void {
     // ── Rendering systems ──────────────────────────────────────────────
-    // Run first so sprites exist before gameplay systems emit events.
-    // RenderingSystem must be first — CombatVisualsSystem needs it to look up sprite containers.
     this.renderingSystem = new RenderingSystem(this.world, { scene: this.scene });
-    this.systems.push(this.renderingSystem);
-    this.systems.push(new WallRenderingSystem(this.world, { scene: this.scene }));
-    this.systems.push(new ForestDecorationSystem(this.world, { scene: this.scene, map: this.map }));
-    this.systems.push(new TrailSystem(this.world, { scene: this.scene }));
-    this.systems.push(new WispVisualsSystem(this.world, {}));
-    this.systems.push(new CombatVisualsSystem(this.world, {
+    this.renderingSystems.push(this.renderingSystem);
+    this.renderingSystems.push(new WallRenderingSystem(this.world, { scene: this.scene }));
+    this.renderingSystems.push(new ForestDecorationSystem(this.world, { scene: this.scene, map: this.map }));
+    this.renderingSystems.push(new TrailSystem(this.world, { scene: this.scene }));
+    this.renderingSystems.push(new WispVisualsSystem(this.world, {}));
+    this.renderingSystems.push(new CombatVisualsSystem(this.world, {
       scene: this.scene,
       renderingSystem: this.renderingSystem
     }));
-    this.systems.push(new ParticleEffectsSystem(this.world, { scene: this.scene }));
+    this.renderingSystems.push(new ParticleEffectsSystem(this.world, { scene: this.scene }));
+    this.renderingSystems.push(new WallGenerationSystem(this.world, {
+      worker: this.pathfindingWorker,
+      map: this.map
+    }));
 
     if (this.config.debug) {
-      this.systems.push(new DebugRedirectSystem(this.world, { scene: this.scene }));
+      this.renderingSystems.push(new DebugRedirectSystem(this.world, { scene: this.scene }));
     }
 
     // ── UI systems ────────────────────────────────────────────────────
-    this.systems.push(new UISystem(this.world, {
+    this.uiSystems.push(new UISystem(this.world, {
       scene: this.scene,
       energyManager: this.config.energyManager,
       levelConfig: this.config.levelConfig
     }));
-    this.systems.push(new PlacementSystem(this.world, {
+    this.uiSystems.push(new PlacementSystem(this.world, {
       scene: this.scene,
       energyManager: this.config.energyManager,
       levelConfig: this.config.levelConfig,
       map: this.map
     }));
+    this.uiSystems.push(new OverlaySystem(this.world, {
+      scene: this.scene,
+      levelIndex: this.config.levelIndex,
+      onNextLevel: this.config.onNextLevel,
+      onRetry: this.config.onRetry
+    }));
 
     // ── Gameplay systems ───────────────────────────────────────────────
-    // Order matters here:
-    //   WallGeneration → runs once to build nav mesh
-    //   Spawner        → spawns new entities from spawner queues
-    //   Interaction    → populates targeting.potentialTargets via spatial grid
-    //   Targeting      → picks a target from potentialTargets
-    //   Combat         → uses target to run attack state machine
-    //   Lodging        → checks spatial proximity for tenant arrival
-    //   Damage         → processes ATTACK_HIT events from combat
-    //   Movement       → moves entities along paths, emits PATH_COMPLETED
-    //   Destination    → requests new paths from worker when current path ends
-    //   FireflyGoal    → checks if fireflies reached the goal
-    //   Victory        → checks if all monsters are dead (event-driven)
-    this.systems.push(new WallGenerationSystem(this.world, {
-      worker: this.pathfindingWorker,
-      map: this.map
+    this.gameplaySystems.push(new SpawnerSystem(this.world, {}));
+    this.gameplaySystems.push(new InteractionSystem(this.world, { spatialGrid: this.spatialGrid }));
+    this.gameplaySystems.push(new TargetingSystem(this.world, {}));
+    this.gameplaySystems.push(new CombatSystem(this.world, { spatialGrid: this.spatialGrid }));
+    this.gameplaySystems.push(new LodgingSystem(this.world, { spatialGrid: this.spatialGrid }));
+    this.gameplaySystems.push(new DamageSystem(this.world, {}));
+    this.gameplaySystems.push(new MovementSystem(this.world, {}));
+    this.gameplaySystems.push(new RedirectSystem(this.world, {}));
+    this.gameplaySystems.push(new DestinationSystem(this.world, { worker: this.pathfindingWorker }));
+    this.gameplaySystems.push(new FireflyGoalSystem(this.world, {
+      firefliesToWin: this.config.levelConfig.firefliesToWin
     }));
-    this.systems.push(new SpawnerSystem(this.world, {}));
-    this.systems.push(new InteractionSystem(this.world, { spatialGrid: this.spatialGrid }));
-    this.systems.push(new TargetingSystem(this.world, {}));
-    this.systems.push(new CombatSystem(this.world, { spatialGrid: this.spatialGrid }));
-    this.systems.push(new LodgingSystem(this.world, { spatialGrid: this.spatialGrid }));
-    this.systems.push(new DamageSystem(this.world, {}));
-    this.systems.push(new MovementSystem(this.world, {}));
-    this.systems.push(new RedirectSystem(this.world, {}));
-    this.systems.push(new DestinationSystem(this.world, { worker: this.pathfindingWorker }));
-    this.systems.push(new FireflyGoalSystem(this.world, {}));
-    this.systems.push(new VictorySystem(this.world, {}));
+    this.gameplaySystems.push(new DefeatSystem(this.world, {
+      firefliesToWin: this.config.levelConfig.firefliesToWin
+    }));
+    this.gameplaySystems.push(new VictorySystem(this.world, {}));
   }
 
   update(delta: number, time: number): void {
     try {
       this.rebuildSpatialGrid();
 
-      for (const system of this.systems) {
+      for (const system of this.renderingSystems) {
         system.update(delta, time);
+      }
+      for (const system of this.uiSystems) {
+        system.update(delta, time);
+      }
+      if (!this._paused) {
+        for (const system of this.gameplaySystems) {
+          system.update(delta, time);
+        }
       }
     } catch (error) {
       console.error('[WorldManager] Error during system execution:', error);
@@ -146,10 +162,13 @@ export class WorldManager {
   }
 
   destroy(): void {
-    for (const system of this.systems) {
+    const allSystems = [...this.renderingSystems, ...this.uiSystems, ...this.gameplaySystems];
+    for (const system of allSystems) {
       system.destroy?.();
     }
-    this.systems = [];
+    this.renderingSystems = [];
+    this.uiSystems = [];
+    this.gameplaySystems = [];
     this.world.clear();
   }
 }

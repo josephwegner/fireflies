@@ -21,9 +21,6 @@ export const GAME_CONFIG = Object.freeze({
     wisp: { cost: 100 }
   }),
 
-  // Victory condition
-  FIREFLIES_TO_WIN: 2,
-
   // Firefly goal visual progression
   FIREFLY_GOAL_GLOW: Object.freeze({
     startColor: 0xC65D3B, // Red when empty

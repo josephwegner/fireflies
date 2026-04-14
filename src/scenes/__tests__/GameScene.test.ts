@@ -48,7 +48,7 @@ vi.mock('@/levels/parseTmx', () => ({
       [0, 1, 0],
       [0, 0, 0]
     ],
-    config: { initialEnergy: 200 },
+    config: { initialEnergy: 200, firefliesToWin: 2 },
     entities: []
   }))
 }));
@@ -57,8 +57,8 @@ vi.mock('@/levels/loadLevel', () => ({
   loadLevelFromData: vi.fn()
 }));
 
-vi.mock('../../maps/demo.tmx?raw', () => ({
-  default: '<map></map>'
+vi.mock('@/levels/levelRegistry', () => ({
+  LEVELS: ['<map>level1</map>', '<map>level2</map>']
 }));
 
 import { GameScene } from '../GameScene';

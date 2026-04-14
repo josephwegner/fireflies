@@ -11,8 +11,11 @@ export class FireflyGoalSystem implements GameSystem {
   private fireflyGoals: Query<GoalEntity>;
   private processedFireflies = new Set<Entity>();
   private handlePathCompletedBound: (data: any) => void;
+  private firefliesToWin: number;
+  private wonEmitted = false;
 
-  constructor(private world: GameWorld, _config: Record<string, any>) {
+  constructor(private world: GameWorld, config: Record<string, any>) {
+    this.firefliesToWin = config.firefliesToWin ?? 1;
     this.fireflyGoals = world.with('fireflyGoal', 'renderable', 'position', 'goalTag') as any;
 
     this.handlePathCompletedBound = this.handlePathCompleted.bind(this);
@@ -74,9 +77,8 @@ export class FireflyGoalSystem implements GameSystem {
     goalEntity.fireflyGoal.currentCount++;
     this.processedFireflies.add(fireflyEntity);
 
-    logger.debug('FireflyGoalSystem', `Firefly collected: ${goalEntity.fireflyGoal.currentCount}/${GAME_CONFIG.FIREFLIES_TO_WIN}`);
+    logger.debug('FireflyGoalSystem', `Firefly collected: ${goalEntity.fireflyGoal.currentCount}/${this.firefliesToWin}`);
 
-    // Remove components so systems stop processing this firefly
     this.world.removeComponent(fireflyEntity, 'destination');
     this.world.removeComponent(fireflyEntity, 'path');
     this.world.removeComponent(fireflyEntity, 'renderable');
@@ -84,13 +86,18 @@ export class FireflyGoalSystem implements GameSystem {
     if (fireflyEntity.trail) {
       fireflyEntity.trail.enabled = false;
     }
+
+    if (!this.wonEmitted && goalEntity.fireflyGoal.currentCount >= this.firefliesToWin) {
+      this.wonEmitted = true;
+      gameEvents.emit(GameEvents.LEVEL_WON, { firefliesCollected: goalEntity.fireflyGoal.currentCount });
+    }
   }
 
   private updateGoalGlow(renderable: Entity['renderable'] & {}, currentCount: number): void {
     if (!renderable.glow) return;
 
     const glowConfig = GAME_CONFIG.FIREFLY_GOAL_GLOW;
-    const progress = Math.min(currentCount / GAME_CONFIG.FIREFLIES_TO_WIN, 1);
+    const progress = Math.min(currentCount / this.firefliesToWin, 1);
     const easedProgress = this.easeInOutCubic(progress);
 
     const startR = (glowConfig.startColor >> 16) & 0xFF;
