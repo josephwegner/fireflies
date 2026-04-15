@@ -5,6 +5,8 @@ import { gameEvents, GameEvents } from '@/events';
 import { PHYSICS_CONFIG } from '@/config';
 import { Vector } from '@/utils';
 
+const STRUCTURE_DEATH_DURATION = 800;
+
 interface DyingEntity {
   entity: Entity;
   timeElapsed: number;
@@ -64,6 +66,26 @@ export class DamageSystem implements GameSystem {
       });
     }
 
+    if (entity.lodge) {
+      const lodgePos = entity.position;
+      for (const tenant of [...entity.lodge.tenants]) {
+        if (!this.world.has(tenant)) continue;
+        if (tenant.health) {
+          tenant.health.isDead = true;
+          tenant.health.currentHealth = 0;
+        }
+        if (lodgePos) {
+          gameEvents.emit(GameEvents.ENTITY_DIED, {
+            entity: tenant,
+            position: { x: lodgePos.x, y: lodgePos.y }
+          });
+        }
+        this.world.remove(tenant);
+      }
+      entity.lodge.tenants = [];
+      entity.lodge.incoming = [];
+    }
+
     if (entity.renderable) {
       this.dyingEntities.push({ entity, timeElapsed: 0 });
     } else {
@@ -98,13 +120,19 @@ export class DamageSystem implements GameSystem {
 
     this.dyingEntities.forEach((dying, index) => {
       dying.timeElapsed += dt;
+      const isStructure = dying.entity.physicsBody?.isStatic;
+      const duration = isStructure ? STRUCTURE_DEATH_DURATION : PHYSICS_CONFIG.DEATH_ANIMATION_DURATION;
 
       if (dying.entity.renderable) {
-        const progress = dying.timeElapsed / PHYSICS_CONFIG.DEATH_ANIMATION_DURATION;
-        dying.entity.renderable.alpha = Math.max(0, 1 - progress);
+        if (isStructure) {
+          this.updateStructureDeathAnimation(dying, duration);
+        } else {
+          const progress = dying.timeElapsed / duration;
+          dying.entity.renderable.alpha = Math.max(0, 1 - progress);
+        }
       }
 
-      if (dying.timeElapsed >= PHYSICS_CONFIG.DEATH_ANIMATION_DURATION) {
+      if (dying.timeElapsed >= duration) {
         if (this.world.has(dying.entity)) {
           this.world.remove(dying.entity);
         }
@@ -114,6 +142,24 @@ export class DamageSystem implements GameSystem {
 
     for (let i = toRemove.length - 1; i >= 0; i--) {
       this.dyingEntities.splice(toRemove[i], 1);
+    }
+  }
+
+  private updateStructureDeathAnimation(dying: DyingEntity, duration: number): void {
+    const progress = dying.timeElapsed / duration;
+    const renderable = dying.entity.renderable!;
+
+    if (progress < 0.4) {
+      const flicker = Math.sin(dying.timeElapsed * 0.15) * 0.5 + 0.5;
+      renderable.alpha = 0.3 + flicker * 0.7;
+    } else if (progress < 0.7) {
+      const shrinkProgress = (progress - 0.4) / 0.3;
+      renderable.scale = Math.max(0.1, 1 - shrinkProgress * 0.9);
+      renderable.alpha = 1 - shrinkProgress * 0.3;
+    } else {
+      const fadeProgress = (progress - 0.7) / 0.3;
+      renderable.alpha = Math.max(0, 0.7 * (1 - fadeProgress));
+      renderable.scale = Math.max(0.05, 0.1 * (1 - fadeProgress));
     }
   }
 }

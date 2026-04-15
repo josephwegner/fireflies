@@ -124,6 +124,43 @@ describe('PulseAttackHandler', () => {
       );
     });
 
+    it('should account for target collisionRadius in hit range', () => {
+      // Place target at exactly pulse radius (50). Without target's collisionRadius,
+      // the check is distance(50) <= radius(50) which is borderline true.
+      // With a large collisionRadius it becomes 50 <= 50 + 45 = 95, clearly true.
+      // The real test: place entity just beyond pulse radius but within getNearby range.
+      // Since getNearby pre-filters at pulse radius, we use a custom spatial grid
+      // with a large cell size so the entity is still returned.
+      const wideGrid = new SpatialGrid(200);
+      const target = world.add({
+        position: { x: 50, y: 0 },
+        physicsBody: { mass: 1, isStatic: true, collisionRadius: 45 },
+        fireflyTag: true
+      });
+
+      wideGrid.insert(attacker, 0, 0);
+      wideGrid.insert(target, 50, 0);
+
+      vi.spyOn(gameEvents, 'emit');
+
+      const context: AttackContext = {
+        attacker,
+        combat: mockCombat,
+        world,
+        spatialGrid: wideGrid
+      };
+
+      handler.execute(context);
+
+      // distance(50) <= radius(50) + targetRadius(45) = 95 → hit
+      expect(gameEvents.emit).toHaveBeenCalledWith(GameEvents.ATTACK_HIT, {
+        attacker,
+        target,
+        damage: 25,
+        knockbackForce: 30
+      });
+    });
+
     it('should set hasHit flag after execution', () => {
       const context: AttackContext = {
         attacker,

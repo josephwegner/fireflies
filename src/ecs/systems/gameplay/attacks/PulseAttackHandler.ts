@@ -65,7 +65,8 @@ export class PulseAttackHandler implements AttackHandler {
       const dy = entity.position.y - attackerPos.y;
       const distance = Vector.length(dx, dy);
 
-      if (distance <= radius) {
+      const targetRadius = entity.physicsBody?.collisionRadius ?? 0;
+      if (distance <= radius + targetRadius) {
         gameEvents.emit(GameEvents.ATTACK_HIT, {
           attacker,
           target: entity,

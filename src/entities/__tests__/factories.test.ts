@@ -392,7 +392,7 @@ describe('Entity Factories', () => {
       const monster = createMonster(world, 0, 0);
 
       expect(firefly.physicsBody!.collisionRadius).toBe(firefly.renderable!.radius);
-      expect(wisp.physicsBody!.collisionRadius).toBe(wisp.renderable!.radius);
+      expect(wisp.physicsBody!.collisionRadius).toBe(45);
       expect(monster.physicsBody!.collisionRadius).toBe(monster.renderable!.radius);
     });
 

@@ -5,13 +5,14 @@ import { GAME_CONFIG } from '@/config';
 import { EnergyManager } from '@/ui/EnergyManager';
 import { parseTmx } from '@/levels/parseTmx';
 import { loadLevelFromData } from '@/levels/loadLevel';
-import { LEVELS } from '@/levels/levelRegistry';
+import { LEVELS, LEVELS_BY_NAME } from '@/levels/levelRegistry';
 import { gameEvents, GameEvents } from '@/events';
 
 export class GameScene extends Phaser.Scene {
   private worldManager!: WorldManager;
   private pathfindingWorker!: Worker;
   private levelIndex = 0;
+  private levelOverride: string | null = null;
 
   constructor() {
     super('GameScene');
@@ -20,8 +21,11 @@ export class GameScene extends Phaser.Scene {
   init(data?: { levelIndex?: number }): void {
     const params = new URLSearchParams(window.location.search);
     const levelParam = params.get('level');
+    this.levelOverride = null;
     if (data?.levelIndex !== undefined) {
       this.levelIndex = data.levelIndex;
+    } else if (levelParam && levelParam in LEVELS_BY_NAME) {
+      this.levelOverride = levelParam;
     } else if (levelParam) {
       this.levelIndex = Math.max(0, Math.min(parseInt(levelParam) - 1, LEVELS.length - 1));
     } else {
@@ -46,7 +50,7 @@ export class GameScene extends Phaser.Scene {
       this.setupViewport(STORE_DRAWER_WIDTH, STATUS_BAR_HEIGHT, mapCenterX, mapCenterY);
     });
 
-    const tmx = LEVELS[this.levelIndex];
+    const tmx = this.levelOverride ? LEVELS_BY_NAME[this.levelOverride] : LEVELS[this.levelIndex];
     const levelData = parseTmx(tmx);
     const levelConfig = {
       initialEnergy: levelData.config.initialEnergy,

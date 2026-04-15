@@ -39,6 +39,7 @@ export class LodgingSystem implements GameSystem {
 
   update(_delta: number, _time: number): void {
     for (const lodgeEntity of this.lodges) {
+      if (lodgeEntity.health?.isDead) continue;
       const { lodge } = lodgeEntity;
 
       // Clean dead tenants

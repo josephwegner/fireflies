@@ -1,5 +1,5 @@
 {
-    "activeFile": "level1.tmx",
+    "activeFile": "level2.tmx",
     "expandedProjectPaths": [
     ],
     "file.lastUsedOpenFilter": "All Files (*)",
@@ -37,8 +37,8 @@
             "scale": 1.7846,
             "selectedLayer": 1,
             "viewCenter": {
-                "x": 637.9580858455677,
-                "y": 222.73898912921663
+                "x": 230.02353468564382,
+                "y": 217.13549254734957
             }
         },
         "main_tiles.tsx": {
@@ -52,13 +52,15 @@
     "map.tileWidth": 48,
     "map.width": 20,
     "openFiles": [
-        "level1.tmx"
+        "demo.tmx",
+        "level1.tmx",
+        "level2.tmx"
     ],
     "project": "fireflies.tiled-project",
     "recentFiles": [
-        "level2.tmx",
-        "level1.tmx",
         "demo.tmx",
+        "level1.tmx",
+        "level2.tmx",
         "level1.tsx"
     ],
     "tileset.lastUsedFormat": "tsx"

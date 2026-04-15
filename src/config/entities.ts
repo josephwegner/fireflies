@@ -72,7 +72,7 @@ export const ENTITY_CONFIG: Readonly<Record<string, Readonly<EntityConfig>>> = O
     speed: 20,
     direction: 'l',
     interactionRadius: 45,
-    interactsWith: Object.freeze(['firefly']),
+    interactsWith: Object.freeze(['firefly', 'wisp']),
     health: 50,
     combat: Object.freeze({
       chargeTime: 2200,

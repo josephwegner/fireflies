@@ -433,6 +433,193 @@ describe('DamageSystem', () => {
     });
   });
 
+  describe('lodge tenant death', () => {
+    it('should kill all tenants when a lodge entity dies', () => {
+      const tenant1 = world.add({
+        fireflyTag: true,
+        health: { currentHealth: 50, maxHealth: 50, isDead: false },
+        renderable: {
+          type: 'firefly', sprite: 'firefly', color: 0xffff00, radius: 5,
+          alpha: 1, scale: 1, tint: 0xFFFFFF, rotation: 0, rotationSpeed: 0, depth: 50, offsetY: 0
+        }
+      });
+
+      const tenant2 = world.add({
+        fireflyTag: true,
+        health: { currentHealth: 50, maxHealth: 50, isDead: false },
+        renderable: {
+          type: 'firefly', sprite: 'firefly', color: 0xffff00, radius: 5,
+          alpha: 1, scale: 1, tint: 0xFFFFFF, rotation: 0, rotationSpeed: 0, depth: 50, offsetY: 0
+        }
+      });
+
+      const attacker = world.add({});
+      const lodge = world.add({
+        health: { currentHealth: 10, maxHealth: 500, isDead: false },
+        position: { x: 100, y: 100 },
+        renderable: {
+          type: 'wisp', sprite: 'wisp', color: 0xB0C4DE, radius: 18,
+          alpha: 1, scale: 1, tint: 0xB0C4DE, rotation: 0, rotationSpeed: 0, depth: 40, offsetY: 0
+        },
+        physicsBody: { mass: 1, isStatic: true, collisionRadius: 45 },
+        lodge: { tenants: [tenant1, tenant2], incoming: [], allowedTenants: ['firefly'], maxTenants: 2 }
+      });
+
+      gameEvents.emit(GameEvents.ATTACK_HIT, { attacker, target: lodge, damage: 10 });
+
+      expect(tenant1.health!.isDead).toBe(true);
+      expect(tenant2.health!.isDead).toBe(true);
+      expect(world.has(tenant1)).toBe(false);
+      expect(world.has(tenant2)).toBe(false);
+      expect(lodge.lodge!.tenants).toHaveLength(0);
+      expect(lodge.lodge!.incoming).toHaveLength(0);
+    });
+
+    it('should emit ENTITY_DIED for each tenant with lodge position', () => {
+      const tenant = world.add({
+        fireflyTag: true,
+        health: { currentHealth: 50, maxHealth: 50, isDead: false },
+        renderable: {
+          type: 'firefly', sprite: 'firefly', color: 0xffff00, radius: 5,
+          alpha: 1, scale: 1, tint: 0xFFFFFF, rotation: 0, rotationSpeed: 0, depth: 50, offsetY: 0
+        }
+      });
+
+      const attacker = world.add({});
+      const lodge = world.add({
+        health: { currentHealth: 10, maxHealth: 500, isDead: false },
+        position: { x: 200, y: 300 },
+        renderable: {
+          type: 'wisp', sprite: 'wisp', color: 0xB0C4DE, radius: 18,
+          alpha: 1, scale: 1, tint: 0xB0C4DE, rotation: 0, rotationSpeed: 0, depth: 40, offsetY: 0
+        },
+        physicsBody: { mass: 1, isStatic: true, collisionRadius: 45 },
+        lodge: { tenants: [tenant], incoming: [], allowedTenants: ['firefly'], maxTenants: 1 }
+      });
+
+      const diedEvents: any[] = [];
+      gameEvents.on(GameEvents.ENTITY_DIED, (data) => diedEvents.push(data));
+
+      gameEvents.emit(GameEvents.ATTACK_HIT, { attacker, target: lodge, damage: 10 });
+
+      const tenantDeath = diedEvents.find(e => e.entity === tenant);
+      expect(tenantDeath).toBeDefined();
+      expect(tenantDeath.position).toEqual({ x: 200, y: 300 });
+    });
+
+    it('should clear incoming when lodge dies', () => {
+      const incoming = world.add({ fireflyTag: true });
+      const attacker = world.add({});
+      const lodge = world.add({
+        health: { currentHealth: 10, maxHealth: 500, isDead: false },
+        position: { x: 100, y: 100 },
+        renderable: {
+          type: 'wisp', sprite: 'wisp', color: 0xB0C4DE, radius: 18,
+          alpha: 1, scale: 1, tint: 0xB0C4DE, rotation: 0, rotationSpeed: 0, depth: 40, offsetY: 0
+        },
+        physicsBody: { mass: 1, isStatic: true, collisionRadius: 45 },
+        lodge: { tenants: [], incoming: [incoming], allowedTenants: ['firefly'], maxTenants: 1 }
+      });
+
+      gameEvents.emit(GameEvents.ATTACK_HIT, { attacker, target: lodge, damage: 10 });
+
+      expect(lodge.lodge!.incoming).toHaveLength(0);
+    });
+
+    it('should skip already-removed tenants gracefully', () => {
+      const tenant = world.add({ fireflyTag: true });
+      world.remove(tenant);
+
+      const attacker = world.add({});
+      const lodge = world.add({
+        health: { currentHealth: 10, maxHealth: 500, isDead: false },
+        position: { x: 100, y: 100 },
+        renderable: {
+          type: 'wisp', sprite: 'wisp', color: 0xB0C4DE, radius: 18,
+          alpha: 1, scale: 1, tint: 0xB0C4DE, rotation: 0, rotationSpeed: 0, depth: 40, offsetY: 0
+        },
+        physicsBody: { mass: 1, isStatic: true, collisionRadius: 45 },
+        lodge: { tenants: [tenant], incoming: [], allowedTenants: ['firefly'], maxTenants: 1 }
+      });
+
+      expect(() => {
+        gameEvents.emit(GameEvents.ATTACK_HIT, { attacker, target: lodge, damage: 10 });
+      }).not.toThrow();
+    });
+  });
+
+  describe('structure death animation', () => {
+    it('should use longer duration for static structures', () => {
+      const attacker = world.add({});
+      const structure = world.add({
+        health: { currentHealth: 10, maxHealth: 500, isDead: false },
+        position: { x: 100, y: 100 },
+        renderable: {
+          type: 'wisp', sprite: 'wisp', color: 0xB0C4DE, radius: 18,
+          alpha: 1, scale: 1, tint: 0xB0C4DE, rotation: 0, rotationSpeed: 0, depth: 40, offsetY: 0
+        },
+        physicsBody: { mass: 1, isStatic: true, collisionRadius: 45 }
+      });
+
+      gameEvents.emit(GameEvents.ATTACK_HIT, { attacker, target: structure, damage: 10 });
+
+      // After normal death duration (500ms), structure should still exist
+      const normalDuration = PHYSICS_CONFIG.DEATH_ANIMATION_DURATION;
+      system.update(normalDuration, normalDuration);
+      expect(world.has(structure)).toBe(true);
+
+      // After 800ms total, structure should be removed
+      system.update(400, 400);
+      expect(world.has(structure)).toBe(false);
+    });
+
+    it('should flicker alpha during first phase', () => {
+      const attacker = world.add({});
+      const structure = world.add({
+        health: { currentHealth: 10, maxHealth: 500, isDead: false },
+        position: { x: 100, y: 100 },
+        renderable: {
+          type: 'wisp', sprite: 'wisp', color: 0xB0C4DE, radius: 18,
+          alpha: 1, scale: 1, tint: 0xB0C4DE, rotation: 0, rotationSpeed: 0, depth: 40, offsetY: 0
+        },
+        physicsBody: { mass: 1, isStatic: true, collisionRadius: 45 }
+      });
+
+      gameEvents.emit(GameEvents.ATTACK_HIT, { attacker, target: structure, damage: 10 });
+
+      // Step through flicker phase (0-40% of 800ms = 0-320ms)
+      system.update(100, 100);
+      const alpha1 = structure.renderable!.alpha;
+      system.update(50, 50);
+      const alpha2 = structure.renderable!.alpha;
+
+      // Alpha should oscillate, not just linearly decrease
+      expect(alpha1).toBeGreaterThanOrEqual(0.3);
+      expect(alpha2).toBeGreaterThanOrEqual(0.3);
+      expect(alpha1).toBeLessThanOrEqual(1);
+    });
+
+    it('should shrink scale during implosion phase', () => {
+      const attacker = world.add({});
+      const structure = world.add({
+        health: { currentHealth: 10, maxHealth: 500, isDead: false },
+        position: { x: 100, y: 100 },
+        renderable: {
+          type: 'wisp', sprite: 'wisp', color: 0xB0C4DE, radius: 18,
+          alpha: 1, scale: 1, tint: 0xB0C4DE, rotation: 0, rotationSpeed: 0, depth: 40, offsetY: 0
+        },
+        physicsBody: { mass: 1, isStatic: true, collisionRadius: 45 }
+      });
+
+      gameEvents.emit(GameEvents.ATTACK_HIT, { attacker, target: structure, damage: 10 });
+
+      // Advance past flicker phase into implosion (40-70% of 800ms)
+      system.update(400, 400); // at 400ms = 50% progress
+      expect(structure.renderable!.scale).toBeLessThan(1);
+      expect(structure.renderable!.scale).toBeGreaterThan(0);
+    });
+  });
+
   describe('firefly eviction on victory', () => {
     it('should evict all lodged fireflies when victory is triggered', () => {
       const firefly1 = world.add({

@@ -38,6 +38,10 @@ export class ParticleEffectsSystem implements GameSystem {
     if (data.position && data.entity.monsterTag) {
       this.createGeometricDispersion(data.position.x, data.position.y, 0xC65D3B);
     }
+    if (data.position && data.entity.physicsBody?.isStatic) {
+      const color = data.entity.renderable?.glow?.color ?? 0xB0C4DE;
+      this.createLightBurst(data.position.x, data.position.y, color);
+    }
   }
 
   private createLightBurst(x: number, y: number, color: number): void {

@@ -113,11 +113,11 @@ export function createWisp(world: GameWorld, x: number, y: number): Entity {
     physicsBody: {
       mass: config.mass,
       isStatic: config.isStatic,
-      collisionRadius: config.radius
+      collisionRadius: 45
     },
     health: {
-      currentHealth: 500,
-      maxHealth: 500,
+      currentHealth: 100,
+      maxHealth: 100,
       isDead: false
     },
     wispTag: true,

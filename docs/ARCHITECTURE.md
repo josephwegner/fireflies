@@ -75,14 +75,26 @@ Combat visuals are fully decoupled from combat logic via events:
 - `COMBAT_CHARGING` / `COMBAT_ATTACK_BURST` / `COMBAT_RECOVERING` / `COMBAT_CLEANUP`
 - CombatSystem emits these; CombatVisualsSystem listens and renders
 
+Level flow is event-driven:
+- `GAME_STARTED` — emitted by OverlaySystem when player clicks start; unpauses gameplay
+- `LEVEL_WON` — emitted by FireflyGoalSystem when enough fireflies collected; pauses gameplay
+- `LEVEL_LOST` — emitted by DefeatSystem (monster reached goal, or insufficient fireflies); pauses gameplay
+
 ## Directory Structure
 
 ```
+maps/                        # Tiled map editor files
+├── *.tmx                    # Level maps (XML-based Tiled format)
+├── *.tsx                    # Tileset definitions
+├── tileset.png              # Tile spritesheet
+├── propertytypes.json       # Custom property type definitions for Tiled
+└── *.tiled-project/session  # Tiled editor state
+
 src/
 ├── assets/              # Asset loading and manifest
 ├── config/              # Frozen configuration objects
 │   ├── entities.ts      # Entity type definitions
-│   ├── game.ts          # Game-wide settings
+│   ├── game.ts          # Game-wide settings (store costs, tile size, etc.)
 │   └── physics.ts       # Physics and pathfinding config
 ├── ecs/
 │   ├── Entity.ts        # Central Entity type + all component interfaces
@@ -92,10 +104,11 @@ src/
 │   └── systems/
 │       ├── gameplay/    # Game logic systems
 │       ├── rendering/   # Rendering systems (Phaser-dependent)
+│       ├── ui/          # UI overlay and placement systems
 │       └── effects/     # Particle effects
 ├── entities/            # Entity factories (world.add pattern)
 ├── events/              # Typed event system
-├── levels/              # Level data and entity spawning
+├── levels/              # Level loading pipeline (TMX parsing, registry)
 ├── scenes/              # Phaser scenes (thin orchestration)
 ├── types/               # TypeScript type definitions
 ├── utils/               # Shared utilities
@@ -131,6 +144,9 @@ export type Entity = {
   lodge?: Lodge;              // { tenants, allowedTenants, maxTenants }
   activationConfig?: ActivationConfig;
   fireflyGoal?: FireflyGoal;  // { currentCount }
+  spawner?: Spawner;          // { queue, state } — timed entity spawning
+  redirect?: Redirect;        // { exits, radius, for } — weighted path redirection
+  redirectTarget?: { x, y };  // Temporary override destination from a redirect
 
   // Tags (boolean flags)
   fireflyTag?: true;
@@ -138,6 +154,8 @@ export type Entity = {
   monsterTag?: true;
   goalTag?: true;
   wallTag?: true;
+  spawnerTag?: true;
+  redirectTag?: true;
   fleeingToGoalTag?: true;
 };
 
@@ -188,7 +206,10 @@ export class MovementSystem implements GameSystem {
 | **DamageSystem** | Handles ATTACK_HIT events, applies damage, manages death animations |
 | **LodgingSystem** | Manages tenant lifecycle in lodges, triggers activation/deactivation |
 | **WallGenerationSystem** | Generates walls via marching squares, sends to pathfinding worker |
-| **FireflyGoalSystem** | Tracks firefly collection progress, updates goal glow |
+| **SpawnerSystem** | Processes spawner queues, creates entities on timers with repeat/delay support |
+| **RedirectSystem** | Detects entities entering redirect zones, picks weighted exit, overrides path |
+| **FireflyGoalSystem** | Tracks firefly collection progress, emits LEVEL_WON when threshold met |
+| **DefeatSystem** | Emits LEVEL_LOST when a monster reaches its goal or insufficient fireflies remain |
 | **VictorySystem** | Listens for ENTITY_DIED, checks if all monsters defeated, evicts fireflies |
 
 ### Rendering Systems
@@ -201,59 +222,84 @@ export class MovementSystem implements GameSystem {
 | **ForestDecorationSystem** | Places tree sprites on non-pathable tiles |
 | **TrailSystem** | Renders fading movement trails behind entities |
 | **WispVisualsSystem** | Updates wisp sprite based on lodge occupancy |
+| **DebugRedirectSystem** | Visualizes redirect zones and exits (enabled via `?debug` URL param) |
 | **ParticleEffectsSystem** | Event-driven particle bursts for lodging and death |
+
+### UI Systems
+
+| System | Responsibility |
+|--------|---------------|
+| **UISystem** | Energy display and HUD elements |
+| **PlacementSystem** | Handles wisp placement via user interaction |
+| **OverlaySystem** | Pregame start button, victory/defeat overlays, level progression buttons |
 
 ## WorldManager
 
-`WorldManager` is the central orchestrator, replacing the previous pattern where GameScene owned everything:
+`WorldManager` is the central orchestrator. Systems are split into three update groups:
+
+- **Rendering systems** — always run (sprites, walls, trails, debug overlays)
+- **UI systems** — always run (HUD, placement, victory/defeat overlays)
+- **Gameplay systems** — only run when unpaused (movement, combat, spawning, etc.)
 
 ```typescript
 export class WorldManager {
   readonly world: GameWorld;
   readonly spatialGrid: SpatialGrid;
+  private renderingSystems: GameSystem[] = [];
+  private uiSystems: GameSystem[] = [];
+  private gameplaySystems: GameSystem[] = [];
+  private _paused = true;
 
-  constructor(scene: Phaser.Scene, pathfindingWorker: Worker, map: number[][]) {
-    this.world = new World<Entity>();
-    this.spatialGrid = new SpatialGrid(PHYSICS_CONFIG.SPATIAL_GRID_CELL_SIZE);
-    this.registerSystems(); // Creates all systems in order
-  }
+  constructor(scene, pathfindingWorker, map, config: WorldManagerConfig) { ... }
 
   update(delta: number, time: number): void {
     this.rebuildSpatialGrid();
-    for (const system of this.systems) {
-      system.update(delta, time);
+    for (const system of this.renderingSystems) system.update(delta, time);
+    for (const system of this.uiSystems) system.update(delta, time);
+    if (!this._paused) {
+      for (const system of this.gameplaySystems) system.update(delta, time);
     }
   }
 }
 ```
 
-GameScene is now thin orchestration:
+The game starts paused. The `OverlaySystem` shows a start button; pressing it emits `GAME_STARTED`, which GameScene uses to unpause. On `LEVEL_WON` or `LEVEL_LOST`, the game pauses again and the overlay shows next-level or retry buttons.
+
+GameScene is thin orchestration — it parses the TMX level, creates the WorldManager, and wires up level-flow event listeners:
 
 ```typescript
 create(): void {
-  this.worldManager = new WorldManager(this, this.pathfindingWorker, LEVEL_1_MAP);
-  loadLevel(this.worldManager.world);
-}
-
-update(time: number, delta: number): void {
-  this.worldManager.update(delta, time);
+  const levelData = parseTmx(LEVELS[this.levelIndex]);
+  this.worldManager = new WorldManager(this, this.pathfindingWorker, levelData.map, {
+    energyManager, levelConfig, levelIndex,
+    onNextLevel: () => this.scene.restart({ levelIndex: this.levelIndex + 1 }),
+    onRetry: () => this.scene.restart({ levelIndex: this.levelIndex }),
+  });
+  loadLevelFromData(this.worldManager.world, levelData);
 }
 ```
 
 ## Levels
 
-Level data and entity spawning are separated from the scene:
+Levels are authored in [Tiled](https://www.mapeditor.org/) and stored as `.tmx` files in the `maps/` directory. The loading pipeline is:
+
+1. **`levelRegistry.ts`** — imports TMX files as raw strings via Vite's `?raw` suffix
+2. **`parseTmx(xml)`** — parses the TMX XML into a `LevelData` object:
+   - Tile layer CSV → `number[][]` map grid (GID-1 mapping)
+   - Map-level properties → `LevelConfig` (`initialEnergy`, `firefliesToWin`)
+   - Object layer → `EntityDescriptor[]` (spawners, goals, wisps, redirects)
+3. **`loadLevelFromData(world, data)`** — calls entity factories for each descriptor
 
 ```typescript
-// src/levels/level1.ts
-export const LEVEL_1_MAP: number[][] = [ /* tile data */ ];
-
-export function loadLevel(world: GameWorld): void {
-  createFirefly(world, x, y);
-  createWisp(world, x, y);
-  // ...
-}
+// src/levels/levelRegistry.ts
+import level1Tmx from '../../maps/level1.tmx?raw';
+import level2Tmx from '../../maps/level2.tmx?raw';
+export const LEVELS: readonly string[] = [level1Tmx, level2Tmx];
 ```
+
+Tiled objects use custom properties (defined in `maps/propertytypes.json`) for entity-specific data like spawner queues (JSON), redirect exits (linked via `redirect_exit` objects), and goal types.
+
+Level selection: GameScene reads `?level=N` from the URL, or accepts `{ levelIndex }` via scene restart data.
 
 ## Pathfinding Architecture
 
@@ -282,6 +328,10 @@ Main Thread                    Worker Thread
 3. **Triangulation**: Earcut library for triangulation
 4. **Caching**: NavMesh cached per radius size
 
+### Snap-to-Mesh
+
+When a start or destination point falls outside the NavMesh (e.g., an entity near a wall edge), the `pathfind` function snaps it to the closest mesh point within a 20-unit radius before querying. This prevents pathfinding failures for entities slightly off the walkable area.
+
 ### Race Condition Prevention
 
 - Pending requests tracked in `Map<entityId, timeout>`
@@ -305,8 +355,10 @@ export const PHYSICS_CONFIG = Object.freeze({
 ### Configuration Files
 
 - `entities.ts`: Entity type definitions (frozen, readonly arrays)
-- `game.ts`: Canvas size, tile size, wall config, victory conditions
+- `game.ts`: Canvas size, tile size, wall config, store costs
 - `physics.ts`: Movement, friction, pathfinding weights
+
+Per-level configuration (energy budget, win threshold) is defined as Tiled map properties in each `.tmx` file, parsed at load time rather than stored in global config.
 
 ## Event System
 
@@ -323,6 +375,9 @@ export interface GameEventPayloads {
     attackPattern: AttackPattern;
     position: { x: number; y: number }
   };
+  [GameEvents.LEVEL_WON]: { firefliesCollected: number };
+  [GameEvents.LEVEL_LOST]: { reason: 'monster_reached_goal' | 'insufficient_fireflies' };
+  [GameEvents.GAME_STARTED]: {};
   // ...
 }
 ```
