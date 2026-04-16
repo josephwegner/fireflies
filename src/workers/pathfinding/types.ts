@@ -19,7 +19,12 @@ export interface BuildNavMeshMessage {
   walls: Point[][];
 }
 
-export type WorkerMessage = PathfindMessage | BuildNavMeshMessage;
+export interface UpdateWallsMessage {
+  action: 'updateWalls';
+  walls: Point[][];
+}
+
+export type WorkerMessage = PathfindMessage | BuildNavMeshMessage | UpdateWallsMessage;
 
 export interface NavMeshReadyResponse {
   action: 'navmeshReady';
@@ -41,7 +46,11 @@ export interface ErrorResponse {
   requestId?: string;
 }
 
-export type WorkerResponse = NavMeshReadyResponse | PathfindResponse | ErrorResponse;
+export interface NavMeshUpdatedResponse {
+  action: 'navmeshUpdated';
+}
+
+export type WorkerResponse = NavMeshReadyResponse | PathfindResponse | ErrorResponse | NavMeshUpdatedResponse;
 
 export interface NavMesh {
   findPath(start: Point, end: Point): Point[] | null;

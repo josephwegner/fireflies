@@ -114,7 +114,8 @@ src/
 ├── utils/               # Shared utilities
 │   ├── logger.ts        # Environment-aware logging
 │   ├── SpatialGrid.ts   # Spatial partitioning
-│   └── vector.ts        # Vector math utilities
+│   ├── vector.ts        # Vector math utilities
+│   └── geometry.ts      # Geometry utilities (ray intersection, point-to-segment, etc.)
 └── workers/             # Web Workers
     └── pathfinding/     # Pathfinding computation
 ```
@@ -148,6 +149,10 @@ export type Entity = {
   redirect?: Redirect;        // { exits, radius, forTeam } — weighted path redirection
   redirectTarget?: { x, y };  // Temporary override destination from a redirect
 
+  // Building
+  buildable?: Buildable;      // { sites: BuildSite[], buildTime, allBuilt } — generic build sites
+  wallBlueprint?: WallBlueprint; // { active, passableBy? } — wall-specific activation
+
   // Team — 'firefly' | 'monster', used for enemy detection, routing, lodging
   team?: Team;
 
@@ -159,6 +164,7 @@ export type Entity = {
   wallTag?: true;
   spawnerTag?: true;
   redirectTag?: true;
+  wallBlueprintTag?: true;
   fleeingToGoalTag?: true;
 };
 
@@ -210,7 +216,9 @@ export class MovementSystem implements GameSystem {
 | **LodgingSystem** | Manages tenant lifecycle in lodges, triggers activation/deactivation |
 | **WallGenerationSystem** | Generates walls via marching squares, sends to pathfinding worker |
 | **SpawnerSystem** | Processes spawner queues, creates entities on timers with repeat/delay support |
-| **RedirectSystem** | Detects entities entering redirect zones, picks weighted exit, overrides path |
+| **RedirectSystem** | Detects entities entering redirect zones, picks weighted exit, overrides path. One-time-only per entity; tracking resets on navmesh update |
+| **BuildingSystem** | Generic build-site recruitment (Manhattan estimate for 1 vs 2 builders), build progress ticking, sequential handoff |
+| **WallActivationSystem** | Listens for BUILD_COMPLETE on wall blueprints, activates wall, pushes out overlapping entities, triggers navmesh rebuild |
 | **FireflyGoalSystem** | Tracks firefly collection progress, emits LEVEL_WON when threshold met |
 | **DefeatSystem** | Emits LEVEL_LOST when a monster reaches its goal or insufficient fireflies remain |
 | **VictorySystem** | Listens for ENTITY_DIED, checks if all monsters defeated, evicts fireflies |
@@ -225,6 +233,7 @@ export class MovementSystem implements GameSystem {
 | **ForestDecorationSystem** | Places tree sprites on non-pathable tiles |
 | **TrailSystem** | Renders fading movement trails behind entities |
 | **WispVisualsSystem** | Updates wisp sprite based on lodge occupancy |
+| **WallBlueprintRenderingSystem** | Renders wall blueprints (dashed lines when building, solid when active), build-progress indicators at nodes |
 | **DebugRedirectSystem** | Visualizes redirect zones and exits (enabled via `?debug` URL param) |
 | **ParticleEffectsSystem** | Event-driven particle bursts for lodging and death |
 
@@ -234,6 +243,7 @@ export class MovementSystem implements GameSystem {
 |--------|---------------|
 | **UISystem** | Energy display and HUD elements |
 | **PlacementSystem** | Handles wisp placement via user interaction |
+| **WallPlacementSystem** | Two-click wall placement: first anchor snaps to wall geometry, second anchor snaps to ray-wall intersection |
 | **OverlaySystem** | Pregame start button, victory/defeat overlays, level progression buttons |
 
 ## WorldManager

@@ -34,6 +34,16 @@ export interface GameEventPayloads {
   [GameEvents.PLACEMENT_STARTED]: { itemType: string; cost: number };
   [GameEvents.PLACEMENT_COMPLETED]: { itemType: string; x: number; y: number };
   [GameEvents.PLACEMENT_CANCELLED]: { itemType: string };
+
+  // Building events
+  [GameEvents.BUILD_SITE_STARTED]: { entity: Entity; siteIndex: number };
+  [GameEvents.BUILD_SITE_COMPLETED]: { entity: Entity; siteIndex: number };
+  [GameEvents.BUILD_COMPLETE]: { entity: Entity };
+
+  // Wall events
+  [GameEvents.WALL_BLUEPRINT_PLACED]: { entity: Entity };
+  [GameEvents.WALL_ACTIVATED]: { entity: Entity };
+  [GameEvents.NAVMESH_UPDATED]: {};
 }
 
 type EventCallback<T = any> = (data: T) => void;
@@ -74,6 +84,16 @@ export class GameEvents {
   static readonly PLACEMENT_STARTED = 'placement:started';
   static readonly PLACEMENT_COMPLETED = 'placement:completed';
   static readonly PLACEMENT_CANCELLED = 'placement:cancelled';
+
+  // Building events
+  static readonly BUILD_SITE_STARTED = 'build:siteStarted';
+  static readonly BUILD_SITE_COMPLETED = 'build:siteCompleted';
+  static readonly BUILD_COMPLETE = 'build:complete';
+
+  // Wall events
+  static readonly WALL_BLUEPRINT_PLACED = 'wall:blueprintPlaced';
+  static readonly WALL_ACTIVATED = 'wall:activated';
+  static readonly NAVMESH_UPDATED = 'navmesh:updated';
 
   on<K extends keyof GameEventPayloads>(
     event: K,

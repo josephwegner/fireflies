@@ -1,8 +1,9 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
 import { World } from 'miniplex';
 import type { Entity, GameWorld } from '@/ecs/Entity';
 import { RedirectSystem } from '../RedirectSystem';
 import { PHYSICS_CONFIG } from '@/config';
+import { gameEvents, GameEvents } from '@/events';
 import {
   createTestFirefly,
   createTestMonster,
@@ -17,6 +18,11 @@ describe('RedirectSystem', () => {
   beforeEach(() => {
     world = new World<Entity>();
     system = new RedirectSystem(world, {});
+  });
+
+  afterEach(() => {
+    system.destroy();
+    gameEvents.clear();
   });
 
   describe('basic redirect', () => {
@@ -95,8 +101,8 @@ describe('RedirectSystem', () => {
       expect(firefly.redirectTarget).toBeUndefined();
     });
 
-    it('should clear tracking when entity leaves radius', () => {
-      const redirect = createTestRedirect(world, {
+    it('should NOT re-trigger after entity leaves and re-enters radius (one-time-only)', () => {
+      createTestRedirect(world, {
         x: 200, y: 200,
         exits: [{ x: 200, y: 100, weight: 1 }],
         for: 'firefly',
@@ -109,16 +115,41 @@ describe('RedirectSystem', () => {
       expect(firefly.redirectTarget).toBeDefined();
 
       world.removeComponent(firefly, 'redirectTarget');
+
+      // Move outside radius
       firefly.position!.x = 400;
       firefly.position!.y = 400;
-
       system.update(16, 0);
 
+      // Move back inside radius — should NOT re-trigger
       firefly.position!.x = 210;
       firefly.position!.y = 210;
+      system.update(16, 0);
 
+      expect(firefly.redirectTarget).toBeUndefined();
+    });
+
+    it('should not re-trigger after NAVMESH_UPDATED (redirect is permanent one-time-only)', () => {
+      createTestRedirect(world, {
+        x: 200, y: 200,
+        exits: [{ x: 200, y: 100, weight: 1 }],
+        for: 'firefly',
+        radius: 50
+      });
+
+      const firefly = createTestFirefly(world, { x: 210, y: 210 });
+
+      // First trigger
       system.update(16, 0);
       expect(firefly.redirectTarget).toBeDefined();
+
+      world.removeComponent(firefly, 'redirectTarget');
+
+      // Navmesh update does NOT clear tracking — redirect stays one-time-only
+      gameEvents.emit(GameEvents.NAVMESH_UPDATED, {});
+
+      system.update(16, 0);
+      expect(firefly.redirectTarget).toBeUndefined();
     });
   });
 

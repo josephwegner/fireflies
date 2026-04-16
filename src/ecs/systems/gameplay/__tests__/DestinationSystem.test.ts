@@ -400,7 +400,7 @@ describe('DestinationSystem', () => {
       expect(navMessages[0].destination).toEqual({ x: 300, y: 300 });
     });
 
-    it('should request goalPath from lodge to goal for assigned entity', () => {
+    it('should not pre-compute goalPath for assigned entity (it should wait at target)', () => {
       const firefly = createTestFirefly(world, {
         x: 100, y: 100,
         currentPath: [{ x: 200, y: 200 }]
@@ -416,9 +416,36 @@ describe('DestinationSystem', () => {
       const goalPathMessages = getPostMessages().filter(
         (m: any) => m.pathType === 'next'
       );
-      expect(goalPathMessages.length).toBeGreaterThan(0);
-      expect(goalPathMessages[0].start).toEqual({ x: 300, y: 300 });
-      expect(goalPathMessages[0].destination).toEqual({ x: 500, y: 500 });
+      expect(goalPathMessages.length).toBe(0);
+    });
+
+    it('should skip all navigation when assignedDestination.holding is true', () => {
+      const firefly = createTestFirefly(world, { x: 100, y: 100 });
+      const wisp = createTestWisp(world, { x: 300, y: 300 });
+      createTestGoal(world);
+
+      world.addComponent(firefly, 'assignedDestination', { target: wisp, holding: true });
+
+      system = new DestinationSystem(world, { worker: mockWorker });
+      system.update(16, 16);
+
+      const allMessages = getPostMessages();
+      expect(allMessages.length).toBe(0);
+    });
+
+    it('should navigate to assigned target when holding is false', () => {
+      const firefly = createTestFirefly(world, { x: 100, y: 100 });
+      const wisp = createTestWisp(world, { x: 300, y: 300 });
+      createTestGoal(world);
+
+      world.addComponent(firefly, 'assignedDestination', { target: wisp, holding: false });
+
+      system = new DestinationSystem(world, { worker: mockWorker });
+      system.update(16, 16);
+
+      const navMessages = getPostMessages().filter((m: any) => m.pathType === 'current');
+      expect(navMessages.length).toBeGreaterThan(0);
+      expect(navMessages[0].destination).toEqual({ x: 300, y: 300 });
     });
 
     it('should request path to goal for fleeing entity, ignoring assignment', () => {

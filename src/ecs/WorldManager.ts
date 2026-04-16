@@ -20,6 +20,8 @@ import { VictorySystem } from './systems/gameplay/VictorySystem';
 import { SpawnerSystem } from './systems/gameplay/SpawnerSystem';
 import { RedirectSystem } from './systems/gameplay/RedirectSystem';
 import { DefeatSystem } from './systems/gameplay/DefeatSystem';
+import { BuildingSystem } from './systems/gameplay/BuildingSystem';
+import { WallActivationSystem } from './systems/gameplay/WallActivationSystem';
 
 // Rendering systems
 import { RenderingSystem } from './systems/rendering/RenderingSystem';
@@ -29,11 +31,13 @@ import { TrailSystem } from './systems/rendering/TrailSystem';
 import { WispVisualsSystem } from './systems/rendering/WispVisualsSystem';
 import { CombatVisualsSystem } from './systems/rendering/CombatVisualsSystem';
 import { DebugRedirectSystem } from './systems/rendering/DebugRedirectSystem';
+import { WallBlueprintRenderingSystem } from './systems/rendering/WallBlueprintRenderingSystem';
 import { ParticleEffectsSystem } from './systems/effects/ParticleEffectsSystem';
 
 // UI systems
 import { UISystem } from './systems/ui/UISystem';
 import { PlacementSystem } from './systems/ui/PlacementSystem';
+import { WallPlacementSystem } from './systems/ui/WallPlacementSystem';
 import { OverlaySystem } from './systems/ui/OverlaySystem';
 
 // Attack handlers
@@ -86,6 +90,7 @@ export class WorldManager {
       renderingSystem: this.renderingSystem
     }));
     this.renderingSystems.push(new ParticleEffectsSystem(this.world, { scene: this.scene }));
+    this.renderingSystems.push(new WallBlueprintRenderingSystem(this.world, { scene: this.scene }));
     this.renderingSystems.push(new WallGenerationSystem(this.world, {
       worker: this.pathfindingWorker,
       map: this.map
@@ -107,6 +112,10 @@ export class WorldManager {
       levelConfig: this.config.levelConfig,
       map: this.map
     }));
+    this.uiSystems.push(new WallPlacementSystem(this.world, {
+      scene: this.scene,
+      energyManager: this.config.energyManager
+    }));
     this.uiSystems.push(new OverlaySystem(this.world, {
       scene: this.scene,
       levelIndex: this.config.levelIndex,
@@ -122,6 +131,8 @@ export class WorldManager {
     this.gameplaySystems.push(new LodgingSystem(this.world, { spatialGrid: this.spatialGrid }));
     this.gameplaySystems.push(new DamageSystem(this.world, {}));
     this.gameplaySystems.push(new MovementSystem(this.world, {}));
+    this.gameplaySystems.push(new BuildingSystem(this.world, { worker: this.pathfindingWorker }));
+    this.gameplaySystems.push(new WallActivationSystem(this.world, { worker: this.pathfindingWorker }));
     this.gameplaySystems.push(new RedirectSystem(this.world, {}));
     this.gameplaySystems.push(new DestinationSystem(this.world, { worker: this.pathfindingWorker }));
     this.gameplaySystems.push(new FireflyGoalSystem(this.world, {

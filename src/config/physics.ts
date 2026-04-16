@@ -21,6 +21,9 @@ export const PHYSICS_CONFIG = Object.freeze({
   MAX_KNOCKBACK_VELOCITY: 200,
   DEATH_ANIMATION_DURATION: 500,
 
+  // Building
+  BUILD_SITE_RADIUS: 20,
+
   // Spatial Partitioning
   SPATIAL_GRID_CELL_SIZE: 150
 });

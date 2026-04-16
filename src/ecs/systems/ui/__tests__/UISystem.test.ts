@@ -5,6 +5,22 @@ import { UISystem } from '../UISystem';
 import { EnergyManager } from '@/ui/EnergyManager';
 import { gameEvents, GameEvents } from '@/events';
 
+function createMockGraphics() {
+  return {
+    setScrollFactor: vi.fn().mockReturnThis(),
+    setDepth: vi.fn().mockReturnThis(),
+    setOrigin: vi.fn().mockReturnThis(),
+    fillStyle: vi.fn().mockReturnThis(),
+    fillRect: vi.fn().mockReturnThis(),
+    fillCircle: vi.fn().mockReturnThis(),
+    lineStyle: vi.fn().mockReturnThis(),
+    lineBetween: vi.fn().mockReturnThis(),
+    clear: vi.fn().mockReturnThis(),
+    setAlpha: vi.fn().mockReturnThis(),
+    destroy: vi.fn()
+  };
+}
+
 function createMockScene() {
   const mockText = {
     setScrollFactor: vi.fn().mockReturnThis(),
@@ -15,15 +31,16 @@ function createMockScene() {
     destroy: vi.fn()
   };
 
+  const mockBackground = createMockGraphics();
+  const mockWallIcon = createMockGraphics();
+
   const mockRect = {
     setScrollFactor: vi.fn().mockReturnThis(),
     setDepth: vi.fn().mockReturnThis(),
-    setOrigin: vi.fn().mockReturnThis(),
-    fillStyle: vi.fn().mockReturnThis(),
-    fillRect: vi.fn().mockReturnThis(),
-    lineStyle: vi.fn().mockReturnThis(),
-    lineBetween: vi.fn().mockReturnThis(),
-    clear: vi.fn().mockReturnThis(),
+    setAlpha: vi.fn().mockReturnThis(),
+    setInteractive: vi.fn().mockReturnThis(),
+    disableInteractive: vi.fn().mockReturnThis(),
+    on: vi.fn().mockReturnThis(),
     destroy: vi.fn()
   };
 
@@ -56,9 +73,12 @@ function createMockScene() {
   return {
     scene: {
       add: {
-        text: vi.fn().mockReturnValueOnce(mockText).mockReturnValue(mockCostText),
-        graphics: vi.fn().mockReturnValue(mockRect),
-        sprite: vi.fn().mockReturnValue(mockSprite)
+        text: vi.fn().mockReturnValueOnce(mockText)
+          .mockReturnValueOnce(mockCostText)
+          .mockReturnValue(mockCostText),
+        graphics: vi.fn().mockReturnValueOnce(mockBackground).mockReturnValue(mockWallIcon),
+        sprite: vi.fn().mockReturnValue(mockSprite),
+        rectangle: vi.fn().mockReturnValue(mockRect)
       },
       scale: {
         width: 1200,
@@ -70,6 +90,8 @@ function createMockScene() {
       }
     },
     mockText,
+    mockBackground,
+    mockWallIcon,
     mockRect,
     mockSprite,
     mockCostText
@@ -93,7 +115,7 @@ describe('UISystem', () => {
       system = new UISystem(world, {
         scene,
         energyManager,
-        levelConfig: { store: { wisp: { cost: 100 } } }
+        levelConfig: { store: { wisp: { cost: 100 }, wall: { cost: 150 } } }
       });
 
       expect(scene.add.graphics).toHaveBeenCalled();
@@ -102,15 +124,15 @@ describe('UISystem', () => {
     });
 
     it('should set scroll factor 0 on HUD elements', () => {
-      const { scene, mockText, mockRect, mockSprite } = createMockScene();
+      const { scene, mockText, mockBackground, mockSprite } = createMockScene();
       system = new UISystem(world, {
         scene,
         energyManager,
-        levelConfig: { store: { wisp: { cost: 100 } } }
+        levelConfig: { store: { wisp: { cost: 100 }, wall: { cost: 150 } } }
       });
 
       expect(mockText.setScrollFactor).toHaveBeenCalledWith(0);
-      expect(mockRect.setScrollFactor).toHaveBeenCalledWith(0);
+      expect(mockBackground.setScrollFactor).toHaveBeenCalledWith(0);
       expect(mockSprite.setScrollFactor).toHaveBeenCalledWith(0);
     });
 
@@ -119,7 +141,7 @@ describe('UISystem', () => {
       system = new UISystem(world, {
         scene,
         energyManager,
-        levelConfig: { store: { wisp: { cost: 100 } } }
+        levelConfig: { store: { wisp: { cost: 100 }, wall: { cost: 150 } } }
       });
 
       expect(mockSprite.setInteractive).toHaveBeenCalled();
@@ -132,7 +154,7 @@ describe('UISystem', () => {
       system = new UISystem(world, {
         scene,
         energyManager,
-        levelConfig: { store: { wisp: { cost: 100 } } }
+        levelConfig: { store: { wisp: { cost: 100 }, wall: { cost: 150 } } }
       });
 
       system.update(16, 16);
@@ -145,7 +167,7 @@ describe('UISystem', () => {
       system = new UISystem(world, {
         scene,
         energyManager,
-        levelConfig: { store: { wisp: { cost: 100 } } }
+        levelConfig: { store: { wisp: { cost: 100 }, wall: { cost: 150 } } }
       });
 
       energyManager.spend(50);
@@ -161,7 +183,7 @@ describe('UISystem', () => {
       system = new UISystem(world, {
         scene,
         energyManager: new EnergyManager(50),
-        levelConfig: { store: { wisp: { cost: 100 } } }
+        levelConfig: { store: { wisp: { cost: 100 }, wall: { cost: 150 } } }
       });
 
       system.update(16, 16);
@@ -175,7 +197,7 @@ describe('UISystem', () => {
       system = new UISystem(world, {
         scene,
         energyManager,
-        levelConfig: { store: { wisp: { cost: 100 } } }
+        levelConfig: { store: { wisp: { cost: 100 }, wall: { cost: 150 } } }
       });
 
       system.update(16, 16);
@@ -191,7 +213,7 @@ describe('UISystem', () => {
       system = new UISystem(world, {
         scene,
         energyManager,
-        levelConfig: { store: { wisp: { cost: 100 } } }
+        levelConfig: { store: { wisp: { cost: 100 }, wall: { cost: 150 } } }
       });
 
       const listener = vi.fn();
@@ -209,17 +231,17 @@ describe('UISystem', () => {
 
   describe('cleanup', () => {
     it('should destroy HUD elements on destroy', () => {
-      const { scene, mockText, mockRect, mockSprite, mockCostText } = createMockScene();
+      const { scene, mockText, mockBackground, mockSprite, mockCostText } = createMockScene();
       system = new UISystem(world, {
         scene,
         energyManager,
-        levelConfig: { store: { wisp: { cost: 100 } } }
+        levelConfig: { store: { wisp: { cost: 100 }, wall: { cost: 150 } } }
       });
 
       system.destroy!();
 
       expect(mockText.destroy).toHaveBeenCalled();
-      expect(mockRect.destroy).toHaveBeenCalled();
+      expect(mockBackground.destroy).toHaveBeenCalled();
       expect(mockSprite.destroy).toHaveBeenCalled();
       expect(mockCostText.destroy).toHaveBeenCalled();
     });

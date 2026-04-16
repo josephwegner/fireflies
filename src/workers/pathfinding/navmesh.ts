@@ -16,15 +16,34 @@ export function generateNavMesh(paths: Point[][]): INavMesh {
 }
 
 export function shrinkPaths(paths: Point[][], radius: number): Point[][] {
-  function offsetShape(shape: Shape, offset: number): Shape {
-    return shape.offset(-offset);
+  // Shrink the outer boundary inward
+  const outerShape = new Shape([paths[0]], true, true).offset(-radius);
+
+  if (paths.length === 1) {
+    return [outerShape.mapToLower()[0]];
   }
 
-  const outerPath = offsetShape(new Shape([paths[0]], true, true), radius);
-  const innerPaths = paths.slice(1).map(path => offsetShape(new Shape([path], true, true), -radius));
+  // Grow each inner obstacle outward, then union them all into one shape
+  // so overlapping obstacles (e.g. a player-built wall connecting to an
+  // existing wall) merge cleanly instead of producing overlapping holes
+  // that break earcut triangulation.
+  let mergedInners = new Shape([paths[1]], true, true).offset(radius);
+  for (let i = 2; i < paths.length; i++) {
+    const grown = new Shape([paths[i]], true, true).offset(radius);
+    mergedInners = mergedInners.union(grown);
+  }
 
-  // Turn it back into a MultiPolygon
-  return [outerPath.mapToLower()[0], ...innerPaths.map(p => p.mapToLower()[0])];
+  // Boolean difference: subtract merged obstacles from the shrunk outer boundary.
+  // This produces a clean polygon (with properly nested holes) for earcut.
+  const walkable = outerShape.difference(mergedInners);
+  const walkablePaths = walkable.mapToLower();
+
+  if (!walkablePaths.length) {
+    console.warn('[shrinkPaths] difference produced empty result, falling back to outer only');
+    return [outerShape.mapToLower()[0]];
+  }
+
+  return walkablePaths;
 }
 
 export function wallsToPaths(walls: Point[][]): Point[][] {

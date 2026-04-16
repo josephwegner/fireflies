@@ -2,6 +2,7 @@ import type { Query, With } from 'miniplex';
 import type { Entity, GameWorld, Team } from '@/ecs/Entity';
 import type { GameSystem } from '@/ecs/GameSystem';
 import { PHYSICS_CONFIG } from '@/config';
+import { gameEvents, GameEvents } from '@/events';
 
 interface RecruitmentState {
   lodge: Entity;
@@ -29,6 +30,12 @@ export class DestinationSystem implements GameSystem {
 
     this.worker.onmessage = (event: MessageEvent) => {
       if (event.data.action === 'navmeshReady') return;
+
+      if (event.data.action === 'navmeshUpdated') {
+        this.clearAllPaths();
+        gameEvents.emit(GameEvents.NAVMESH_UPDATED, {});
+        return;
+      }
 
       if (event.data.action === 'error') {
         console.error('[DestinationSystem] Worker error:', event.data.error);
@@ -119,6 +126,9 @@ export class DestinationSystem implements GameSystem {
         const isFleeing = !!mover.fleeingToGoalTag;
         const assigned = mover.assignedDestination;
 
+        // Owning system (e.g. BuildingSystem) sets holding = true when entity should stay put
+        if (assigned?.holding) continue;
+
         if (!mover.path.currentPath.length) {
           if (mover.redirectTarget) {
             this.cancelNavigationRequest(entityId);
@@ -133,7 +143,8 @@ export class DestinationSystem implements GameSystem {
           } else if (isFleeing) {
             destination = { x: goal.position.x, y: goal.position.y };
           } else if (assigned) {
-            destination = { x: assigned.target.position!.x, y: assigned.target.position!.y };
+            const targetPos = assigned.targetPosition ?? assigned.target.position!;
+            destination = { x: targetPos.x, y: targetPos.y };
           } else {
             destination = { x: goal.position.x, y: goal.position.y };
           }
@@ -143,15 +154,11 @@ export class DestinationSystem implements GameSystem {
         } else if (mover.path.goalPath && !mover.path.goalPath.length) {
           if (this.navigationRequestForEntity.has(entityId)) continue;
 
-          const lastPos = mover.path.currentPath[mover.path.currentPath.length - 1];
+          // Don't pre-compute a goal path for assigned entities — they should stop at their target
+          if (assigned) continue;
 
-          if (isFleeing) {
-            this.fireNavRequest(mover, lastPos, { x: goal.position.x, y: goal.position.y }, 'next');
-          } else if (assigned) {
-            this.fireNavRequest(mover, { x: assigned.target.position!.x, y: assigned.target.position!.y }, { x: goal.position.x, y: goal.position.y }, 'next');
-          } else {
-            this.fireNavRequest(mover, lastPos, { x: goal.position.x, y: goal.position.y }, 'next');
-          }
+          const lastPos = mover.path.currentPath[mover.path.currentPath.length - 1];
+          this.fireNavRequest(mover, lastPos, { x: goal.position.x, y: goal.position.y }, 'next');
         }
       } catch (error) {
         console.error('[DestinationSystem] Error processing entity:', error);
@@ -218,6 +225,11 @@ export class DestinationSystem implements GameSystem {
       timeout,
       callback: () => {}
     });
+
+    const hasAssigned = !!entity.assignedDestination;
+    const isFleeing = !!entity.fleeingToGoalTag;
+    console.debug(`[DestinationSystem] Nav request entity=${entityId} type=${pathType} radius=${radius} assigned=${hasAssigned} fleeing=${isFleeing}`,
+      `from=(${start.x.toFixed(1)},${start.y.toFixed(1)}) to=(${destination.x.toFixed(1)},${destination.y.toFixed(1)})`);
 
     this.worker.postMessage({
       action: 'pathfind',
@@ -361,6 +373,19 @@ export class DestinationSystem implements GameSystem {
       }
 
       break;
+    }
+  }
+
+  private clearAllPaths(): void {
+    for (const mover of this.movers) {
+      if (mover.path) {
+        mover.path.currentPath = [];
+        mover.path.goalPath = [];
+      }
+      const entityId = this.world.id(mover);
+      if (entityId !== undefined) {
+        this.cancelNavigationRequest(entityId);
+      }
     }
   }
 

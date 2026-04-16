@@ -39,6 +39,8 @@ export class PlacementSystem implements GameSystem {
   }
 
   private startPlacement(itemType: string, cost: number): void {
+    if (itemType === 'wall') return;
+
     if (this.state === 'placing') {
       this.cancelPlacement();
     }

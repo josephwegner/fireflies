@@ -14,12 +14,22 @@ self.onmessage = function(e: MessageEvent<WorkerMessage>) {
   try {
     switch (e.data.action) {
       case 'buildNavMesh':
+        console.debug(`[Worker] buildNavMesh: ${e.data.walls.length} walls, sizes: [${e.data.walls.map((w: Point[]) => w.length).join(', ')}]`);
         baseMapPaths = wallsToPaths(e.data.walls);
+        console.debug(`[Worker] baseMapPaths after build: ${baseMapPaths.length} paths, sizes: [${baseMapPaths.map(p => p.length).join(', ')}]`);
 
         self.postMessage({
           action: 'navmeshReady',
           pathCount: baseMapPaths?.length || 0
         });
+        break;
+
+      case 'updateWalls':
+        console.debug(`[Worker] updateWalls: ${e.data.walls.length} walls, sizes: [${e.data.walls.map((w: Point[]) => w.length).join(', ')}]`);
+        baseMapPaths = wallsToPaths(e.data.walls);
+        console.debug(`[Worker] baseMapPaths after update: ${baseMapPaths.length} paths, sizes: [${baseMapPaths.map(p => p.length).join(', ')}]`);
+        bufferedNavMeshCache.clear();
+        self.postMessage({ action: 'navmeshUpdated' });
         break;
 
       case 'pathfind':

@@ -2,6 +2,7 @@ import type { Query, With } from 'miniplex';
 import type { Entity, GameWorld } from '@/ecs/Entity';
 import type { GameSystem } from '@/ecs/GameSystem';
 import { PHYSICS_CONFIG } from '@/config';
+import { gameEvents, GameEvents } from '@/events';
 
 export class RedirectSystem implements GameSystem {
   private movers: Query<With<Entity, 'position' | 'velocity' | 'path'>>;
@@ -45,7 +46,6 @@ export class RedirectSystem implements GameSystem {
         const inRadius = dist <= redirect.redirect.radius;
 
         if (!inRadius) {
-          tracking.delete(redirectId);
           continue;
         }
 

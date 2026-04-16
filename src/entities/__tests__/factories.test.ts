@@ -6,7 +6,8 @@ import {
   createMonster,
   createGoal,
   createSpawner,
-  createRedirect
+  createRedirect,
+  createWallBlueprint
 } from '../factories';
 import type { Entity, GameWorld } from '@/ecs/Entity';
 import { ENTITY_CONFIG, PHYSICS_CONFIG, GAME_CONFIG } from '@/config';
@@ -372,6 +373,73 @@ describe('Entity Factories', () => {
     it('should not have movement components', () => {
       const exits = [{ x: 200, y: 100, weight: 1 }];
       const entity = createRedirect(world, 100, 200, exits, 'firefly');
+
+      expect(entity.velocity).toBeUndefined();
+      expect(entity.path).toBeUndefined();
+    });
+  });
+
+  describe('createWallBlueprint', () => {
+    it('should create entity with buildable and wallBlueprint components', () => {
+      const entity = createWallBlueprint(world, { x: 0, y: 0 }, { x: 100, y: 0 }, 5);
+
+      expect(entity.buildable).toBeDefined();
+      expect(entity.wallBlueprint).toBeDefined();
+      expect(entity.wallBlueprintTag).toBe(true);
+    });
+
+    it('should position at midpoint of the two nodes', () => {
+      const entity = createWallBlueprint(world, { x: 0, y: 0 }, { x: 100, y: 50 }, 5);
+
+      expect(entity.position!.x).toBe(50);
+      expect(entity.position!.y).toBe(25);
+    });
+
+    it('should create two build sites at node positions', () => {
+      const entity = createWallBlueprint(world, { x: 10, y: 20 }, { x: 80, y: 90 }, 5);
+
+      expect(entity.buildable!.sites).toHaveLength(2);
+      expect(entity.buildable!.sites[0]).toEqual({
+        x: 10, y: 20, built: false, buildProgress: 0
+      });
+      expect(entity.buildable!.sites[1]).toEqual({
+        x: 80, y: 90, built: false, buildProgress: 0
+      });
+    });
+
+    it('should set buildTime and allBuilt=false', () => {
+      const entity = createWallBlueprint(world, { x: 0, y: 0 }, { x: 100, y: 0 }, 7);
+
+      expect(entity.buildable!.buildTime).toBe(7);
+      expect(entity.buildable!.allBuilt).toBe(false);
+    });
+
+    it('should initialize wallBlueprint as inactive', () => {
+      const entity = createWallBlueprint(world, { x: 0, y: 0 }, { x: 100, y: 0 }, 5);
+
+      expect(entity.wallBlueprint!.active).toBe(false);
+    });
+
+    it('should set passableBy when provided', () => {
+      const entity = createWallBlueprint(world, { x: 0, y: 0 }, { x: 100, y: 0 }, 5, 'firefly');
+
+      expect(entity.wallBlueprint!.passableBy).toBe('firefly');
+    });
+
+    it('should leave passableBy undefined when not provided', () => {
+      const entity = createWallBlueprint(world, { x: 0, y: 0 }, { x: 100, y: 0 }, 5);
+
+      expect(entity.wallBlueprint!.passableBy).toBeUndefined();
+    });
+
+    it('should have renderable component', () => {
+      const entity = createWallBlueprint(world, { x: 0, y: 0 }, { x: 100, y: 0 }, 5);
+
+      expect(entity.renderable).toBeDefined();
+    });
+
+    it('should not have movement components', () => {
+      const entity = createWallBlueprint(world, { x: 0, y: 0 }, { x: 100, y: 0 }, 5);
 
       expect(entity.velocity).toBeUndefined();
       expect(entity.path).toBeUndefined();

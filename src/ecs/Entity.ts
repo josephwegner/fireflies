@@ -140,6 +140,8 @@ export interface Lodge {
 
 export interface AssignedDestination {
   target: Entity;
+  targetPosition?: { x: number; y: number };
+  holding?: boolean;
 }
 
 export interface ActivationEffect {
@@ -187,6 +189,27 @@ export interface Redirect {
   forTeam: Team;
 }
 
+// ─── Building ──────────────────────────────────────────────────────────────
+
+export interface BuildSite {
+  x: number;
+  y: number;
+  built: boolean;
+  buildProgress: number;
+  builderEntity?: Entity;
+}
+
+export interface Buildable {
+  sites: BuildSite[];
+  buildTime: number;
+  allBuilt: boolean;
+}
+
+export interface WallBlueprint {
+  active: boolean;
+  passableBy?: Team;
+}
+
 // ─── Entity Type ────────────────────────────────────────────────────────────
 
 export type Entity = {
@@ -214,6 +237,10 @@ export type Entity = {
   redirect?: Redirect;
   redirectTarget?: { x: number; y: number };
 
+  // Building
+  buildable?: Buildable;
+  wallBlueprint?: WallBlueprint;
+
   // Team
   team?: Team;
 
@@ -225,6 +252,7 @@ export type Entity = {
   wallTag?: true;
   spawnerTag?: true;
   redirectTag?: true;
+  wallBlueprintTag?: true;
   fleeingToGoalTag?: true;
 };
 

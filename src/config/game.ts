@@ -16,9 +16,15 @@ export const GAME_CONFIG = Object.freeze({
   WALL_SMOOTHING_TENSION: 0.5,
   WALL_SMOOTHING_POINTS_PER_SEGMENT: 5,
 
+  // Wall Blueprints
+  WALL_BUILD_TIME: 2,
+  WALL_BLUEPRINT_COST: 150,
+  WALL_BLUEPRINT_THICKNESS: 8,
+
   // Store
   STORE: Object.freeze({
-    wisp: { cost: 100 }
+    wisp: { cost: 100 },
+    wall: { cost: 150 }
   }),
 
   // Firefly goal visual progression

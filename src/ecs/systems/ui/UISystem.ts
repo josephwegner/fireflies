@@ -21,14 +21,19 @@ export class UISystem implements GameSystem {
   private energyText!: Phaser.GameObjects.Text;
   private wispIcon!: Phaser.GameObjects.Sprite;
   private wispCostText!: Phaser.GameObjects.Text;
+  private wallIcon!: Phaser.GameObjects.Graphics;
+  private wallIconHitArea!: Phaser.GameObjects.Rectangle;
+  private wallCostText!: Phaser.GameObjects.Text;
 
   private wispCost: number;
+  private wallCost: number;
 
   constructor(_world: GameWorld, config: Record<string, any>) {
     this.scene = config.scene;
     this.energyManager = config.energyManager;
     this.levelConfig = config.levelConfig;
     this.wispCost = this.levelConfig.store.wisp.cost;
+    this.wallCost = this.levelConfig.store.wall?.cost ?? GAME_CONFIG.WALL_BLUEPRINT_COST;
 
     this.createHUD();
   }
@@ -72,6 +77,34 @@ export class UISystem implements GameSystem {
     this.wispCostText.setDepth(1001);
     this.wispCostText.setOrigin(0.5, 0);
 
+    // Wall icon (drawn programmatically)
+    const wallIconY = iconY + 70;
+    this.wallIcon = this.scene.add.graphics();
+    this.wallIcon.setScrollFactor(0);
+    this.wallIcon.setDepth(1001);
+    this.drawWallIcon(iconX, wallIconY);
+
+    this.wallIconHitArea = this.scene.add.rectangle(iconX, wallIconY, 40, 30);
+    this.wallIconHitArea.setScrollFactor(0);
+    this.wallIconHitArea.setDepth(1001);
+    this.wallIconHitArea.setAlpha(0.001);
+    this.wallIconHitArea.setInteractive({ useHandCursor: true });
+    this.wallIconHitArea.on('pointerdown', () => {
+      gameEvents.emit(GameEvents.PLACEMENT_STARTED, {
+        itemType: 'wall',
+        cost: this.wallCost
+      });
+    });
+
+    this.wallCostText = this.scene.add.text(
+      iconX, wallIconY + 20,
+      `${this.wallCost}`,
+      { fontSize: '12px', color: '#B0C4DE', fontFamily: 'monospace' }
+    );
+    this.wallCostText.setScrollFactor(0);
+    this.wallCostText.setDepth(1001);
+    this.wallCostText.setOrigin(0.5, 0);
+
     this.scene.scale.on('resize', () => this.drawBackgrounds());
   }
 
@@ -93,6 +126,16 @@ export class UISystem implements GameSystem {
     this.background.lineBetween(0, STATUS_BAR_HEIGHT, w, STATUS_BAR_HEIGHT);
   }
 
+  private drawWallIcon(cx: number, cy: number): void {
+    this.wallIcon.clear();
+    // Two dots connected by a line — represents wall endpoints
+    this.wallIcon.lineStyle(2, 0x88AACC, 1);
+    this.wallIcon.lineBetween(cx - 14, cy, cx + 14, cy);
+    this.wallIcon.fillStyle(0x88AACC, 1);
+    this.wallIcon.fillCircle(cx - 14, cy, 4);
+    this.wallIcon.fillCircle(cx + 14, cy, 4);
+  }
+
   update(_delta: number, _time: number): void {
     this.energyText.setText(`Energy: ${this.energyManager.getEnergy()}`);
 
@@ -105,6 +148,14 @@ export class UISystem implements GameSystem {
       this.wispIcon.setAlpha(0.5);
       this.wispIcon.disableInteractive();
     }
+
+    if (this.energyManager.canAfford(this.wallCost)) {
+      this.wallIcon.setAlpha(1);
+      this.wallIconHitArea.setInteractive({ useHandCursor: true });
+    } else {
+      this.wallIcon.setAlpha(0.5);
+      this.wallIconHitArea.disableInteractive();
+    }
   }
 
   destroy(): void {
@@ -112,5 +163,8 @@ export class UISystem implements GameSystem {
     this.background.destroy();
     this.wispIcon.destroy();
     this.wispCostText.destroy();
+    this.wallIcon.destroy();
+    this.wallIconHitArea.destroy();
+    this.wallCostText.destroy();
   }
 }

@@ -1,4 +1,4 @@
-import type { Entity, GameWorld, SpawnEntry, RedirectExit, Team } from '@/ecs/Entity';
+import type { Entity, GameWorld, SpawnEntry, RedirectExit, Team, BuildSite } from '@/ecs/Entity';
 import { CombatState } from '@/ecs/Entity';
 import { ENTITY_CONFIG, PHYSICS_CONFIG, GAME_CONFIG } from '@/config';
 
@@ -315,6 +315,42 @@ export function createRedirect(
       forTeam
     },
     redirectTag: true
+  });
+}
+
+export function createWallBlueprint(
+  world: GameWorld,
+  nodeA: { x: number; y: number },
+  nodeB: { x: number; y: number },
+  buildTime: number,
+  passableBy?: Team
+): Entity {
+  const midX = (nodeA.x + nodeB.x) / 2;
+  const midY = (nodeA.y + nodeB.y) / 2;
+
+  const sites: BuildSite[] = [
+    { x: nodeA.x, y: nodeA.y, built: false, buildProgress: 0 },
+    { x: nodeB.x, y: nodeB.y, built: false, buildProgress: 0 }
+  ];
+
+  return world.add({
+    position: { x: midX, y: midY },
+    buildable: { sites, buildTime, allBuilt: false },
+    wallBlueprint: { active: false, passableBy },
+    wallBlueprintTag: true,
+    renderable: {
+      type: 'wallBlueprint',
+      sprite: 'wallBlueprint',
+      color: 0x88AACC,
+      radius: 4,
+      alpha: 0.6,
+      scale: 1,
+      tint: 0xFFFFFF,
+      rotation: 0,
+      rotationSpeed: 0,
+      depth: 30,
+      offsetY: 0
+    }
   });
 }
 
