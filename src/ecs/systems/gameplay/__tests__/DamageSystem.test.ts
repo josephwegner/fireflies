@@ -462,7 +462,7 @@ describe('DamageSystem', () => {
           alpha: 1, scale: 1, tint: 0xB0C4DE, rotation: 0, rotationSpeed: 0, depth: 40, offsetY: 0
         },
         physicsBody: { mass: 1, isStatic: true, collisionRadius: 45 },
-        lodge: { tenants: [tenant1, tenant2], incoming: [], allowedTenants: ['firefly'], maxTenants: 2 }
+        lodge: { tenants: [tenant1, tenant2], incoming: [], allowedTeam: 'firefly', maxTenants: 2 }
       });
 
       gameEvents.emit(GameEvents.ATTACK_HIT, { attacker, target: lodge, damage: 10 });
@@ -494,7 +494,7 @@ describe('DamageSystem', () => {
           alpha: 1, scale: 1, tint: 0xB0C4DE, rotation: 0, rotationSpeed: 0, depth: 40, offsetY: 0
         },
         physicsBody: { mass: 1, isStatic: true, collisionRadius: 45 },
-        lodge: { tenants: [tenant], incoming: [], allowedTenants: ['firefly'], maxTenants: 1 }
+        lodge: { tenants: [tenant], incoming: [], allowedTeam: 'firefly', maxTenants: 1 }
       });
 
       const diedEvents: any[] = [];
@@ -518,7 +518,7 @@ describe('DamageSystem', () => {
           alpha: 1, scale: 1, tint: 0xB0C4DE, rotation: 0, rotationSpeed: 0, depth: 40, offsetY: 0
         },
         physicsBody: { mass: 1, isStatic: true, collisionRadius: 45 },
-        lodge: { tenants: [], incoming: [incoming], allowedTenants: ['firefly'], maxTenants: 1 }
+        lodge: { tenants: [], incoming: [incoming], allowedTeam: 'firefly', maxTenants: 1 }
       });
 
       gameEvents.emit(GameEvents.ATTACK_HIT, { attacker, target: lodge, damage: 10 });
@@ -539,7 +539,7 @@ describe('DamageSystem', () => {
           alpha: 1, scale: 1, tint: 0xB0C4DE, rotation: 0, rotationSpeed: 0, depth: 40, offsetY: 0
         },
         physicsBody: { mass: 1, isStatic: true, collisionRadius: 45 },
-        lodge: { tenants: [tenant], incoming: [], allowedTenants: ['firefly'], maxTenants: 1 }
+        lodge: { tenants: [tenant], incoming: [], allowedTeam: 'firefly', maxTenants: 1 }
       });
 
       expect(() => {
@@ -623,6 +623,7 @@ describe('DamageSystem', () => {
   describe('firefly eviction on victory', () => {
     it('should evict all lodged fireflies when victory is triggered', () => {
       const firefly1 = world.add({
+        team: 'firefly' as const,
         fireflyTag: true,
         renderable: {
           type: 'firefly', sprite: 'firefly', color: 0xffff00, radius: 5,
@@ -631,6 +632,7 @@ describe('DamageSystem', () => {
       });
 
       const firefly2 = world.add({
+        team: 'firefly' as const,
         fireflyTag: true,
         renderable: {
           type: 'firefly', sprite: 'firefly', color: 0xffff00, radius: 5,
@@ -644,7 +646,7 @@ describe('DamageSystem', () => {
           type: 'wisp', sprite: 'wisp', color: 0x0000ff, radius: 10,
           alpha: 1, scale: 1, tint: 0xFFFFFF, rotation: 0, rotationSpeed: 0, depth: 50, offsetY: 0
         },
-        lodge: { allowedTenants: ['firefly'], maxTenants: 2, tenants: [firefly1, firefly2], incoming: [] }
+        lodge: { allowedTeam: 'firefly', maxTenants: 2, tenants: [firefly1, firefly2], incoming: [] }
       });
 
       const monster = world.add({
@@ -678,6 +680,7 @@ describe('DamageSystem', () => {
 
     it('should mark evicted fireflies with FleeingToGoalTag', () => {
       const firefly = world.add({
+        team: 'firefly' as const,
         fireflyTag: true,
         renderable: {
           type: 'firefly', sprite: 'firefly', color: 0xffff00, radius: 5,
@@ -691,7 +694,7 @@ describe('DamageSystem', () => {
           type: 'wisp', sprite: 'wisp', color: 0x0000ff, radius: 10,
           alpha: 1, scale: 1, tint: 0xFFFFFF, rotation: 0, rotationSpeed: 0, depth: 50, offsetY: 0
         },
-        lodge: { allowedTenants: ['firefly'], maxTenants: 1, tenants: [firefly], incoming: [] }
+        lodge: { allowedTeam: 'firefly', maxTenants: 1, tenants: [firefly], incoming: [] }
       });
 
       const monster = world.add({
@@ -720,6 +723,7 @@ describe('DamageSystem', () => {
       const lodgeY = 250;
 
       const firefly = world.add({
+        team: 'firefly' as const,
         fireflyTag: true,
         renderable: {
           type: 'firefly', sprite: 'firefly', color: 0xffff00, radius: 5,
@@ -733,7 +737,7 @@ describe('DamageSystem', () => {
           type: 'wisp', sprite: 'wisp', color: 0x0000ff, radius: 10,
           alpha: 1, scale: 1, tint: 0xFFFFFF, rotation: 0, rotationSpeed: 0, depth: 50, offsetY: 0
         },
-        lodge: { allowedTenants: ['firefly'], maxTenants: 1, tenants: [firefly], incoming: [] }
+        lodge: { allowedTeam: 'firefly', maxTenants: 1, tenants: [firefly], incoming: [] }
       });
 
       const monster = world.add({
@@ -760,6 +764,7 @@ describe('DamageSystem', () => {
 
     it('should not evict non-firefly tenants', () => {
       const firefly = world.add({
+        team: 'firefly' as const,
         fireflyTag: true,
         renderable: {
           type: 'firefly', sprite: 'firefly', color: 0xffff00, radius: 5,
@@ -768,6 +773,7 @@ describe('DamageSystem', () => {
       });
 
       const lodgedMonster = world.add({
+        team: 'monster' as const,
         monsterTag: true,
         renderable: {
           type: 'monster', sprite: 'monster', color: 0xff0000, radius: 8,
@@ -781,7 +787,7 @@ describe('DamageSystem', () => {
           type: 'wisp', sprite: 'wisp', color: 0x0000ff, radius: 10,
           alpha: 1, scale: 1, tint: 0xFFFFFF, rotation: 0, rotationSpeed: 0, depth: 50, offsetY: 0
         },
-        lodge: { allowedTenants: ['firefly', 'monster'], maxTenants: 2, tenants: [firefly, lodgedMonster], incoming: [] }
+        lodge: { allowedTeam: 'firefly', maxTenants: 2, tenants: [firefly, lodgedMonster], incoming: [] }
       });
 
       const targetMonster = world.add({
@@ -810,6 +816,7 @@ describe('DamageSystem', () => {
 
     it('should handle dead entities gracefully during eviction', () => {
       const livingFirefly = world.add({
+        team: 'firefly' as const,
         fireflyTag: true,
         renderable: {
           type: 'firefly', sprite: 'firefly', color: 0xffff00, radius: 5,
@@ -818,6 +825,7 @@ describe('DamageSystem', () => {
       });
 
       const deadFirefly = world.add({
+        team: 'firefly' as const,
         fireflyTag: true,
         renderable: {
           type: 'firefly', sprite: 'firefly', color: 0xffff00, radius: 5,
@@ -832,7 +840,7 @@ describe('DamageSystem', () => {
           type: 'wisp', sprite: 'wisp', color: 0x0000ff, radius: 10,
           alpha: 1, scale: 1, tint: 0xFFFFFF, rotation: 0, rotationSpeed: 0, depth: 50, offsetY: 0
         },
-        lodge: { allowedTenants: ['firefly'], maxTenants: 2, tenants: [livingFirefly, deadFirefly], incoming: [] }
+        lodge: { allowedTeam: 'firefly', maxTenants: 2, tenants: [livingFirefly, deadFirefly], incoming: [] }
       });
 
       const monster = world.add({
@@ -861,6 +869,7 @@ describe('DamageSystem', () => {
 
     it('should handle entities without Renderable component gracefully', () => {
       const firefly = world.add({
+        team: 'firefly' as const,
         fireflyTag: true
       });
 
@@ -870,7 +879,7 @@ describe('DamageSystem', () => {
           type: 'wisp', sprite: 'wisp', color: 0x0000ff, radius: 10,
           alpha: 1, scale: 1, tint: 0xFFFFFF, rotation: 0, rotationSpeed: 0, depth: 50, offsetY: 0
         },
-        lodge: { allowedTenants: ['firefly'], maxTenants: 1, tenants: [firefly], incoming: [] }
+        lodge: { allowedTeam: 'firefly', maxTenants: 1, tenants: [firefly], incoming: [] }
       });
 
       const monster = world.add({
@@ -903,7 +912,7 @@ describe('DamageSystem', () => {
           type: 'wisp', sprite: 'wisp', color: 0x0000ff, radius: 10,
           alpha: 1, scale: 1, tint: 0xFFFFFF, rotation: 0, rotationSpeed: 0, depth: 50, offsetY: 0
         },
-        lodge: { allowedTenants: ['firefly'], maxTenants: 1, tenants: [], incoming: [] }
+        lodge: { allowedTeam: 'firefly', maxTenants: 1, tenants: [], incoming: [] }
       });
 
       const monster = world.add({

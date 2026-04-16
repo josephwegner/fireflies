@@ -24,6 +24,7 @@ describe('VictorySystem', () => {
   function createLodgeWithFirefly(): { lodge: Entity; firefly: Entity } {
     const firefly = world.add({
       fireflyTag: true,
+      team: 'firefly',
       renderable: {
         type: 'firefly', sprite: 'firefly', color: 0xffff00, radius: 4,
         alpha: 1, scale: 1, tint: 0xFFFFFF, rotation: 0, rotationSpeed: 0,
@@ -32,7 +33,7 @@ describe('VictorySystem', () => {
     });
 
     const lodge = world.add({
-      lodge: { tenants: [firefly], incoming: [], allowedTenants: ['firefly'], maxTenants: 1 },
+      lodge: { tenants: [firefly], incoming: [], allowedTeam: 'firefly', maxTenants: 1 },
       position: { x: 100, y: 100 }
     });
 
@@ -104,6 +105,7 @@ describe('VictorySystem', () => {
   function createFreeFirefly(opts?: { x?: number; y?: number }): Entity {
     return world.add({
       fireflyTag: true,
+      team: 'firefly',
       position: { x: opts?.x ?? 200, y: opts?.y ?? 200 },
       velocity: { vx: 1, vy: 0 },
       path: { currentPath: [{ x: 300, y: 300 }], goalPath: [{ x: 400, y: 400 }], direction: 'r' },
@@ -145,7 +147,7 @@ describe('VictorySystem', () => {
       createMonster(true);
       const firefly = createFreeFirefly();
       const wisp = world.add({
-        lodge: { tenants: [], incoming: [firefly], allowedTenants: ['firefly'], maxTenants: 1 },
+        lodge: { tenants: [], incoming: [firefly], allowedTeam: 'firefly', maxTenants: 1 },
         position: { x: 300, y: 300 }
       });
       world.addComponent(firefly, 'assignedDestination', { target: wisp });
@@ -163,7 +165,7 @@ describe('VictorySystem', () => {
       createMonster(true);
       const firefly = createFreeFirefly();
       const wisp = world.add({
-        lodge: { tenants: [], incoming: [firefly], allowedTenants: ['firefly'], maxTenants: 1 },
+        lodge: { tenants: [], incoming: [firefly], allowedTeam: 'firefly', maxTenants: 1 },
         position: { x: 300, y: 300 }
       });
 
@@ -221,17 +223,17 @@ describe('VictorySystem', () => {
       expect(firefly.position!.y).toBe(100);
     });
 
-    it('should skip non-firefly tenants', () => {
+    it('should skip non-firefly team tenants', () => {
       createMonster(true);
 
-      const wisp = world.add({ wispTag: true, renderable: {
-        type: 'wisp', sprite: 'wisp', color: 0xB0C4DE, radius: 12,
+      const monster = world.add({ monsterTag: true, team: 'monster', renderable: {
+        type: 'monster', sprite: 'monster', color: 0xFF0000, radius: 12,
         alpha: 1, scale: 1, tint: 0xFFFFFF, rotation: 0, rotationSpeed: 0,
         depth: 40, offsetY: 0
       }});
 
       const lodge = world.add({
-        lodge: { tenants: [wisp], incoming: [], allowedTenants: ['wisp'], maxTenants: 1 },
+        lodge: { tenants: [monster], incoming: [], allowedTeam: 'monster', maxTenants: 1 },
         position: { x: 100, y: 100 }
       });
 
@@ -260,9 +262,9 @@ describe('VictorySystem', () => {
     it('should skip tenants without a renderable type', () => {
       createMonster(true);
 
-      const bareFirefly = world.add({ fireflyTag: true });
+      const bareFirefly = world.add({ fireflyTag: true, team: 'firefly' });
       const lodge = world.add({
-        lodge: { tenants: [bareFirefly], incoming: [], allowedTenants: ['firefly'], maxTenants: 1 },
+        lodge: { tenants: [bareFirefly], incoming: [], allowedTeam: 'firefly', maxTenants: 1 },
         position: { x: 100, y: 100 }
       });
 

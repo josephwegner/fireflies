@@ -1,4 +1,4 @@
-import type { Entity, GameWorld, SpawnEntry, RedirectExit } from '@/ecs/Entity';
+import type { Entity, GameWorld, SpawnEntry, RedirectExit, Team } from '@/ecs/Entity';
 import { CombatState } from '@/ecs/Entity';
 import { ENTITY_CONFIG, PHYSICS_CONFIG, GAME_CONFIG } from '@/config';
 
@@ -46,7 +46,6 @@ export function createFirefly(world: GameWorld, x: number, y: number): Entity {
       collisionRadius: config.radius
     },
     interaction: {
-      interactsWith: config.interactsWith!,
       interactionRadius: config.interactionRadius!
     },
     targeting: {
@@ -76,6 +75,7 @@ export function createFirefly(world: GameWorld, x: number, y: number): Entity {
       },
       points: []
     },
+    team: 'firefly',
     fireflyTag: true
   });
 }
@@ -85,7 +85,7 @@ export function createWisp(world: GameWorld, x: number, y: number): Entity {
 
   return world.add({
     position: { x, y },
-    destination: { for: ['firefly'] },
+    destination: { forTeam: 'firefly' },
     renderable: {
       type: config.type,
       sprite: config.type,
@@ -120,11 +120,12 @@ export function createWisp(world: GameWorld, x: number, y: number): Entity {
       maxHealth: 100,
       isDead: false
     },
+    team: 'firefly',
     wispTag: true,
     lodge: {
       tenants: [],
       incoming: [],
-      allowedTenants: ['firefly'],
+      allowedTeam: 'firefly',
       maxTenants: 1
     },
     activationConfig: {
@@ -149,7 +150,6 @@ export function createWisp(world: GameWorld, x: number, y: number): Entity {
         {
           componentName: 'interaction',
           config: {
-            interactsWith: ['monster'],
             interactionRadius: 112
           }
         },
@@ -224,7 +224,6 @@ export function createMonster(world: GameWorld, x: number, y: number): Entity {
       collisionRadius: config.radius
     },
     interaction: {
-      interactsWith: config.interactsWith!,
       interactionRadius: config.interactionRadius!
     },
     targeting: {
@@ -243,6 +242,7 @@ export function createMonster(world: GameWorld, x: number, y: number): Entity {
       attackPattern: config.combat!,
       hasHit: false
     },
+    team: 'monster',
     monsterTag: true
   });
 }
@@ -251,12 +251,12 @@ export function createGoal(
   world: GameWorld,
   x: number,
   y: number,
-  attractType: string
+  forTeam: Team
 ): Entity {
   const config = ENTITY_CONFIG.goal;
 
-  const spriteKey = attractType === 'monster' ? 'fireflywell' : 'greattree';
-  const spriteRadius = attractType === 'monster' ? 30 : 60;
+  const spriteKey = forTeam === 'monster' ? 'fireflywell' : 'greattree';
+  const spriteRadius = forTeam === 'monster' ? 30 : 60;
 
   const renderableConfig: any = {
     type: config.type,
@@ -272,7 +272,7 @@ export function createGoal(
     offsetY: -spriteRadius + 12
   };
 
-  if (attractType === 'firefly') {
+  if (forTeam === 'firefly') {
     renderableConfig.glow = {
       radius: 45,
       color: 0xC65D3B,
@@ -282,7 +282,7 @@ export function createGoal(
 
   const entity: Partial<Entity> = {
     position: { x, y },
-    destination: { for: [attractType] },
+    destination: { forTeam },
     renderable: renderableConfig,
     physicsBody: {
       mass: config.mass,
@@ -292,7 +292,7 @@ export function createGoal(
     goalTag: true
   };
 
-  if (attractType === 'firefly') {
+  if (forTeam === 'firefly') {
     entity.fireflyGoal = { currentCount: 0 };
   }
 
@@ -304,7 +304,7 @@ export function createRedirect(
   x: number,
   y: number,
   exits: RedirectExit[],
-  forTypes: string[],
+  forTeam: Team,
   radius: number = GAME_CONFIG.TILE_SIZE * 3
 ): Entity {
   return world.add({
@@ -312,7 +312,7 @@ export function createRedirect(
     redirect: {
       exits,
       radius,
-      for: forTypes
+      forTeam
     },
     redirectTag: true
   });

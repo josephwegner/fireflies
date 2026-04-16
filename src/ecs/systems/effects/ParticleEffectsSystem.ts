@@ -35,7 +35,7 @@ export class ParticleEffectsSystem implements GameSystem {
   }
 
   private handleEntityDied(data: { entity: Entity; position: { x: number; y: number } }): void {
-    if (data.position && data.entity.monsterTag) {
+    if (data.position && data.entity.team === 'monster') {
       this.createGeometricDispersion(data.position.x, data.position.y, 0xC65D3B);
     }
     if (data.position && data.entity.physicsBody?.isStatic) {

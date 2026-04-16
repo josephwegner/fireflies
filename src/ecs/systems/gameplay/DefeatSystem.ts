@@ -46,7 +46,7 @@ export class DefeatSystem implements GameSystem {
 
   private checkMonsterReachedGoal(): void {
     for (const goal of this.monsterGoals) {
-      if (!goal.destination.for.includes('monster')) continue;
+      if (goal.destination.forTeam !== 'monster') continue;
 
       for (const monster of this.monsters) {
         const dx = monster.position.x - goal.position.x;

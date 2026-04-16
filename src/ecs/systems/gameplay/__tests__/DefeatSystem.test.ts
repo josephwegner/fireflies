@@ -16,7 +16,7 @@ function createMonster(world: GameWorld, x: number, y: number): Entity {
 function createMonsterGoal(world: GameWorld, x = 500, y = 500): Entity {
   return world.add({
     position: { x, y },
-    destination: { for: ['monster'] },
+    destination: { forTeam: 'monster' },
     goalTag: true
   });
 }
@@ -92,7 +92,7 @@ describe('DefeatSystem', () => {
 
       world.add({
         position: { x: 500, y: 500 },
-        destination: { for: ['firefly'] },
+        destination: { forTeam: 'firefly' },
         goalTag: true
       });
       createMonster(world, 500, 500);

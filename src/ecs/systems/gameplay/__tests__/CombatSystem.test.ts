@@ -18,7 +18,6 @@ const MOCK_ATTACK_PATTERN: AttackPattern = {
   damage: 10,
   knockbackForce: 50,
   dashSpeed: 100,
-  targetTags: ['monster'],
 };
 
 const MOCK_PULSE_PATTERN: AttackPattern = {
@@ -29,7 +28,6 @@ const MOCK_PULSE_PATTERN: AttackPattern = {
   damage: 10,
   knockbackForce: 50,
   radius: 50,
-  targetTags: ['firefly'],
 };
 
 describe('CombatSystem', () => {
@@ -272,10 +270,10 @@ describe('CombatSystem', () => {
         damage: 10,
         knockbackForce: 50,
         dashSpeed: 100,
-        targetTags: ['monster']
       };
 
       const attacker = world.add({
+        team: 'firefly' as const,
         fireflyTag: true,
         physicsBody: { mass: 1, isStatic: false, collisionRadius: 5 },
         position: { x: 100, y: 100 },
@@ -322,6 +320,7 @@ describe('CombatSystem', () => {
       const target1 = world.add({
         position: { x: 110, y: 100 },
         health: { currentHealth: 100, maxHealth: 100, isDead: false },
+        team: 'firefly' as const,
         fireflyTag: true,
         physicsBody: { mass: 1, isStatic: false, collisionRadius: 5 }
       });
@@ -329,6 +328,7 @@ describe('CombatSystem', () => {
       const target2 = world.add({
         position: { x: 120, y: 100 },
         health: { currentHealth: 100, maxHealth: 100, isDead: false },
+        team: 'firefly' as const,
         fireflyTag: true,
         physicsBody: { mass: 1, isStatic: false, collisionRadius: 5 }
       });
@@ -347,6 +347,7 @@ describe('CombatSystem', () => {
           attackPattern: ENTITY_CONFIG.monster.combat! as AttackPattern,
           hasHit: false
         },
+        team: 'monster' as const,
         monsterTag: true
       });
 
@@ -576,10 +577,10 @@ describe('CombatSystem', () => {
         damage: 10,
         knockbackForce: 50,
         dashSpeed: 100,
-        targetTags: ['monster']
       };
 
       world.add({
+        team: 'firefly' as const,
         fireflyTag: true,
         physicsBody: { mass: 1, isStatic: false, collisionRadius: 5 },
         position: { x: 100, y: 100 },
@@ -624,8 +625,9 @@ describe('CombatSystem', () => {
       vi.spyOn(gameEvents, 'emit');
     });
 
-    it('should hit entities matching targetTags', () => {
+    it('should hit entities on enemy team', () => {
       const target = world.add({
+        team: 'firefly' as const,
         fireflyTag: true,
         position: { x: 10, y: 10 },
         health: { currentHealth: 100, maxHealth: 100, isDead: false },
@@ -633,6 +635,7 @@ describe('CombatSystem', () => {
       });
 
       const attacker = world.add({
+        team: 'monster' as const,
         combat: {
           state: CombatState.ATTACKING,
           chargeTime: 1000,
@@ -659,8 +662,9 @@ describe('CombatSystem', () => {
       });
     });
 
-    it('should not hit entities not matching targetTags', () => {
+    it('should not hit entities on same team', () => {
       const target = world.add({
+        team: 'firefly' as const,
         fireflyTag: true,
         position: { x: 10, y: 10 },
         health: { currentHealth: 100, maxHealth: 100, isDead: false },
@@ -668,16 +672,14 @@ describe('CombatSystem', () => {
       });
 
       world.add({
+        team: 'firefly' as const,
         combat: {
           state: CombatState.ATTACKING,
           chargeTime: 1000,
           attackElapsed: 0,
           recoveryElapsed: 0,
           hasHit: false,
-          attackPattern: {
-            ...MOCK_PULSE_PATTERN,
-            targetTags: ['monster']
-          },
+          attackPattern: MOCK_PULSE_PATTERN,
         },
         position: { x: 0, y: 0 },
         velocity: { vx: 0, vy: 0 },
@@ -695,8 +697,9 @@ describe('CombatSystem', () => {
       );
     });
 
-    it('should hit multiple entities matching targetTags', () => {
+    it('should hit multiple enemy entities but not same-team', () => {
       const target1 = world.add({
+        team: 'firefly' as const,
         fireflyTag: true,
         position: { x: 10, y: 10 },
         health: { currentHealth: 100, maxHealth: 100, isDead: false },
@@ -704,6 +707,7 @@ describe('CombatSystem', () => {
       });
 
       const target2 = world.add({
+        team: 'firefly' as const,
         wispTag: true,
         position: { x: 15, y: 15 },
         health: { currentHealth: 100, maxHealth: 100, isDead: false },
@@ -711,6 +715,7 @@ describe('CombatSystem', () => {
       });
 
       const target3 = world.add({
+        team: 'monster' as const,
         monsterTag: true,
         position: { x: 20, y: 20 },
         health: { currentHealth: 100, maxHealth: 100, isDead: false },
@@ -718,16 +723,14 @@ describe('CombatSystem', () => {
       });
 
       world.add({
+        team: 'monster' as const,
         combat: {
           state: CombatState.ATTACKING,
           chargeTime: 1000,
           attackElapsed: 0,
           recoveryElapsed: 0,
           hasHit: false,
-          attackPattern: {
-            ...MOCK_PULSE_PATTERN,
-            targetTags: ['firefly', 'wisp']
-          },
+          attackPattern: MOCK_PULSE_PATTERN,
         },
         position: { x: 0, y: 0 },
         velocity: { vx: 0, vy: 0 },
@@ -749,6 +752,7 @@ describe('CombatSystem', () => {
 
     it('should not hit entities outside of range', () => {
       const target = world.add({
+        team: 'firefly' as const,
         fireflyTag: true,
         position: { x: 100, y: 100 },
         health: { currentHealth: 100, maxHealth: 100, isDead: false },
@@ -756,6 +760,7 @@ describe('CombatSystem', () => {
       });
 
       world.add({
+        team: 'monster' as const,
         combat: {
           state: CombatState.ATTACKING,
           chargeTime: 1000,
@@ -789,11 +794,13 @@ describe('CombatSystem', () => {
       const target = world.add({
         position: { x: 10, y: 0 },
         health: { currentHealth: 100, maxHealth: 100, isDead: false },
+        team: 'firefly' as const,
         fireflyTag: true,
         physicsBody: { mass: 1, isStatic: false, collisionRadius: 5 }
       });
 
       const attacker = world.add({
+        team: 'monster' as const,
         combat: {
           state: CombatState.ATTACKING,
           chargeTime: 1000,
@@ -824,11 +831,13 @@ describe('CombatSystem', () => {
       const target = world.add({
         position: { x: 10, y: 0 },
         health: { currentHealth: 100, maxHealth: 100, isDead: false },
+        team: 'firefly' as const,
         fireflyTag: true,
         physicsBody: { mass: 1, isStatic: false, collisionRadius: 5 }
       });
 
       const attacker = world.add({
+        team: 'monster' as const,
         combat: {
           state: CombatState.ATTACKING,
           chargeTime: 1000,

@@ -1,5 +1,5 @@
 import type { Query, With } from 'miniplex';
-import type { Entity, GameWorld } from '@/ecs/Entity';
+import type { Entity, GameWorld, Team } from '@/ecs/Entity';
 import type { GameSystem } from '@/ecs/GameSystem';
 import { Vector, SpatialGrid } from '@/utils';
 
@@ -15,12 +15,10 @@ export class InteractionSystem implements GameSystem {
   }
 
   update(_delta: number, _time: number): void {
-    // Clear previous potential targets
     for (const entity of this.interactive) {
       entity.targeting.potentialTargets = [];
     }
 
-    // Rebuild interactions from spatial grid
     for (const entity of this.interactive) {
       const { interaction, position, targeting } = entity;
 
@@ -33,7 +31,7 @@ export class InteractionSystem implements GameSystem {
       for (const other of nearbyEntities) {
         if (entity === other) continue;
         if (other.health?.isDead) continue;
-        if (!this.canInteractWith(other, interaction.interactsWith)) continue;
+        if (!this.isEnemy(entity.team, other.team)) continue;
 
         const otherPos = other.position;
         if (!otherPos) continue;
@@ -49,8 +47,8 @@ export class InteractionSystem implements GameSystem {
     }
   }
 
-  private canInteractWith(entity: Entity, interactsWith: readonly string[]): boolean {
-    if (!entity.renderable) return false;
-    return interactsWith.includes(entity.renderable.type);
+  private isEnemy(sourceTeam: Team | undefined, otherTeam: Team | undefined): boolean {
+    if (!sourceTeam || !otherTeam) return false;
+    return sourceTeam !== otherTeam;
   }
 }

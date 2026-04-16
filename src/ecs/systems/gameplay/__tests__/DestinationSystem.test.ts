@@ -192,12 +192,12 @@ describe('DestinationSystem', () => {
       expect(scoreMessages.length).toBe(0);
     });
 
-    it('should only score entities matching lodge allowedTenants', () => {
+    it('should only score entities matching lodge allowedTeam', () => {
       createTestFirefly(world, { x: 100, y: 100 });
       createTestMonster(world, { x: 200, y: 200 });
-      createTestWisp(world, { x: 300, y: 300, for: ['firefly'] });
+      createTestWisp(world, { x: 300, y: 300, for: 'firefly' });
       createTestGoal(world);
-      createTestGoal(world, { for: ['monster'] });
+      createTestGoal(world, { for: 'monster' });
 
       system = new DestinationSystem(world, { worker: mockWorker });
       system.update(16, 16);
@@ -528,7 +528,7 @@ describe('DestinationSystem', () => {
   describe('Monsters with no lodges', () => {
     it('should path monsters directly to their goal', () => {
       const monster = createTestMonster(world, { x: 100, y: 100 });
-      createTestGoal(world, { x: 500, y: 500, for: ['monster'] });
+      createTestGoal(world, { x: 500, y: 500, for: 'monster' });
 
       system = new DestinationSystem(world, { worker: mockWorker });
       system.update(16, 16);

@@ -1,8 +1,7 @@
 import type { Query, With } from 'miniplex';
-import type { Entity, GameWorld } from '@/ecs/Entity';
+import type { Entity, GameWorld, Team } from '@/ecs/Entity';
 import type { GameSystem } from '@/ecs/GameSystem';
 import { PHYSICS_CONFIG } from '@/config';
-import { getEntityType } from '@/utils';
 
 interface RecruitmentState {
   lodge: Entity;
@@ -76,14 +75,13 @@ export class DestinationSystem implements GameSystem {
       if (lodge.lodge.tenants.length + incoming >= lodge.lodge.maxTenants) continue;
       if (this.activeRecruitments.has(lodgeId)) continue;
 
-      const tenantTypes = lodge.lodge.allowedTenants;
-      const goal = this.findGoalForType(tenantTypes as string[]);
+      const allowedTeam = lodge.lodge.allowedTeam;
+      const goal = this.findGoalForTeam(allowedTeam);
       if (!goal) continue;
 
       const candidates: Entity[] = [];
       for (const mover of this.movers) {
-        const entityType = getEntityType(mover);
-        if (!entityType || !(tenantTypes as string[]).includes(entityType)) continue;
+        if (mover.team !== allowedTeam) continue;
         if (mover.fleeingToGoalTag) continue;
         if (mover.assignedDestination) continue;
         candidates.push(mover);
@@ -110,12 +108,12 @@ export class DestinationSystem implements GameSystem {
   private navigateMovers(): void {
     for (const mover of this.movers) {
       try {
-        const entityType = getEntityType(mover) || 'unknown';
         const entityId = this.world.id(mover);
         if (entityId === undefined) continue;
         if (!mover.path.currentPath) continue;
+        if (!mover.team) continue;
 
-        const goal = this.findGoalForType([entityType]);
+        const goal = this.findGoalForTeam(mover.team);
         if (!goal) continue;
 
         const isFleeing = !!mover.fleeingToGoalTag;
@@ -161,11 +159,9 @@ export class DestinationSystem implements GameSystem {
     }
   }
 
-  private findGoalForType(types: string[]): With<Entity, 'position' | 'destination' | 'goalTag'> | null {
+  private findGoalForTeam(team: Team): With<Entity, 'position' | 'destination' | 'goalTag'> | null {
     for (const goal of this.goals) {
-      for (const t of types) {
-        if (goal.destination.for.includes(t)) return goal;
-      }
+      if (goal.destination.forTeam === team) return goal;
     }
     return null;
   }
@@ -325,7 +321,7 @@ export class DestinationSystem implements GameSystem {
     if (recruitment.results.length === 0) return;
 
     const lodge = recruitment.lodge;
-    const goal = this.findGoalForType(lodge.lodge!.allowedTenants as string[]);
+    const goal = this.findGoalForTeam(lodge.lodge!.allowedTeam);
 
     // Apply backtracking penalty
     if (goal) {

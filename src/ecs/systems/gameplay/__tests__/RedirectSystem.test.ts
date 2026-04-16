@@ -24,7 +24,7 @@ describe('RedirectSystem', () => {
       const redirect = createTestRedirect(world, {
         x: 200, y: 200,
         exits: [{ x: 200, y: 100, weight: 1 }],
-        for: ['firefly'],
+        for: 'firefly',
         radius: 50
       });
 
@@ -44,7 +44,7 @@ describe('RedirectSystem', () => {
       createTestRedirect(world, {
         x: 200, y: 200,
         exits: [{ x: 200, y: 100, weight: 1 }],
-        for: ['firefly'],
+        for: 'firefly',
         radius: 50
       });
 
@@ -65,7 +65,7 @@ describe('RedirectSystem', () => {
       createTestRedirect(world, {
         x: 200, y: 200,
         exits: [{ x: 200, y: 100, weight: 1 }],
-        for: ['firefly'],
+        for: 'firefly',
         radius: 50
       });
 
@@ -80,7 +80,7 @@ describe('RedirectSystem', () => {
       const redirect = createTestRedirect(world, {
         x: 200, y: 200,
         exits: [{ x: 200, y: 100, weight: 1 }],
-        for: ['firefly'],
+        for: 'firefly',
         radius: 50
       });
 
@@ -99,7 +99,7 @@ describe('RedirectSystem', () => {
       const redirect = createTestRedirect(world, {
         x: 200, y: 200,
         exits: [{ x: 200, y: 100, weight: 1 }],
-        for: ['firefly'],
+        for: 'firefly',
         radius: 50
       });
 
@@ -130,7 +130,7 @@ describe('RedirectSystem', () => {
           { x: 200, y: 100, weight: 1 },
           { x: 200, y: 300, weight: 3 }
         ],
-        for: ['firefly'],
+        for: 'firefly',
         radius: 50
       });
 
@@ -172,7 +172,7 @@ describe('RedirectSystem', () => {
       createTestRedirect(world, {
         x: 200, y: 200,
         exits: [{ x: 200, y: 100, weight: 1 }],
-        for: ['monster'],
+        for: 'monster',
         radius: 50
       });
 
@@ -187,7 +187,7 @@ describe('RedirectSystem', () => {
       createTestRedirect(world, {
         x: 200, y: 200,
         exits: [{ x: 200, y: 100, weight: 1 }],
-        for: ['monster'],
+        for: 'monster',
         radius: 50
       });
 
@@ -204,7 +204,7 @@ describe('RedirectSystem', () => {
       createTestRedirect(world, {
         x: 200, y: 200,
         exits: [{ x: 200, y: 100, weight: 1 }],
-        for: ['firefly'],
+        for: 'firefly',
         radius: 50
       });
 
@@ -223,7 +223,7 @@ describe('RedirectSystem', () => {
       createTestRedirect(world, {
         x: 200, y: 200,
         exits: [{ x: 200, y: 100, weight: 1 }],
-        for: ['firefly'],
+        for: 'firefly',
         radius: 50
       });
 
@@ -254,14 +254,14 @@ describe('RedirectSystem', () => {
       createTestRedirect(world, {
         x: 100, y: 100,
         exits: [{ x: 150, y: 100, weight: 1 }],
-        for: ['firefly'],
+        for: 'firefly',
         radius: 50
       });
 
       createTestRedirect(world, {
         x: 300, y: 100,
         exits: [{ x: 350, y: 100, weight: 1 }],
-        for: ['firefly'],
+        for: 'firefly',
         radius: 50
       });
 
@@ -288,7 +288,7 @@ describe('RedirectSystem', () => {
       createTestRedirect(world, {
         x: 200, y: 200,
         exits: [{ x: 200, y: 100, weight: 1 }],
-        for: ['firefly'],
+        for: 'firefly',
         radius: 50
       });
 
@@ -309,7 +309,7 @@ describe('RedirectSystem', () => {
       createTestRedirect(world, {
         x: 200, y: 200,
         exits: [{ x: 200, y: 100, weight: 1 }],
-        for: ['firefly'],
+        for: 'firefly',
         radius: 50
       });
 
@@ -323,7 +323,7 @@ describe('RedirectSystem', () => {
       createTestRedirect(world, {
         x: 200, y: 200,
         exits: [{ x: 200, y: 100, weight: 1 }],
-        for: ['firefly'],
+        for: 'firefly',
         radius: 50
       });
 
@@ -334,14 +334,14 @@ describe('RedirectSystem', () => {
       createTestRedirect(world, {
         x: 200, y: 200,
         exits: [{ x: 200, y: 100, weight: 1 }],
-        for: ['firefly'],
+        for: 'firefly',
         radius: 50
       });
 
       createTestRedirect(world, {
         x: 210, y: 210,
         exits: [{ x: 210, y: 300, weight: 1 }],
-        for: ['firefly'],
+        for: 'firefly',
         radius: 50
       });
 

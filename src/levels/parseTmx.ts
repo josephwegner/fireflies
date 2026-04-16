@@ -1,3 +1,4 @@
+import type { Team } from '@/ecs/Entity';
 import type { LevelData, EntityDescriptor } from './loadLevel';
 
 export function parseTmx(xml: string): LevelData {
@@ -81,8 +82,8 @@ function parseEntities(doc: Document, tilewidth: number, tileheight: number): En
         break;
       }
       case 'goal': {
-        const forType = props.get('for') ?? '';
-        entities.push({ type: 'goal', x, y, for: forType });
+        const forTeam = (props.get('for') ?? 'firefly') as Team;
+        entities.push({ type: 'goal', x, y, for: forTeam });
         break;
       }
       case 'wisp': {
@@ -91,10 +92,10 @@ function parseEntities(doc: Document, tilewidth: number, tileheight: number): En
       }
       case 'redirect': {
         const id = obj.getAttribute('id')!;
-        const forType = props.get('for') ?? '';
+        const forTeam = (props.get('for') ?? 'firefly') as Team;
         const radius = parseInt(props.get('radius') ?? '0') || tilewidth * 3;
         const exits = exitsByRedirectId.get(id) ?? [];
-        entities.push({ type: 'redirect', x, y, for: forType, exits, radius });
+        entities.push({ type: 'redirect', x, y, for: forTeam, exits, radius });
         break;
       }
     }

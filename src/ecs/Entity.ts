@@ -1,5 +1,7 @@
 import { World } from 'miniplex';
 
+export type Team = 'firefly' | 'monster';
+
 // ─── Component Data Types ───────────────────────────────────────────────────
 
 export interface Position {
@@ -80,7 +82,7 @@ export interface PathData {
 }
 
 export interface Destination {
-  for: string[];
+  forTeam: Team;
 }
 
 export interface Target {
@@ -92,7 +94,6 @@ export interface Targeting {
 }
 
 export interface Interaction {
-  interactsWith: readonly string[];
   interactionRadius: number;
 }
 
@@ -118,7 +119,6 @@ export interface AttackPattern {
   knockbackForce?: number;
   dashSpeed?: number;
   radius?: number;
-  targetTags?: string[];
   color?: number;
 }
 
@@ -134,7 +134,7 @@ export interface Combat {
 export interface Lodge {
   tenants: Entity[];
   incoming: Entity[];
-  allowedTenants: readonly string[];
+  allowedTeam: Team;
   maxTenants: number;
 }
 
@@ -184,7 +184,7 @@ export interface RedirectExit {
 export interface Redirect {
   exits: RedirectExit[];
   radius: number;
-  for: string[];
+  forTeam: Team;
 }
 
 // ─── Entity Type ────────────────────────────────────────────────────────────
@@ -213,6 +213,9 @@ export type Entity = {
   spawner?: Spawner;
   redirect?: Redirect;
   redirectTarget?: { x: number; y: number };
+
+  // Team
+  team?: Team;
 
   // Tags (boolean flags)
   fireflyTag?: true;

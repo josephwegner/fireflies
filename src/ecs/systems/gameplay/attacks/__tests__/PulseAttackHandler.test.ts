@@ -20,7 +20,8 @@ describe('PulseAttackHandler', () => {
 
     attacker = world.add({
       position: { x: 0, y: 0 },
-      monsterTag: true
+      monsterTag: true,
+      team: 'monster'
     });
 
     mockCombat = {
@@ -36,8 +37,7 @@ describe('PulseAttackHandler', () => {
         recoveryTime: 0,
         damage: 25,
         knockbackForce: 30,
-        radius: 50,
-        targetTags: ['firefly']
+        radius: 50
       }
     };
 
@@ -49,7 +49,8 @@ describe('PulseAttackHandler', () => {
       const target = world.add({
         position: { x: 10, y: 0 },
         physicsBody: { mass: 1, isStatic: false, collisionRadius: 5 },
-        fireflyTag: true
+        fireflyTag: true,
+        team: 'firefly'
       });
 
       spatialGrid.insert(attacker, 0, 0);
@@ -78,7 +79,8 @@ describe('PulseAttackHandler', () => {
       const target = world.add({
         position: { x: 100, y: 0 },
         physicsBody: { mass: 1, isStatic: false, collisionRadius: 5 },
-        fireflyTag: true
+        fireflyTag: true,
+        team: 'firefly'
       });
 
       spatialGrid.insert(attacker, 0, 0);
@@ -135,7 +137,8 @@ describe('PulseAttackHandler', () => {
       const target = world.add({
         position: { x: 50, y: 0 },
         physicsBody: { mass: 1, isStatic: true, collisionRadius: 45 },
-        fireflyTag: true
+        fireflyTag: true,
+        team: 'firefly'
       });
 
       wideGrid.insert(attacker, 0, 0);
@@ -178,7 +181,8 @@ describe('PulseAttackHandler', () => {
       const target = world.add({
         position: { x: 10, y: 0 },
         physicsBody: { mass: 1, isStatic: false, collisionRadius: 5 },
-        fireflyTag: true
+        fireflyTag: true,
+        team: 'firefly'
       });
 
       spatialGrid.insert(attacker, 0, 0);
@@ -212,18 +216,20 @@ describe('PulseAttackHandler', () => {
     });
   });
 
-  describe('target tag filtering', () => {
-    it('should only hit entities matching targetTags', () => {
+  describe('team-based targeting', () => {
+    it('should only hit entities on enemy team', () => {
       const fireflyTarget = world.add({
         position: { x: 10, y: 0 },
         physicsBody: { mass: 1, isStatic: false, collisionRadius: 5 },
-        fireflyTag: true
+        fireflyTag: true,
+        team: 'firefly'
       });
 
       const monsterTarget = world.add({
         position: { x: 20, y: 0 },
         physicsBody: { mass: 1, isStatic: false, collisionRadius: 5 },
-        monsterTag: true
+        monsterTag: true,
+        team: 'monster'
       });
 
       spatialGrid.insert(attacker, 0, 0);
@@ -252,25 +258,26 @@ describe('PulseAttackHandler', () => {
       );
     });
 
-    it('should hit multiple entities with different matching tags', () => {
-      mockCombat.attackPattern.targetTags = ['firefly', 'wisp'];
-
+    it('should hit multiple entities on different enemy teams', () => {
       const fireflyTarget = world.add({
         position: { x: 10, y: 0 },
         physicsBody: { mass: 1, isStatic: false, collisionRadius: 5 },
-        fireflyTag: true
+        fireflyTag: true,
+        team: 'firefly'
       });
 
       const wispTarget = world.add({
         position: { x: 15, y: 0 },
         physicsBody: { mass: 1, isStatic: false, collisionRadius: 5 },
-        wispTag: true
+        wispTag: true,
+        team: 'wisp'
       });
 
       const monsterTarget = world.add({
         position: { x: 20, y: 0 },
         physicsBody: { mass: 1, isStatic: false, collisionRadius: 5 },
-        monsterTag: true
+        monsterTag: true,
+        team: 'monster'
       });
 
       spatialGrid.insert(attacker, 0, 0);
@@ -304,24 +311,22 @@ describe('PulseAttackHandler', () => {
       );
     });
 
-    it('should hit all entities when targetTags is empty', () => {
-      mockCombat.attackPattern.targetTags = [];
-
-      const fireflyTarget = world.add({
+    it('should not hit entities without a team', () => {
+      const teamlessTarget1 = world.add({
         position: { x: 10, y: 0 },
         physicsBody: { mass: 1, isStatic: false, collisionRadius: 5 },
         fireflyTag: true
       });
 
-      const monsterTarget = world.add({
+      const teamlessTarget2 = world.add({
         position: { x: 20, y: 0 },
         physicsBody: { mass: 1, isStatic: false, collisionRadius: 5 },
         monsterTag: true
       });
 
       spatialGrid.insert(attacker, 0, 0);
-      spatialGrid.insert(fireflyTarget, 10, 0);
-      spatialGrid.insert(monsterTarget, 20, 0);
+      spatialGrid.insert(teamlessTarget1, 10, 0);
+      spatialGrid.insert(teamlessTarget2, 20, 0);
 
       vi.spyOn(gameEvents, 'emit');
 
@@ -334,7 +339,10 @@ describe('PulseAttackHandler', () => {
 
       handler.execute(context);
 
-      expect(gameEvents.emit).toHaveBeenCalledTimes(2);
+      expect(gameEvents.emit).not.toHaveBeenCalledWith(
+        GameEvents.ATTACK_HIT,
+        expect.anything()
+      );
     });
   });
 
@@ -343,13 +351,15 @@ describe('PulseAttackHandler', () => {
       const nearTarget = world.add({
         position: { x: 10, y: 0 },
         physicsBody: { mass: 1, isStatic: false, collisionRadius: 5 },
-        fireflyTag: true
+        fireflyTag: true,
+        team: 'firefly'
       });
 
       const farTarget = world.add({
         position: { x: 200, y: 0 },
         physicsBody: { mass: 1, isStatic: false, collisionRadius: 5 },
-        fireflyTag: true
+        fireflyTag: true,
+        team: 'firefly'
       });
 
       spatialGrid.insert(attacker, 0, 0);
@@ -377,7 +387,8 @@ describe('PulseAttackHandler', () => {
       world.add({
         position: { x: 10, y: 0 },
         physicsBody: { mass: 1, isStatic: false, collisionRadius: 5 },
-        fireflyTag: true
+        fireflyTag: true,
+        team: 'firefly'
       });
 
       vi.spyOn(gameEvents, 'emit');
@@ -399,7 +410,7 @@ describe('PulseAttackHandler', () => {
 
   describe('edge cases', () => {
     it('should handle attacker without Position component gracefully', () => {
-      const noPositionAttacker = world.add({ monsterTag: true });
+      const noPositionAttacker = world.add({ monsterTag: true, team: 'monster' });
 
       const context: AttackContext = {
         attacker: noPositionAttacker,
@@ -414,7 +425,8 @@ describe('PulseAttackHandler', () => {
     it('should skip entities without Position component', () => {
       const target = world.add({
         physicsBody: { mass: 1, isStatic: false, collisionRadius: 5 },
-        fireflyTag: true
+        fireflyTag: true,
+        team: 'firefly'
       });
 
       spatialGrid.insert(attacker, 0, 0);
@@ -439,7 +451,8 @@ describe('PulseAttackHandler', () => {
     it('should skip entities without PhysicsBody component', () => {
       const target = world.add({
         position: { x: 10, y: 0 },
-        fireflyTag: true
+        fireflyTag: true,
+        team: 'firefly'
       });
 
       spatialGrid.insert(attacker, 0, 0);
@@ -468,7 +481,8 @@ describe('PulseAttackHandler', () => {
       const target = world.add({
         position: { x: 0, y: 0 },
         physicsBody: { mass: 1, isStatic: false, collisionRadius: 5 },
-        fireflyTag: true
+        fireflyTag: true,
+        team: 'firefly'
       });
 
       spatialGrid.insert(attacker, 0, 0);
@@ -497,7 +511,8 @@ describe('PulseAttackHandler', () => {
       const target = world.add({
         position: { x: 10, y: 0 },
         physicsBody: { mass: 1, isStatic: false, collisionRadius: 5 },
-        fireflyTag: true
+        fireflyTag: true,
+        team: 'firefly'
       });
 
       spatialGrid.insert(attacker, 0, 0);

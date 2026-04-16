@@ -2,7 +2,6 @@ import type { Query, With } from 'miniplex';
 import type { Entity, GameWorld } from '@/ecs/Entity';
 import type { GameSystem } from '@/ecs/GameSystem';
 import { PHYSICS_CONFIG } from '@/config';
-import { getEntityType } from '@/utils';
 
 export class RedirectSystem implements GameSystem {
   private movers: Query<With<Entity, 'position' | 'velocity' | 'path'>>;
@@ -26,8 +25,7 @@ export class RedirectSystem implements GameSystem {
       if (mover.redirectTarget) continue;
       if (mover.assignedDestination) continue;
 
-      const entityType = getEntityType(mover);
-      if (!entityType) continue;
+      if (!mover.team) continue;
 
       let tracking = this.entityRedirectTracking.get(entityId);
       if (!tracking) {
@@ -39,7 +37,7 @@ export class RedirectSystem implements GameSystem {
         const redirectId = this.world.id(redirect);
         if (redirectId === undefined) continue;
 
-        if (!redirect.redirect.for.includes(entityType)) continue;
+        if (mover.team !== redirect.redirect.forTeam) continue;
 
         const dx = mover.position.x - redirect.position.x;
         const dy = mover.position.y - redirect.position.y;

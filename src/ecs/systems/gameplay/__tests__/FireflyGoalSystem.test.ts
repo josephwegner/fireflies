@@ -24,7 +24,7 @@ function createFirefly(world: GameWorld, x: number, y: number): Entity {
     position: { x, y },
     velocity: { vx: 0, vy: 0 },
     path: { currentPath: [], goalPath: [], direction: 'r' },
-    destination: { for: ['firefly'] },
+    destination: { forTeam: 'firefly' },
     renderable: {
       type: 'firefly', sprite: 'firefly', color: 0xffff00, radius: 4,
       alpha: 1, scale: 1, tint: 0xFFFFFF, rotation: 0, rotationSpeed: 0,

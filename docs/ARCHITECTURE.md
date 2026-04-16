@@ -135,18 +135,21 @@ export type Entity = {
 
   // Gameplay
   path?: PathData;            // { currentPath, goalPath, direction }
-  destination?: Destination;  // { for: string[] }
+  destination?: Destination;  // { forTeam: Team }
   target?: Target;            // { target: Entity }
   targeting?: Targeting;      // { potentialTargets: Entity[] }
-  interaction?: Interaction;  // { interactsWith, interactionRadius }
+  interaction?: Interaction;  // { interactionRadius }
   health?: Health;            // { currentHealth, maxHealth, isDead }
   combat?: Combat;            // { state, attackPattern, ... }
-  lodge?: Lodge;              // { tenants, allowedTenants, maxTenants }
+  lodge?: Lodge;              // { tenants, incoming, allowedTeam, maxTenants }
   activationConfig?: ActivationConfig;
   fireflyGoal?: FireflyGoal;  // { currentCount }
   spawner?: Spawner;          // { queue, state } — timed entity spawning
-  redirect?: Redirect;        // { exits, radius, for } — weighted path redirection
+  redirect?: Redirect;        // { exits, radius, forTeam } — weighted path redirection
   redirectTarget?: { x, y };  // Temporary override destination from a redirect
+
+  // Team — 'firefly' | 'monster', used for enemy detection, routing, lodging
+  team?: Team;
 
   // Tags (boolean flags)
   fireflyTag?: true;

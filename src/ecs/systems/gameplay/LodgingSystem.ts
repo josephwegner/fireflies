@@ -1,5 +1,5 @@
 import type { Query, With } from 'miniplex';
-import type { Entity, GameWorld } from '@/ecs/Entity';
+import type { Entity, GameWorld, Team } from '@/ecs/Entity';
 import type { GameSystem } from '@/ecs/GameSystem';
 import { ENTITY_CONFIG, PHYSICS_CONFIG } from '@/config';
 import { SpatialGrid, Vector } from '@/utils';
@@ -98,7 +98,7 @@ export class LodgingSystem implements GameSystem {
     for (const entity of nearbyEntities) {
       if (lodge.tenants.length + incomingCount >= lodge.maxTenants) return;
       if (entity === lodgeEntity) continue;
-      if (!this.canLodge(entity, lodge.allowedTenants)) continue;
+      if (!this.canLodge(entity, lodge.allowedTeam)) continue;
 
       const entityPos = entity.position;
       if (!entityPos) continue;
@@ -113,10 +113,9 @@ export class LodgingSystem implements GameSystem {
     }
   }
 
-  private canLodge(entity: Entity, allowedTenants: readonly string[]): boolean {
-    if (!entity.renderable) return false;
+  private canLodge(entity: Entity, allowedTeam: Team): boolean {
     if (entity.fleeingToGoalTag) return false;
-    return allowedTenants.includes(entity.renderable.type);
+    return entity.team === allowedTeam;
   }
 
   private handleTenantAdded(event: GameEventPayloads[typeof GameEvents.TENANT_ADDED_TO_LODGE]): void {

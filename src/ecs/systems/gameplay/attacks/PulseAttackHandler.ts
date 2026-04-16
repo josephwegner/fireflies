@@ -59,7 +59,7 @@ export class PulseAttackHandler implements AttackHandler {
     for (const entity of entitiesToCheck) {
       if (entity === attacker) continue;
       if (!entity.position || !entity.physicsBody) continue;
-      if (!this.isValidTarget(entity, combat.attackPattern.targetTags)) continue;
+      if (!this.isValidTarget(entity, attacker)) continue;
 
       const dx = entity.position.x - attackerPos.x;
       const dy = entity.position.y - attackerPos.y;
@@ -87,11 +87,8 @@ export class PulseAttackHandler implements AttackHandler {
     // Visual cleanup handled by CombatVisualsSystem via events
   }
 
-  private isValidTarget(entity: Entity, targetTags: string[] = []): boolean {
-    if (targetTags.length === 0) return true;
-    return targetTags.some(tag => {
-      const tagKey = `${tag}Tag` as keyof Entity;
-      return !!entity[tagKey];
-    });
+  private isValidTarget(entity: Entity, attacker: Entity): boolean {
+    if (!entity.team || !attacker.team) return false;
+    return entity.team !== attacker.team;
   }
 }

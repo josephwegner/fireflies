@@ -76,8 +76,13 @@ describe('Entity Factories', () => {
     it('should initialize interaction component', () => {
       const entity = createFirefly(world, 100, 200);
 
-      expect(entity.interaction!.interactsWith).toEqual(ENTITY_CONFIG.firefly.interactsWith);
       expect(entity.interaction!.interactionRadius).toBe(ENTITY_CONFIG.firefly.interactionRadius);
+    });
+
+    it('should have team set to firefly', () => {
+      const entity = createFirefly(world, 100, 200);
+
+      expect(entity.team).toBe('firefly');
     });
 
     it('should initialize targeting with empty potential targets', () => {
@@ -120,10 +125,10 @@ describe('Entity Factories', () => {
       expect(entity.position!.y).toBe(200);
     });
 
-    it('should be a destination for fireflies', () => {
+    it('should be a destination for firefly team', () => {
       const entity = createWisp(world, 100, 200);
 
-      expect(entity.destination!.for).toEqual(['firefly']);
+      expect(entity.destination!.forTeam).toBe('firefly');
     });
 
     it('should initialize renderable with correct properties', () => {
@@ -145,7 +150,7 @@ describe('Entity Factories', () => {
       const wisp = createWisp(world, 100, 100);
 
       expect(!!wisp.lodge).toBe(true);
-      expect(wisp.lodge!.allowedTenants).toEqual(['firefly']);
+      expect(wisp.lodge!.allowedTeam).toBe('firefly');
       expect(wisp.lodge!.maxTenants).toBe(1);
       expect(wisp.lodge!.tenants).toEqual([]);
     });
@@ -230,18 +235,18 @@ describe('Entity Factories', () => {
       expect(entity.position!.y).toBe(200);
     });
 
-    it('should be a destination for specified entity type', () => {
+    it('should be a destination for specified team', () => {
       const entity = createGoal(world, 100, 200, 'firefly');
 
-      expect(entity.destination!.for).toEqual(['firefly']);
+      expect(entity.destination!.forTeam).toBe('firefly');
     });
 
-    it('should accept different attract types', () => {
+    it('should accept different teams', () => {
       const fireflyGoal = createGoal(world, 100, 200, 'firefly');
       const monsterGoal = createGoal(world, 300, 400, 'monster');
 
-      expect(fireflyGoal.destination!.for).toEqual(['firefly']);
-      expect(monsterGoal.destination!.for).toEqual(['monster']);
+      expect(fireflyGoal.destination!.forTeam).toBe('firefly');
+      expect(monsterGoal.destination!.forTeam).toBe('monster');
     });
 
     it('should initialize renderable with correct properties', () => {
@@ -324,41 +329,41 @@ describe('Entity Factories', () => {
         { x: 200, y: 100, weight: 1 },
         { x: 200, y: 300, weight: 1 }
       ];
-      const entity = createRedirect(world, 100, 200, exits, ['firefly']);
+      const entity = createRedirect(world, 100, 200, exits, 'firefly');
 
       expect(entity.position).toEqual({ x: 100, y: 200 });
       expect(entity.redirectTag).toBe(true);
       expect(entity.redirect).toBeDefined();
     });
 
-    it('should store exits and for types', () => {
+    it('should store exits and forTeam', () => {
       const exits = [
         { x: 200, y: 100, weight: 2 },
         { x: 200, y: 300, weight: 1 }
       ];
-      const entity = createRedirect(world, 100, 200, exits, ['firefly', 'monster']);
+      const entity = createRedirect(world, 100, 200, exits, 'firefly');
 
       expect(entity.redirect!.exits).toBe(exits);
-      expect(entity.redirect!.for).toEqual(['firefly', 'monster']);
+      expect(entity.redirect!.forTeam).toBe('firefly');
     });
 
     it('should use default radius of TILE_SIZE * 3 when not specified', () => {
       const exits = [{ x: 200, y: 100, weight: 1 }];
-      const entity = createRedirect(world, 100, 200, exits, ['firefly']);
+      const entity = createRedirect(world, 100, 200, exits, 'firefly');
 
       expect(entity.redirect!.radius).toBe(GAME_CONFIG.TILE_SIZE * 3);
     });
 
     it('should accept custom radius', () => {
       const exits = [{ x: 200, y: 100, weight: 1 }];
-      const entity = createRedirect(world, 100, 200, exits, ['firefly'], 50);
+      const entity = createRedirect(world, 100, 200, exits, 'firefly', 50);
 
       expect(entity.redirect!.radius).toBe(50);
     });
 
     it('should not have renderable or physicsBody', () => {
       const exits = [{ x: 200, y: 100, weight: 1 }];
-      const entity = createRedirect(world, 100, 200, exits, ['firefly']);
+      const entity = createRedirect(world, 100, 200, exits, 'firefly');
 
       expect(entity.renderable).toBeUndefined();
       expect(entity.physicsBody).toBeUndefined();
@@ -366,7 +371,7 @@ describe('Entity Factories', () => {
 
     it('should not have movement components', () => {
       const exits = [{ x: 200, y: 100, weight: 1 }];
-      const entity = createRedirect(world, 100, 200, exits, ['firefly']);
+      const entity = createRedirect(world, 100, 200, exits, 'firefly');
 
       expect(entity.velocity).toBeUndefined();
       expect(entity.path).toBeUndefined();

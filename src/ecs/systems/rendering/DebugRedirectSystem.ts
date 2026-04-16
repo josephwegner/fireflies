@@ -47,7 +47,7 @@ export class DebugRedirectSystem implements GameSystem {
       }
 
       // Label with types
-      const label = redirect.for.join(', ');
+      const label = redirect.forTeam;
       const text = this.scene.add.text(position.x + 6, position.y - 10, label, {
         fontSize: '10px',
         color: '#ffff00',

@@ -2,7 +2,8 @@ import type { Query, With } from 'miniplex';
 import type { Entity, GameWorld } from '@/ecs/Entity';
 import type { GameSystem } from '@/ecs/GameSystem';
 import { gameEvents, GameEvents } from '@/events';
-import { ENTITY_CONFIG, PHYSICS_CONFIG } from '@/config';
+import { ENTITY_CONFIG } from '@/config';
+import { teamForUnitType } from '@/utils';
 import { logger } from '@/utils/logger';
 
 export class VictorySystem implements GameSystem {
@@ -39,7 +40,7 @@ export class VictorySystem implements GameSystem {
     if (this.monsters.entities.length > 0 && livingMonsters.length === 0) {
       const hasActiveMonsterSpawner = this.spawners.entities.some(s => {
         if (s.spawner.state.phase === 'done') return false;
-        return s.spawner.queue.slice(s.spawner.state.currentIndex).some(e => e.unit === 'monster');
+        return s.spawner.queue.slice(s.spawner.state.currentIndex).some(e => teamForUnitType(e.unit) === 'monster');
       });
       if (hasActiveMonsterSpawner) return;
 
@@ -86,7 +87,7 @@ export class VictorySystem implements GameSystem {
           continue;
         }
 
-        if (!tenant.fireflyTag) continue;
+        if (tenant.team !== 'firefly') continue;
 
         const idx = lodge.tenants.indexOf(tenant);
         if (idx !== -1) lodge.tenants.splice(idx, 1);

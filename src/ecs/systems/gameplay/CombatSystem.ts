@@ -76,14 +76,7 @@ export class CombatSystem implements GameSystem {
 
     if (target.health.isDead) return false;
 
-    const targetTags = combat!.attackPattern.targetTags || [];
-    if (targetTags.length > 0) {
-      const hasValidTag = targetTags.some(tag => {
-        const tagKey = `${tag}Tag` as keyof Entity;
-        return !!target[tagKey];
-      });
-      if (!hasValidTag) return false;
-    }
+    if (attacker.team && target.team && attacker.team === target.team) return false;
 
     const attackerPos = attacker.position!;
     const targetPos = target.position;

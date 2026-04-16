@@ -1,5 +1,5 @@
 import { World } from 'miniplex';
-import type { Entity, GameWorld, SpawnEntry, RedirectExit } from '@/ecs/Entity';
+import type { Entity, GameWorld, SpawnEntry, RedirectExit, Team } from '@/ecs/Entity';
 import { CombatState } from '@/ecs/Entity';
 import { ENTITY_CONFIG, GAME_CONFIG } from '@/config';
 import { TEST_POSITIONS, TEST_ENTITY_DEFAULTS } from './constants';
@@ -18,7 +18,7 @@ export interface TestEntityOptions {
 export interface TestDestinationOptions {
   x?: number;
   y?: number;
-  for?: string[];
+  for?: Team;
 }
 
 export function createTestFirefly(
@@ -53,6 +53,7 @@ export function createTestFirefly(
       depth: 50,
       offsetY: 0
     },
+    team: 'firefly',
     fireflyTag: true
   });
 }
@@ -89,6 +90,7 @@ export function createTestMonster(
       depth: 100,
       offsetY: 0
     },
+    team: 'monster',
     monsterTag: true
   });
 }
@@ -100,14 +102,15 @@ export function createTestWisp(
   const {
     x = 300,
     y = 300,
-    for: forTypes = ['firefly']
+    for: forTeam = 'firefly'
   } = options;
 
   return world.add({
     position: { x, y },
-    destination: { for: forTypes },
+    destination: { forTeam },
+    team: forTeam,
     wispTag: true,
-    lodge: { tenants: [], incoming: [], allowedTenants: forTypes, maxTenants: 1 }
+    lodge: { tenants: [], incoming: [], allowedTeam: forTeam, maxTenants: 1 }
   });
 }
 
@@ -118,12 +121,12 @@ export function createTestGoal(
   const {
     x = 500,
     y = 500,
-    for: forTypes = ['firefly']
+    for: forTeam = 'firefly'
   } = options;
 
   return world.add({
     position: { x, y },
-    destination: { for: forTypes },
+    destination: { forTeam },
     goalTag: true
   });
 }
@@ -175,7 +178,7 @@ export interface TestRedirectOptions {
   x?: number;
   y?: number;
   exits?: RedirectExit[];
-  for?: string[];
+  for?: Team;
   radius?: number;
 }
 
@@ -190,13 +193,13 @@ export function createTestRedirect(
       { x: 200, y: 100, weight: 1 },
       { x: 200, y: 300, weight: 1 }
     ],
-    for: forTypes = ['firefly'],
+    for: forTeam = 'firefly',
     radius = GAME_CONFIG.TILE_SIZE * 3
   } = options;
 
   return world.add({
     position: { x, y },
-    redirect: { exits, radius, for: forTypes },
+    redirect: { exits, radius, forTeam },
     redirectTag: true
   });
 }
@@ -225,6 +228,7 @@ export function createCombatFirefly(
     velocity: { vx, vy },
     health: { currentHealth: health, maxHealth, isDead },
     physicsBody: { mass, isStatic: false, collisionRadius },
+    team: 'firefly',
     fireflyTag: true
   });
 }
@@ -244,6 +248,7 @@ export function createCombatMonster(
     velocity: { vx, vy },
     health: { currentHealth: health, maxHealth, isDead },
     physicsBody: { mass, isStatic: false, collisionRadius },
+    team: 'monster',
     monsterTag: true
   });
 }

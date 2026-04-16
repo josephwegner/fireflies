@@ -27,12 +27,13 @@ describe('InteractionSystem', () => {
     it('should populate potentialTargets when entities are in range', () => {
       const firefly = world.add({
         position: { x: 100, y: 100 },
-        interaction: { interactionRadius: 50, interactsWith: ['monster'] },
+        interaction: { interactionRadius: 50 },
         targeting: { potentialTargets: [] },
         renderable: {
           type: 'firefly', sprite: 'firefly', color: 0xffff00, radius: 5,
           alpha: 1, scale: 1, tint: 0xFFFFFF, rotation: 0, rotationSpeed: 0, depth: 50, offsetY: 0
         },
+        team: 'firefly',
         fireflyTag: true
       });
 
@@ -42,6 +43,7 @@ describe('InteractionSystem', () => {
           type: 'monster', sprite: 'monster', color: 0xff0000, radius: 8,
           alpha: 1, scale: 1, tint: 0xFFFFFF, rotation: 0, rotationSpeed: 0, depth: 100, offsetY: 0
         },
+        team: 'monster',
         monsterTag: true
       });
 
@@ -54,13 +56,15 @@ describe('InteractionSystem', () => {
     it('should not add entities outside interaction radius', () => {
       const firefly = world.add({
         position: { x: 100, y: 100 },
-        interaction: { interactionRadius: 30, interactsWith: ['monster'] },
+        interaction: { interactionRadius: 30 },
         targeting: { potentialTargets: [] },
+        team: 'firefly',
         fireflyTag: true
       });
 
       world.add({
         position: { x: 150, y: 100 },
+        team: 'monster',
         monsterTag: true
       });
 
@@ -72,12 +76,13 @@ describe('InteractionSystem', () => {
     it('should clear potentialTargets each frame', () => {
       const firefly = world.add({
         position: { x: 100, y: 100 },
-        interaction: { interactionRadius: 50, interactsWith: ['monster'] },
+        interaction: { interactionRadius: 50 },
         targeting: { potentialTargets: [] },
         renderable: {
           type: 'firefly', sprite: 'firefly', color: 0xffff00, radius: 5,
           alpha: 1, scale: 1, tint: 0xFFFFFF, rotation: 0, rotationSpeed: 0, depth: 50, offsetY: 0
         },
+        team: 'firefly',
         fireflyTag: true
       });
 
@@ -87,6 +92,7 @@ describe('InteractionSystem', () => {
           type: 'monster', sprite: 'monster', color: 0xff0000, radius: 8,
           alpha: 1, scale: 1, tint: 0xFFFFFF, rotation: 0, rotationSpeed: 0, depth: 100, offsetY: 0
         },
+        team: 'monster',
         monsterTag: true
       });
 
@@ -102,8 +108,9 @@ describe('InteractionSystem', () => {
     it('should not add self to potentialTargets', () => {
       const firefly = world.add({
         position: { x: 100, y: 100 },
-        interaction: { interactionRadius: 50, interactsWith: ['firefly'] },
+        interaction: { interactionRadius: 50 },
         targeting: { potentialTargets: [] },
+        team: 'firefly',
         fireflyTag: true
       });
 
@@ -113,12 +120,13 @@ describe('InteractionSystem', () => {
     });
   });
 
-  describe('interactsWith filtering', () => {
-    it('should only add entities matching interactsWith types', () => {
+  describe('team-based filtering', () => {
+    it('should only add entities on different teams', () => {
       const monster = world.add({
         position: { x: 100, y: 100 },
-        interaction: { interactionRadius: 50, interactsWith: ['firefly'] },
+        interaction: { interactionRadius: 50 },
         targeting: { potentialTargets: [] },
+        team: 'monster',
         monsterTag: true
       });
 
@@ -128,6 +136,7 @@ describe('InteractionSystem', () => {
           type: 'firefly', sprite: 'firefly', color: 0xffff00, radius: 5,
           alpha: 1, scale: 1, tint: 0xFFFFFF, rotation: 0, rotationSpeed: 0, depth: 50, offsetY: 0
         },
+        team: 'firefly',
         fireflyTag: true
       });
 
@@ -137,6 +146,7 @@ describe('InteractionSystem', () => {
           type: 'wisp', sprite: 'wisp', color: 0x0000ff, radius: 10,
           alpha: 1, scale: 1, tint: 0xFFFFFF, rotation: 0, rotationSpeed: 0, depth: 50, offsetY: 0
         },
+        team: 'monster',
         wispTag: true
       });
 
@@ -146,11 +156,12 @@ describe('InteractionSystem', () => {
       expect(monster.targeting!.potentialTargets[0]).toBe(firefly);
     });
 
-    it('should handle multiple interactsWith types', () => {
+    it('should add any entity on an enemy team', () => {
       const entity = world.add({
         position: { x: 100, y: 100 },
-        interaction: { interactionRadius: 50, interactsWith: ['firefly', 'wisp'] },
+        interaction: { interactionRadius: 50 },
         targeting: { potentialTargets: [] },
+        team: 'monster',
         monsterTag: true
       });
 
@@ -160,6 +171,7 @@ describe('InteractionSystem', () => {
           type: 'firefly', sprite: 'firefly', color: 0xffff00, radius: 5,
           alpha: 1, scale: 1, tint: 0xFFFFFF, rotation: 0, rotationSpeed: 0, depth: 50, offsetY: 0
         },
+        team: 'firefly',
         fireflyTag: true
       });
 
@@ -169,6 +181,7 @@ describe('InteractionSystem', () => {
           type: 'wisp', sprite: 'wisp', color: 0x0000ff, radius: 10,
           alpha: 1, scale: 1, tint: 0xFFFFFF, rotation: 0, rotationSpeed: 0, depth: 50, offsetY: 0
         },
+        team: 'firefly',
         wispTag: true
       });
 
@@ -179,11 +192,12 @@ describe('InteractionSystem', () => {
       expect(entity.targeting!.potentialTargets).toContain(wisp);
     });
 
-    it('should handle empty interactsWith array', () => {
+    it('should not add entities without a team', () => {
       const entity = world.add({
         position: { x: 100, y: 100 },
-        interaction: { interactionRadius: 50, interactsWith: [] },
+        interaction: { interactionRadius: 50 },
         targeting: { potentialTargets: [] },
+        team: 'firefly',
         fireflyTag: true
       });
 
@@ -206,8 +220,9 @@ describe('InteractionSystem', () => {
     it('should correctly calculate diagonal distances', () => {
       const firefly = world.add({
         position: { x: 100, y: 100 },
-        interaction: { interactionRadius: 50, interactsWith: ['monster'] },
+        interaction: { interactionRadius: 50 },
         targeting: { potentialTargets: [] },
+        team: 'firefly',
         fireflyTag: true
       });
 
@@ -217,6 +232,7 @@ describe('InteractionSystem', () => {
           type: 'monster', sprite: 'monster', color: 0xff0000, radius: 8,
           alpha: 1, scale: 1, tint: 0xFFFFFF, rotation: 0, rotationSpeed: 0, depth: 100, offsetY: 0
         },
+        team: 'monster',
         monsterTag: true
       });
 
@@ -228,8 +244,9 @@ describe('InteractionSystem', () => {
     it('should handle entities at exact radius boundary', () => {
       const firefly = world.add({
         position: { x: 100, y: 100 },
-        interaction: { interactionRadius: 30, interactsWith: ['monster'] },
+        interaction: { interactionRadius: 30 },
         targeting: { potentialTargets: [] },
+        team: 'firefly',
         fireflyTag: true
       });
 
@@ -239,6 +256,7 @@ describe('InteractionSystem', () => {
           type: 'monster', sprite: 'monster', color: 0xff0000, radius: 8,
           alpha: 1, scale: 1, tint: 0xFFFFFF, rotation: 0, rotationSpeed: 0, depth: 100, offsetY: 0
         },
+        team: 'monster',
         monsterTag: true
       });
 
@@ -252,15 +270,17 @@ describe('InteractionSystem', () => {
     it('should populate potentialTargets for multiple entities simultaneously', () => {
       const firefly1 = world.add({
         position: { x: 100, y: 100 },
-        interaction: { interactionRadius: 50, interactsWith: ['monster'] },
+        interaction: { interactionRadius: 50 },
         targeting: { potentialTargets: [] },
+        team: 'firefly',
         fireflyTag: true
       });
 
       const firefly2 = world.add({
         position: { x: 200, y: 200 },
-        interaction: { interactionRadius: 50, interactsWith: ['monster'] },
+        interaction: { interactionRadius: 50 },
         targeting: { potentialTargets: [] },
+        team: 'firefly',
         fireflyTag: true
       });
 
@@ -270,6 +290,7 @@ describe('InteractionSystem', () => {
           type: 'monster', sprite: 'monster', color: 0xff0000, radius: 8,
           alpha: 1, scale: 1, tint: 0xFFFFFF, rotation: 0, rotationSpeed: 0, depth: 100, offsetY: 0
         },
+        team: 'monster',
         monsterTag: true
       });
 
@@ -279,6 +300,7 @@ describe('InteractionSystem', () => {
           type: 'monster', sprite: 'monster', color: 0xff0000, radius: 8,
           alpha: 1, scale: 1, tint: 0xFFFFFF, rotation: 0, rotationSpeed: 0, depth: 100, offsetY: 0
         },
+        team: 'monster',
         monsterTag: true
       });
 
@@ -294,8 +316,9 @@ describe('InteractionSystem', () => {
     it('should handle one entity targeting multiple entities', () => {
       const firefly = world.add({
         position: { x: 100, y: 100 },
-        interaction: { interactionRadius: 50, interactsWith: ['monster'] },
+        interaction: { interactionRadius: 50 },
         targeting: { potentialTargets: [] },
+        team: 'firefly',
         fireflyTag: true
       });
 
@@ -305,6 +328,7 @@ describe('InteractionSystem', () => {
           type: 'monster', sprite: 'monster', color: 0xff0000, radius: 8,
           alpha: 1, scale: 1, tint: 0xFFFFFF, rotation: 0, rotationSpeed: 0, depth: 100, offsetY: 0
         },
+        team: 'monster',
         monsterTag: true
       });
 
@@ -314,6 +338,7 @@ describe('InteractionSystem', () => {
           type: 'monster', sprite: 'monster', color: 0xff0000, radius: 8,
           alpha: 1, scale: 1, tint: 0xFFFFFF, rotation: 0, rotationSpeed: 0, depth: 100, offsetY: 0
         },
+        team: 'monster',
         monsterTag: true
       });
 
@@ -323,6 +348,7 @@ describe('InteractionSystem', () => {
           type: 'monster', sprite: 'monster', color: 0xff0000, radius: 8,
           alpha: 1, scale: 1, tint: 0xFFFFFF, rotation: 0, rotationSpeed: 0, depth: 100, offsetY: 0
         },
+        team: 'monster',
         monsterTag: true
       });
 
@@ -339,8 +365,9 @@ describe('InteractionSystem', () => {
     it('should handle entity without Position component on nearby entity', () => {
       const firefly = world.add({
         position: { x: 100, y: 100 },
-        interaction: { interactionRadius: 50, interactsWith: ['monster'] },
+        interaction: { interactionRadius: 50 },
         targeting: { potentialTargets: [] },
+        team: 'firefly',
         fireflyTag: true
       });
 
@@ -349,6 +376,7 @@ describe('InteractionSystem', () => {
           type: 'monster', sprite: 'monster', color: 0xff0000, radius: 8,
           alpha: 1, scale: 1, tint: 0xFFFFFF, rotation: 0, rotationSpeed: 0, depth: 100, offsetY: 0
         },
+        team: 'monster',
         monsterTag: true
       });
 
@@ -360,8 +388,9 @@ describe('InteractionSystem', () => {
     it('should handle zero interaction radius', () => {
       const firefly = world.add({
         position: { x: 100, y: 100 },
-        interaction: { interactionRadius: 0, interactsWith: ['monster'] },
+        interaction: { interactionRadius: 0 },
         targeting: { potentialTargets: [] },
+        team: 'firefly',
         fireflyTag: true
       });
 
@@ -371,6 +400,7 @@ describe('InteractionSystem', () => {
           type: 'monster', sprite: 'monster', color: 0xff0000, radius: 8,
           alpha: 1, scale: 1, tint: 0xFFFFFF, rotation: 0, rotationSpeed: 0, depth: 100, offsetY: 0
         },
+        team: 'monster',
         monsterTag: true
       });
 
@@ -386,8 +416,9 @@ describe('InteractionSystem', () => {
     it('should handle single entity in world', () => {
       const firefly = world.add({
         position: { x: 100, y: 100 },
-        interaction: { interactionRadius: 50, interactsWith: ['monster'] },
+        interaction: { interactionRadius: 50 },
         targeting: { potentialTargets: [] },
+        team: 'firefly',
         fireflyTag: true
       });
 
@@ -401,8 +432,9 @@ describe('InteractionSystem', () => {
     it('should use spatial grid getNearby instead of checking all entities', () => {
       const firefly = world.add({
         position: { x: 50, y: 50 },
-        interaction: { interactionRadius: 30, interactsWith: ['monster'] },
+        interaction: { interactionRadius: 30 },
         targeting: { potentialTargets: [] },
+        team: 'firefly',
         fireflyTag: true
       });
 
@@ -412,6 +444,7 @@ describe('InteractionSystem', () => {
           type: 'monster', sprite: 'monster', color: 0xff0000, radius: 8,
           alpha: 1, scale: 1, tint: 0xFFFFFF, rotation: 0, rotationSpeed: 0, depth: 100, offsetY: 0
         },
+        team: 'monster',
         monsterTag: true
       });
 
@@ -426,8 +459,9 @@ describe('InteractionSystem', () => {
     it('should find entities when they are properly added to spatial grid', () => {
       const firefly = world.add({
         position: { x: 50, y: 50 },
-        interaction: { interactionRadius: 30, interactsWith: ['monster'] },
+        interaction: { interactionRadius: 30 },
         targeting: { potentialTargets: [] },
+        team: 'firefly',
         fireflyTag: true
       });
 
@@ -437,6 +471,7 @@ describe('InteractionSystem', () => {
           type: 'monster', sprite: 'monster', color: 0xff0000, radius: 8,
           alpha: 1, scale: 1, tint: 0xFFFFFF, rotation: 0, rotationSpeed: 0, depth: 100, offsetY: 0
         },
+        team: 'monster',
         monsterTag: true
       });
 
@@ -451,85 +486,25 @@ describe('InteractionSystem', () => {
     });
   });
 
-  describe('canInteractWith helper', () => {
-    it('should return true for firefly entities when looking for fireflies', () => {
-      const firefly = world.add({
-        renderable: {
-          type: 'firefly', sprite: 'firefly', color: 0xffff00, radius: 5,
-          alpha: 1, scale: 1, tint: 0xFFFFFF, rotation: 0, rotationSpeed: 0, depth: 50, offsetY: 0
-        },
-        fireflyTag: true
-      });
-
-      expect((system as any).canInteractWith(firefly, ['firefly'])).toBe(true);
+  describe('isEnemy helper', () => {
+    it('should return true when teams are different', () => {
+      expect((system as any).isEnemy('firefly', 'monster')).toBe(true);
     });
 
-    it('should return true for monster entities when looking for monsters', () => {
-      const monster = world.add({
-        renderable: {
-          type: 'monster', sprite: 'monster', color: 0xff0000, radius: 8,
-          alpha: 1, scale: 1, tint: 0xFFFFFF, rotation: 0, rotationSpeed: 0, depth: 100, offsetY: 0
-        },
-        monsterTag: true
-      });
-
-      expect((system as any).canInteractWith(monster, ['monster'])).toBe(true);
+    it('should return false when teams are the same', () => {
+      expect((system as any).isEnemy('firefly', 'firefly')).toBe(false);
     });
 
-    it('should return true for wisp entities when looking for wisps', () => {
-      const wisp = world.add({
-        renderable: {
-          type: 'wisp', sprite: 'wisp', color: 0x0000ff, radius: 10,
-          alpha: 1, scale: 1, tint: 0xFFFFFF, rotation: 0, rotationSpeed: 0, depth: 50, offsetY: 0
-        },
-        wispTag: true
-      });
-
-      expect((system as any).canInteractWith(wisp, ['wisp'])).toBe(true);
+    it('should return false when source team is undefined', () => {
+      expect((system as any).isEnemy(undefined, 'monster')).toBe(false);
     });
 
-    it('should return false when entity type does not match', () => {
-      const firefly = world.add({
-        renderable: {
-          type: 'firefly', sprite: 'firefly', color: 0xffff00, radius: 5,
-          alpha: 1, scale: 1, tint: 0xFFFFFF, rotation: 0, rotationSpeed: 0, depth: 50, offsetY: 0
-        },
-        fireflyTag: true
-      });
-
-      expect((system as any).canInteractWith(firefly, ['monster'])).toBe(false);
+    it('should return false when target team is undefined', () => {
+      expect((system as any).isEnemy('firefly', undefined)).toBe(false);
     });
 
-    it('should return false for empty interactsWith array', () => {
-      const firefly = world.add({
-        renderable: {
-          type: 'firefly', sprite: 'firefly', color: 0xffff00, radius: 5,
-          alpha: 1, scale: 1, tint: 0xFFFFFF, rotation: 0, rotationSpeed: 0, depth: 50, offsetY: 0
-        },
-        fireflyTag: true
-      });
-
-      expect((system as any).canInteractWith(firefly, [])).toBe(false);
-    });
-
-    it('should return true if any type in interactsWith matches', () => {
-      const firefly = world.add({
-        renderable: {
-          type: 'firefly', sprite: 'firefly', color: 0xffff00, radius: 5,
-          alpha: 1, scale: 1, tint: 0xFFFFFF, rotation: 0, rotationSpeed: 0, depth: 50, offsetY: 0
-        },
-        fireflyTag: true
-      });
-
-      expect((system as any).canInteractWith(firefly, ['monster', 'firefly', 'wisp'])).toBe(true);
-    });
-
-    it('should return false when entity has no Renderable component', () => {
-      const entity = world.add({
-        fireflyTag: true
-      });
-
-      expect((system as any).canInteractWith(entity, ['firefly'])).toBe(false);
+    it('should return false when both teams are undefined', () => {
+      expect((system as any).isEnemy(undefined, undefined)).toBe(false);
     });
   });
 
@@ -537,12 +512,13 @@ describe('InteractionSystem', () => {
     it('should not add dead entities to potentialTargets', () => {
       const firefly = world.add({
         position: { x: 100, y: 100 },
-        interaction: { interactionRadius: 50, interactsWith: ['monster'] },
+        interaction: { interactionRadius: 50 },
         targeting: { potentialTargets: [] },
         renderable: {
           type: 'firefly', sprite: 'firefly', color: 0xffff00, radius: 5,
           alpha: 1, scale: 1, tint: 0xFFFFFF, rotation: 0, rotationSpeed: 0, depth: 50, offsetY: 0
         },
+        team: 'firefly',
         fireflyTag: true
       });
 
@@ -553,6 +529,7 @@ describe('InteractionSystem', () => {
           alpha: 1, scale: 1, tint: 0xFFFFFF, rotation: 0, rotationSpeed: 0, depth: 100, offsetY: 0
         },
         health: { currentHealth: 0, maxHealth: 100, isDead: true },
+        team: 'monster',
         monsterTag: true
       });
 
@@ -564,12 +541,13 @@ describe('InteractionSystem', () => {
     it('should add living entities to potentialTargets', () => {
       const firefly = world.add({
         position: { x: 100, y: 100 },
-        interaction: { interactionRadius: 50, interactsWith: ['monster'] },
+        interaction: { interactionRadius: 50 },
         targeting: { potentialTargets: [] },
         renderable: {
           type: 'firefly', sprite: 'firefly', color: 0xffff00, radius: 5,
           alpha: 1, scale: 1, tint: 0xFFFFFF, rotation: 0, rotationSpeed: 0, depth: 50, offsetY: 0
         },
+        team: 'firefly',
         fireflyTag: true
       });
 
@@ -580,6 +558,7 @@ describe('InteractionSystem', () => {
           alpha: 1, scale: 1, tint: 0xFFFFFF, rotation: 0, rotationSpeed: 0, depth: 100, offsetY: 0
         },
         health: { currentHealth: 50, maxHealth: 100, isDead: false },
+        team: 'monster',
         monsterTag: true
       });
 
@@ -592,12 +571,13 @@ describe('InteractionSystem', () => {
     it('should filter out dead entities from mixed group', () => {
       const firefly = world.add({
         position: { x: 100, y: 100 },
-        interaction: { interactionRadius: 50, interactsWith: ['monster'] },
+        interaction: { interactionRadius: 50 },
         targeting: { potentialTargets: [] },
         renderable: {
           type: 'firefly', sprite: 'firefly', color: 0xffff00, radius: 5,
           alpha: 1, scale: 1, tint: 0xFFFFFF, rotation: 0, rotationSpeed: 0, depth: 50, offsetY: 0
         },
+        team: 'firefly',
         fireflyTag: true
       });
 
@@ -608,6 +588,7 @@ describe('InteractionSystem', () => {
           alpha: 1, scale: 1, tint: 0xFFFFFF, rotation: 0, rotationSpeed: 0, depth: 100, offsetY: 0
         },
         health: { currentHealth: 50, maxHealth: 100, isDead: false },
+        team: 'monster',
         monsterTag: true
       });
 
@@ -618,6 +599,7 @@ describe('InteractionSystem', () => {
           alpha: 1, scale: 1, tint: 0xFFFFFF, rotation: 0, rotationSpeed: 0, depth: 100, offsetY: 0
         },
         health: { currentHealth: 0, maxHealth: 100, isDead: true },
+        team: 'monster',
         monsterTag: true
       });
 
@@ -631,12 +613,13 @@ describe('InteractionSystem', () => {
     it('should still add entities without Health component', () => {
       const firefly = world.add({
         position: { x: 100, y: 100 },
-        interaction: { interactionRadius: 50, interactsWith: ['wisp'] },
+        interaction: { interactionRadius: 50 },
         targeting: { potentialTargets: [] },
         renderable: {
           type: 'firefly', sprite: 'firefly', color: 0xffff00, radius: 5,
           alpha: 1, scale: 1, tint: 0xFFFFFF, rotation: 0, rotationSpeed: 0, depth: 50, offsetY: 0
         },
+        team: 'monster',
         fireflyTag: true
       });
 
@@ -646,6 +629,7 @@ describe('InteractionSystem', () => {
           type: 'wisp', sprite: 'wisp', color: 0x0000ff, radius: 10,
           alpha: 1, scale: 1, tint: 0xFFFFFF, rotation: 0, rotationSpeed: 0, depth: 50, offsetY: 0
         },
+        team: 'firefly',
         wispTag: true
       });
 

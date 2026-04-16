@@ -1,13 +1,15 @@
+import type { Team } from '@/ecs/Entity';
+
 export interface EntityConfig {
   type: string;
+  team?: Team;
   color: number;
-  activeColor?: number; // Color when entity is activated (e.g., wisp with firefly)
+  activeColor?: number;
   radius: number;
   mass: number;
   isStatic: boolean;
   speed?: number;
   interactionRadius?: number;
-  interactsWith?: readonly string[];
   direction?: string;
   health?: number;
   combat?: {
@@ -19,20 +21,20 @@ export interface EntityConfig {
     dashSpeed?: number;
     radius?: number;
     knockbackForce?: number;
-    color?: number; // Color for visual effects
+    color?: number;
   };
 }
 
 export const ENTITY_CONFIG: Readonly<Record<string, Readonly<EntityConfig>>> = Object.freeze({
   firefly: Object.freeze({
     type: 'firefly',
-    color: 0xDEF4B4, // Firefly glow bright
+    team: 'firefly' as const,
+    color: 0xDEF4B4,
     radius: 6,
     mass: 1,
     isStatic: false,
     speed: 20,
     interactionRadius: 45,
-    interactsWith: Object.freeze(['monster']),
     direction: 'r',
     health: 50,
     combat: Object.freeze({
@@ -47,8 +49,9 @@ export const ENTITY_CONFIG: Readonly<Record<string, Readonly<EntityConfig>>> = O
   }),
   wisp: Object.freeze({
     type: 'wisp',
-    color: 0xB0C4DE, // Tower illumination blue (inactive)
-    activeColor: 0xE8F4F8, // Tower illumination white (active)
+    team: 'firefly' as const,
+    color: 0xB0C4DE,
+    activeColor: 0xE8F4F8,
     radius: 18,
     mass: 1,
     isStatic: true,
@@ -59,20 +62,19 @@ export const ENTITY_CONFIG: Readonly<Record<string, Readonly<EntityConfig>>> = O
       recoveryTime: 500,
       damage: 100,
       radius: 112,
-      targetTags: ['monster'],
       color: 0xB0C4DE
     })
   }),
   monster: Object.freeze({
     type: 'monster',
-    color: 0xC65D3B, // Monster presence red
+    team: 'monster' as const,
+    color: 0xC65D3B,
     radius: 12,
     mass: 1,
     isStatic: false,
     speed: 20,
     direction: 'l',
     interactionRadius: 45,
-    interactsWith: Object.freeze(['firefly', 'wisp']),
     health: 50,
     combat: Object.freeze({
       chargeTime: 2200,

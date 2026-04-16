@@ -14,14 +14,14 @@ describe('Lodge Component', () => {
       const entity = world.add({
         lodge: {
           tenants: [],
-          allowedTenants: [],
+          allowedTeam: 'firefly',
           incoming: [],
           maxTenants: 2
         }
       });
 
       expect(entity.lodge!.tenants).toEqual([]);
-      expect(entity.lodge!.allowedTenants).toEqual([]);
+      expect(entity.lodge!.allowedTeam).toBe('firefly');
       expect(entity.lodge!.maxTenants).toBe(2);
     });
 
@@ -29,28 +29,28 @@ describe('Lodge Component', () => {
       const entity = world.add({
         lodge: {
           tenants: [],
-          allowedTenants: ['firefly', 'wisp'],
+          allowedTeam: 'firefly',
           incoming: [],
           maxTenants: 5
         }
       });
 
-      expect(entity.lodge!.allowedTenants).toEqual(['firefly', 'wisp']);
+      expect(entity.lodge!.allowedTeam).toBe('firefly');
       expect(entity.lodge!.maxTenants).toBe(5);
       expect(entity.lodge!.tenants).toEqual([]);
     });
 
-    it('should allow single allowed tenant type', () => {
+    it('should allow specific team assignment', () => {
       const entity = world.add({
         lodge: {
           tenants: [],
-          allowedTenants: ['firefly'],
+          allowedTeam: 'firefly',
           incoming: [],
           maxTenants: 1
         }
       });
 
-      expect(entity.lodge!.allowedTenants).toEqual(['firefly']);
+      expect(entity.lodge!.allowedTeam).toBe('firefly');
       expect(entity.lodge!.maxTenants).toBe(1);
     });
   });
@@ -60,7 +60,7 @@ describe('Lodge Component', () => {
       const entity = world.add({
         lodge: {
           tenants: [],
-          allowedTenants: ['firefly'],
+          allowedTeam: 'firefly',
           incoming: [],
           maxTenants: 2
         }
@@ -91,7 +91,7 @@ describe('Lodge Component', () => {
       const entity = world.add({
         lodge: {
           tenants: [],
-          allowedTenants: ['firefly'],
+          allowedTeam: 'firefly',
           incoming: [],
           maxTenants: 3
         }
@@ -106,24 +106,24 @@ describe('Lodge Component', () => {
       expect(entity.lodge!.tenants).toHaveLength(2);
     });
 
-    it('should handle empty allowedTenants array', () => {
+    it('should handle specific team assignment', () => {
       const entity = world.add({
         lodge: {
           tenants: [],
-          allowedTenants: [],
+          allowedTeam: 'wisp',
           incoming: [],
           maxTenants: 5
         }
       });
 
-      expect(entity.lodge!.allowedTenants).toEqual([]);
+      expect(entity.lodge!.allowedTeam).toBe('wisp');
     });
 
     it('should support zero maxTenants', () => {
       const entity = world.add({
         lodge: {
           tenants: [],
-          allowedTenants: ['firefly'],
+          allowedTeam: 'firefly',
           incoming: [],
           maxTenants: 0
         }
@@ -136,11 +136,11 @@ describe('Lodge Component', () => {
   describe('Component queries', () => {
     it('should be queryable by systems', () => {
       const entity1 = world.add({
-        lodge: { tenants: [], allowedTenants: [], incoming: [], maxTenants: 2 }
+        lodge: { tenants: [], allowedTeam: 'firefly', incoming: [], maxTenants: 2 }
       });
 
       const entity2 = world.add({
-        lodge: { tenants: [], allowedTenants: [], incoming: [], maxTenants: 2 }
+        lodge: { tenants: [], allowedTeam: 'firefly', incoming: [], maxTenants: 2 }
       });
 
       expect(!!entity1.lodge).toBe(true);
@@ -149,7 +149,7 @@ describe('Lodge Component', () => {
 
     it('should differentiate lodges from non-lodges', () => {
       const lodge = world.add({
-        lodge: { tenants: [], allowedTenants: [], incoming: [], maxTenants: 2 }
+        lodge: { tenants: [], allowedTeam: 'firefly', incoming: [], maxTenants: 2 }
       });
 
       const nonLodge = world.add({
@@ -166,7 +166,7 @@ describe('Lodge Component', () => {
       const entity = world.add({
         lodge: {
           tenants: [],
-          allowedTenants: ['firefly'],
+          allowedTeam: 'firefly',
           incoming: [],
           maxTenants: 100
         }
@@ -175,17 +175,17 @@ describe('Lodge Component', () => {
       expect(entity.lodge!.maxTenants).toBe(100);
     });
 
-    it('should handle multiple allowed tenant types', () => {
+    it('should handle team assignment', () => {
       const entity = world.add({
         lodge: {
           tenants: [],
-          allowedTenants: ['firefly', 'wisp', 'monster'],
+          allowedTeam: 'firefly',
           incoming: [],
           maxTenants: 2
         }
       });
 
-      expect(entity.lodge!.allowedTenants).toEqual(['firefly', 'wisp', 'monster']);
+      expect(entity.lodge!.allowedTeam).toBe('firefly');
     });
   });
 });

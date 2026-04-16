@@ -84,7 +84,7 @@ describe('loadLevelFromData', () => {
     expect(createRedirect).toHaveBeenCalledWith(
       world, 300, 400,
       [{ x: 350, y: 300, weight: 1 }, { x: 350, y: 500, weight: 2 }],
-      ['firefly'],
+      'firefly',
       144
     );
   });

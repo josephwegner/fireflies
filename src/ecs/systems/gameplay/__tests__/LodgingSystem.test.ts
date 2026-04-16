@@ -38,7 +38,7 @@ describe('LodgingSystem', () => {
           type: 'wisp', sprite: 'wisp', color: 0x0000ff, radius: 10,
           alpha: 1, scale: 1, tint: 0xFFFFFF, rotation: 0, rotationSpeed: 0, depth: 50, offsetY: 0
         },
-        lodge: { allowedTenants: ['firefly'], maxTenants: 1, tenants: [], incoming: [] },
+        lodge: { allowedTeam: 'firefly', maxTenants: 1, tenants: [], incoming: [] },
         wispTag: true
       });
 
@@ -50,6 +50,7 @@ describe('LodgingSystem', () => {
           type: 'firefly', sprite: 'firefly', color: 0xffff00, radius: 5,
           alpha: 1, scale: 1, tint: 0xFFFFFF, rotation: 0, rotationSpeed: 0, depth: 50, offsetY: 0
         },
+        team: 'firefly',
         fireflyTag: true
       });
 
@@ -65,7 +66,7 @@ describe('LodgingSystem', () => {
           type: 'wisp', sprite: 'wisp', color: 0x0000ff, radius: 10,
           alpha: 1, scale: 1, tint: 0xFFFFFF, rotation: 0, rotationSpeed: 0, depth: 50, offsetY: 0
         },
-        lodge: { allowedTenants: ['firefly'], maxTenants: 1, tenants: [], incoming: [] },
+        lodge: { allowedTeam: 'firefly', maxTenants: 1, tenants: [], incoming: [] },
         wispTag: true
       });
 
@@ -77,6 +78,7 @@ describe('LodgingSystem', () => {
           type: 'firefly', sprite: 'firefly', color: 0xffff00, radius: 5,
           alpha: 1, scale: 1, tint: 0xFFFFFF, rotation: 0, rotationSpeed: 0, depth: 50, offsetY: 0
         },
+        team: 'firefly',
         fireflyTag: true
       });
 
@@ -92,7 +94,7 @@ describe('LodgingSystem', () => {
           type: 'wisp', sprite: 'wisp', color: 0x0000ff, radius: 10,
           alpha: 1, scale: 1, tint: 0xFFFFFF, rotation: 0, rotationSpeed: 0, depth: 50, offsetY: 0
         },
-        lodge: { allowedTenants: ['firefly'], maxTenants: 1, tenants: [], incoming: [] },
+        lodge: { allowedTeam: 'firefly', maxTenants: 1, tenants: [], incoming: [] },
         wispTag: true
       });
 
@@ -104,6 +106,7 @@ describe('LodgingSystem', () => {
           type: 'firefly', sprite: 'firefly', color: 0xffff00, radius: 5,
           alpha: 1, scale: 1, tint: 0xFFFFFF, rotation: 0, rotationSpeed: 0, depth: 50, offsetY: 0
         },
+        team: 'firefly',
         fireflyTag: true
       });
 
@@ -115,6 +118,7 @@ describe('LodgingSystem', () => {
           type: 'firefly', sprite: 'firefly', color: 0xffff00, radius: 5,
           alpha: 1, scale: 1, tint: 0xFFFFFF, rotation: 0, rotationSpeed: 0, depth: 50, offsetY: 0
         },
+        team: 'firefly',
         fireflyTag: true
       });
 
@@ -123,14 +127,14 @@ describe('LodgingSystem', () => {
       expect(wisp.lodge!.tenants).toHaveLength(1);
     });
 
-    it('should not add tenant of disallowed type', () => {
+    it('should not add tenant of mismatched team', () => {
       const wisp = world.add({
         position: { x: 100, y: 100 },
         renderable: {
           type: 'wisp', sprite: 'wisp', color: 0x0000ff, radius: 10,
           alpha: 1, scale: 1, tint: 0xFFFFFF, rotation: 0, rotationSpeed: 0, depth: 50, offsetY: 0
         },
-        lodge: { allowedTenants: ['monster'], maxTenants: 1, tenants: [], incoming: [] },
+        lodge: { allowedTeam: 'monster', maxTenants: 1, tenants: [], incoming: [] },
         wispTag: true
       });
 
@@ -142,6 +146,7 @@ describe('LodgingSystem', () => {
           type: 'firefly', sprite: 'firefly', color: 0xffff00, radius: 5,
           alpha: 1, scale: 1, tint: 0xFFFFFF, rotation: 0, rotationSpeed: 0, depth: 50, offsetY: 0
         },
+        team: 'firefly',
         fireflyTag: true
       });
 
@@ -157,7 +162,7 @@ describe('LodgingSystem', () => {
           type: 'wisp', sprite: 'wisp', color: 0x0000ff, radius: 10,
           alpha: 1, scale: 1, tint: 0xFFFFFF, rotation: 0, rotationSpeed: 0, depth: 50, offsetY: 0
         },
-        lodge: { allowedTenants: ['wisp'], maxTenants: 1, tenants: [], incoming: [] },
+        lodge: { allowedTeam: 'firefly', maxTenants: 1, tenants: [], incoming: [] },
         wispTag: true
       });
 
@@ -168,58 +173,44 @@ describe('LodgingSystem', () => {
   });
 
   describe('canLodge helper', () => {
-    it('should return true for allowed tenant type', () => {
+    it('should return true for matching team', () => {
       const firefly = world.add({
+        team: 'firefly',
         renderable: {
           type: 'firefly', sprite: 'firefly', color: 0xffff00, radius: 5,
           alpha: 1, scale: 1, tint: 0xFFFFFF, rotation: 0, rotationSpeed: 0, depth: 50, offsetY: 0
         }
       });
 
-      expect((system as any).canLodge(firefly, ['firefly'])).toBe(true);
+      expect((system as any).canLodge(firefly, 'firefly')).toBe(true);
     });
 
-    it('should return false for disallowed tenant type', () => {
+    it('should return false for mismatched team', () => {
       const firefly = world.add({
+        team: 'firefly',
         renderable: {
           type: 'firefly', sprite: 'firefly', color: 0xffff00, radius: 5,
           alpha: 1, scale: 1, tint: 0xFFFFFF, rotation: 0, rotationSpeed: 0, depth: 50, offsetY: 0
         }
       });
 
-      expect((system as any).canLodge(firefly, ['monster'])).toBe(false);
+      expect((system as any).canLodge(firefly, 'monster')).toBe(false);
     });
 
-    it('should return true if tenant type is in multiple allowed types', () => {
-      const firefly = world.add({
+    it('should return false for entity without team', () => {
+      const entity = world.add({
         renderable: {
           type: 'firefly', sprite: 'firefly', color: 0xffff00, radius: 5,
           alpha: 1, scale: 1, tint: 0xFFFFFF, rotation: 0, rotationSpeed: 0, depth: 50, offsetY: 0
         }
       });
 
-      expect((system as any).canLodge(firefly, ['monster', 'firefly', 'wisp'])).toBe(true);
-    });
-
-    it('should return false for entity without Renderable component', () => {
-      const entity = world.add({});
-
-      expect((system as any).canLodge(entity, ['firefly'])).toBe(false);
-    });
-
-    it('should return false for empty allowedTenants array', () => {
-      const firefly = world.add({
-        renderable: {
-          type: 'firefly', sprite: 'firefly', color: 0xffff00, radius: 5,
-          alpha: 1, scale: 1, tint: 0xFFFFFF, rotation: 0, rotationSpeed: 0, depth: 50, offsetY: 0
-        }
-      });
-
-      expect((system as any).canLodge(firefly, [])).toBe(false);
+      expect((system as any).canLodge(entity, 'firefly')).toBe(false);
     });
 
     it('should return false for entity with FleeingToGoalTag', () => {
       const firefly = world.add({
+        team: 'firefly',
         renderable: {
           type: 'firefly', sprite: 'firefly', color: 0xffff00, radius: 5,
           alpha: 1, scale: 1, tint: 0xFFFFFF, rotation: 0, rotationSpeed: 0, depth: 50, offsetY: 0
@@ -227,7 +218,7 @@ describe('LodgingSystem', () => {
         fleeingToGoalTag: true
       });
 
-      expect((system as any).canLodge(firefly, ['firefly'])).toBe(false);
+      expect((system as any).canLodge(firefly, 'firefly')).toBe(false);
     });
   });
 
@@ -242,7 +233,7 @@ describe('LodgingSystem', () => {
           type: 'wisp', sprite: 'wisp', color: 0x0000ff, radius: 10,
           alpha: 1, scale: 1, tint: 0xFFFFFF, rotation: 0, rotationSpeed: 0, depth: 50, offsetY: 0
         },
-        lodge: { allowedTenants: ['firefly'], maxTenants: 1, tenants: [], incoming: [] },
+        lodge: { allowedTeam: 'firefly', maxTenants: 1, tenants: [], incoming: [] },
         wispTag: true
       });
 
@@ -254,6 +245,7 @@ describe('LodgingSystem', () => {
           type: 'firefly', sprite: 'firefly', color: 0xffff00, radius: 5,
           alpha: 1, scale: 1, tint: 0xFFFFFF, rotation: 0, rotationSpeed: 0, depth: 50, offsetY: 0
         },
+        team: 'firefly',
         fireflyTag: true
       });
 
@@ -273,7 +265,7 @@ describe('LodgingSystem', () => {
           type: 'wisp', sprite: 'wisp', color: 0x0000ff, radius: 10,
           alpha: 1, scale: 1, tint: 0xFFFFFF, rotation: 0, rotationSpeed: 0, depth: 50, offsetY: 0
         },
-        lodge: { allowedTenants: ['firefly'], maxTenants: 1, tenants: [], incoming: [] },
+        lodge: { allowedTeam: 'firefly', maxTenants: 1, tenants: [], incoming: [] },
         wispTag: true
       });
 
@@ -285,6 +277,7 @@ describe('LodgingSystem', () => {
           type: 'firefly', sprite: 'firefly', color: 0xffff00, radius: 5,
           alpha: 1, scale: 1, tint: 0xFFFFFF, rotation: 0, rotationSpeed: 0, depth: 50, offsetY: 0
         },
+        team: 'firefly',
         fireflyTag: true
       });
 
@@ -302,7 +295,7 @@ describe('LodgingSystem', () => {
           type: 'wisp', sprite: 'wisp', color: 0x0000ff, radius: 10,
           alpha: 1, scale: 1, tint: ENTITY_CONFIG.wisp.color, rotation: 0, rotationSpeed: 0, depth: 50, offsetY: 0
         },
-        lodge: { allowedTenants: ['firefly'], maxTenants: 1, tenants: [], incoming: [] },
+        lodge: { allowedTeam: 'firefly', maxTenants: 1, tenants: [], incoming: [] },
         activationConfig: {
           onActivate: [
             { componentName: 'renderable', config: { tint: ENTITY_CONFIG.wisp.activeColor } }
@@ -322,6 +315,7 @@ describe('LodgingSystem', () => {
           type: 'firefly', sprite: 'firefly', color: 0xffff00, radius: 5,
           alpha: 1, scale: 1, tint: 0xFFFFFF, rotation: 0, rotationSpeed: 0, depth: 50, offsetY: 0
         },
+        team: 'firefly',
         fireflyTag: true
       });
 
@@ -339,7 +333,7 @@ describe('LodgingSystem', () => {
           type: 'wisp', sprite: 'wisp', color: 0x0000ff, radius: 10,
           alpha: 1, scale: 1, tint: originalColor, rotation: 0, rotationSpeed: 0, depth: 50, offsetY: 0
         },
-        lodge: { allowedTenants: ['firefly'], maxTenants: 2, tenants: [], incoming: [] },
+        lodge: { allowedTeam: 'firefly', maxTenants: 2, tenants: [], incoming: [] },
         wispTag: true
       });
 
@@ -351,6 +345,7 @@ describe('LodgingSystem', () => {
           type: 'firefly', sprite: 'firefly', color: 0xffff00, radius: 5,
           alpha: 1, scale: 1, tint: 0xFFFFFF, rotation: 0, rotationSpeed: 0, depth: 50, offsetY: 0
         },
+        team: 'firefly',
         fireflyTag: true
       });
 
@@ -370,7 +365,7 @@ describe('LodgingSystem', () => {
           type: 'wisp', sprite: 'wisp', color: 0x0000ff, radius: 10,
           alpha: 1, scale: 1, tint: 0xFFFFFF, rotation: 0, rotationSpeed: 0, depth: 50, offsetY: 0
         },
-        lodge: { allowedTenants: ['firefly'], maxTenants: 1, tenants: [], incoming: [] },
+        lodge: { allowedTeam: 'firefly', maxTenants: 1, tenants: [], incoming: [] },
         wispTag: true
       });
 
@@ -382,6 +377,7 @@ describe('LodgingSystem', () => {
           type: 'firefly', sprite: 'firefly', color: 0xffff00, radius: 5,
           alpha: 1, scale: 1, tint: 0xFFFFFF, rotation: 0, rotationSpeed: 0, depth: 50, offsetY: 0
         },
+        team: 'firefly',
         fireflyTag: true
       });
 
@@ -397,7 +393,7 @@ describe('LodgingSystem', () => {
           type: 'wisp', sprite: 'wisp', color: 0x0000ff, radius: 10,
           alpha: 1, scale: 1, tint: 0xFFFFFF, rotation: 0, rotationSpeed: 0, depth: 50, offsetY: 0
         },
-        lodge: { allowedTenants: ['firefly'], maxTenants: 1, tenants: [], incoming: [] },
+        lodge: { allowedTeam: 'firefly', maxTenants: 1, tenants: [], incoming: [] },
         wispTag: true
       });
 
@@ -410,6 +406,7 @@ describe('LodgingSystem', () => {
           type: 'firefly', sprite: 'firefly', color: 0xffff00, radius: 5,
           alpha: 1, scale: 1, tint: 0xFFFFFF, rotation: 0, rotationSpeed: 0, depth: 50, offsetY: 0
         },
+        team: 'firefly',
         fireflyTag: true
       });
 
@@ -427,7 +424,7 @@ describe('LodgingSystem', () => {
           type: 'wisp', sprite: 'wisp', color: 0x0000ff, radius: 10,
           alpha: 1, scale: 1, tint: 0xFFFFFF, rotation: 0, rotationSpeed: 0, depth: 50, offsetY: 0
         },
-        lodge: { allowedTenants: ['firefly'], maxTenants: 1, tenants: [], incoming: [] },
+        lodge: { allowedTeam: 'firefly', maxTenants: 1, tenants: [], incoming: [] },
         wispTag: true
       });
 
@@ -437,7 +434,7 @@ describe('LodgingSystem', () => {
           type: 'wisp', sprite: 'wisp', color: 0x0000ff, radius: 10,
           alpha: 1, scale: 1, tint: 0xFFFFFF, rotation: 0, rotationSpeed: 0, depth: 50, offsetY: 0
         },
-        lodge: { allowedTenants: ['firefly'], maxTenants: 1, tenants: [], incoming: [] },
+        lodge: { allowedTeam: 'firefly', maxTenants: 1, tenants: [], incoming: [] },
         wispTag: true
       });
 
@@ -449,6 +446,7 @@ describe('LodgingSystem', () => {
           type: 'firefly', sprite: 'firefly', color: 0xffff00, radius: 5,
           alpha: 1, scale: 1, tint: 0xFFFFFF, rotation: 0, rotationSpeed: 0, depth: 50, offsetY: 0
         },
+        team: 'firefly',
         fireflyTag: true
       });
 
@@ -460,6 +458,7 @@ describe('LodgingSystem', () => {
           type: 'firefly', sprite: 'firefly', color: 0xffff00, radius: 5,
           alpha: 1, scale: 1, tint: 0xFFFFFF, rotation: 0, rotationSpeed: 0, depth: 50, offsetY: 0
         },
+        team: 'firefly',
         fireflyTag: true
       });
 
@@ -476,7 +475,7 @@ describe('LodgingSystem', () => {
           type: 'wisp', sprite: 'wisp', color: 0x0000ff, radius: 10,
           alpha: 1, scale: 1, tint: 0xFFFFFF, rotation: 0, rotationSpeed: 0, depth: 50, offsetY: 0
         },
-        lodge: { allowedTenants: ['firefly'], maxTenants: 3, tenants: [], incoming: [] },
+        lodge: { allowedTeam: 'firefly', maxTenants: 3, tenants: [], incoming: [] },
         wispTag: true
       });
 
@@ -488,6 +487,7 @@ describe('LodgingSystem', () => {
           type: 'firefly', sprite: 'firefly', color: 0xffff00, radius: 5,
           alpha: 1, scale: 1, tint: 0xFFFFFF, rotation: 0, rotationSpeed: 0, depth: 50, offsetY: 0
         },
+        team: 'firefly',
         fireflyTag: true
       });
 
@@ -499,6 +499,7 @@ describe('LodgingSystem', () => {
           type: 'firefly', sprite: 'firefly', color: 0xffff00, radius: 5,
           alpha: 1, scale: 1, tint: 0xFFFFFF, rotation: 0, rotationSpeed: 0, depth: 50, offsetY: 0
         },
+        team: 'firefly',
         fireflyTag: true
       });
 
@@ -528,7 +529,7 @@ describe('LodgingSystem', () => {
           type: 'wisp', sprite: 'wisp', color: 0x0000ff, radius: 10,
           alpha: 1, scale: 1, tint: 0xFFFFFF, rotation: 0, rotationSpeed: 0, depth: 50, offsetY: 0
         },
-        lodge: { allowedTenants: ['firefly'], maxTenants: 1, tenants: [], incoming: [firefly] },
+        lodge: { allowedTeam: 'firefly', maxTenants: 1, tenants: [], incoming: [firefly] },
         wispTag: true
       });
 
@@ -549,6 +550,7 @@ describe('LodgingSystem', () => {
           type: 'firefly', sprite: 'firefly', color: 0xffff00, radius: 5,
           alpha: 1, scale: 1, tint: 0xFFFFFF, rotation: 0, rotationSpeed: 0, depth: 50, offsetY: 0
         },
+        team: 'firefly',
         fireflyTag: true
       });
 
@@ -558,7 +560,7 @@ describe('LodgingSystem', () => {
           type: 'wisp', sprite: 'wisp', color: 0x0000ff, radius: 10,
           alpha: 1, scale: 1, tint: 0xFFFFFF, rotation: 0, rotationSpeed: 0, depth: 50, offsetY: 0
         },
-        lodge: { allowedTenants: ['firefly'], maxTenants: 1, tenants: [], incoming: [firefly] },
+        lodge: { allowedTeam: 'firefly', maxTenants: 1, tenants: [], incoming: [firefly] },
         wispTag: true
       });
 
@@ -588,7 +590,7 @@ describe('LodgingSystem', () => {
           type: 'wisp', sprite: 'wisp', color: 0x0000ff, radius: 10,
           alpha: 1, scale: 1, tint: 0xFFFFFF, rotation: 0, rotationSpeed: 0, depth: 50, offsetY: 0
         },
-        lodge: { allowedTenants: ['firefly'], maxTenants: 1, tenants: [], incoming: [firefly] },
+        lodge: { allowedTeam: 'firefly', maxTenants: 1, tenants: [], incoming: [firefly] },
         wispTag: true
       });
 
@@ -606,6 +608,7 @@ describe('LodgingSystem', () => {
           type: 'firefly', sprite: 'firefly', color: 0xffff00, radius: 5,
           alpha: 1, scale: 1, tint: 0xFFFFFF, rotation: 0, rotationSpeed: 0, depth: 50, offsetY: 0
         },
+        team: 'firefly',
         fireflyTag: true
       });
 
@@ -615,7 +618,7 @@ describe('LodgingSystem', () => {
           type: 'wisp', sprite: 'wisp', color: 0x0000ff, radius: 10,
           alpha: 1, scale: 1, tint: 0xFFFFFF, rotation: 0, rotationSpeed: 0, depth: 50, offsetY: 0
         },
-        lodge: { allowedTenants: ['firefly'], maxTenants: 1, tenants: [], incoming: [firefly] },
+        lodge: { allowedTeam: 'firefly', maxTenants: 1, tenants: [], incoming: [firefly] },
         wispTag: true
       });
 
@@ -635,6 +638,7 @@ describe('LodgingSystem', () => {
           type: 'firefly', sprite: 'firefly', color: 0xffff00, radius: 5,
           alpha: 1, scale: 1, tint: 0xFFFFFF, rotation: 0, rotationSpeed: 0, depth: 50, offsetY: 0
         },
+        team: 'firefly',
         fireflyTag: true
       });
 
@@ -646,6 +650,7 @@ describe('LodgingSystem', () => {
           type: 'firefly', sprite: 'firefly', color: 0xffff00, radius: 5,
           alpha: 1, scale: 1, tint: 0xFFFFFF, rotation: 0, rotationSpeed: 0, depth: 50, offsetY: 0
         },
+        team: 'firefly',
         fireflyTag: true
       });
 
@@ -655,7 +660,7 @@ describe('LodgingSystem', () => {
           type: 'wisp', sprite: 'wisp', color: 0x0000ff, radius: 10,
           alpha: 1, scale: 1, tint: 0xFFFFFF, rotation: 0, rotationSpeed: 0, depth: 50, offsetY: 0
         },
-        lodge: { allowedTenants: ['firefly'], maxTenants: 1, tenants: [], incoming: [incomingFirefly] },
+        lodge: { allowedTeam: 'firefly', maxTenants: 1, tenants: [], incoming: [incomingFirefly] },
         wispTag: true
       });
 
@@ -686,6 +691,7 @@ describe('LodgingSystem', () => {
           type: 'firefly', sprite: 'firefly', color: 0xffff00, radius: 5,
           alpha: 1, scale: 1, tint: 0xFFFFFF, rotation: 0, rotationSpeed: 0, depth: 50, offsetY: 0
         },
+        team: 'firefly',
         fireflyTag: true
       });
 
@@ -695,7 +701,7 @@ describe('LodgingSystem', () => {
           type: 'wisp', sprite: 'wisp', color: 0x0000ff, radius: 10,
           alpha: 1, scale: 1, tint: 0xFFFFFF, rotation: 0, rotationSpeed: 0, depth: 50, offsetY: 0
         },
-        lodge: { allowedTenants: ['firefly'], maxTenants: 1, tenants: [], incoming: [deadFirefly] },
+        lodge: { allowedTeam: 'firefly', maxTenants: 1, tenants: [], incoming: [deadFirefly] },
         wispTag: true
       });
 
@@ -714,7 +720,7 @@ describe('LodgingSystem', () => {
           type: 'wisp', sprite: 'wisp', color: 0x0000ff, radius: 10,
           alpha: 1, scale: 1, tint: 0xFFFFFF, rotation: 0, rotationSpeed: 0, depth: 50, offsetY: 0
         },
-        lodge: { allowedTenants: ['firefly'], maxTenants: 1, tenants: [], incoming: [] },
+        lodge: { allowedTeam: 'firefly', maxTenants: 1, tenants: [], incoming: [] },
         wispTag: true
       });
 
@@ -728,7 +734,7 @@ describe('LodgingSystem', () => {
           type: 'wisp', sprite: 'wisp', color: 0x0000ff, radius: 10,
           alpha: 1, scale: 1, tint: 0xFFFFFF, rotation: 0, rotationSpeed: 0, depth: 50, offsetY: 0
         },
-        lodge: { allowedTenants: ['firefly'], maxTenants: 1, tenants: [], incoming: [] },
+        lodge: { allowedTeam: 'firefly', maxTenants: 1, tenants: [], incoming: [] },
         wispTag: true
       });
 
@@ -752,7 +758,7 @@ describe('LodgingSystem', () => {
           type: 'wisp', sprite: 'wisp', color: 0x0000ff, radius: 10,
           alpha: 1, scale: 1, tint: 0xFFFFFF, rotation: 0, rotationSpeed: 0, depth: 50, offsetY: 0
         },
-        lodge: { allowedTenants: ['firefly'], maxTenants: 1, tenants: [], incoming: [] },
+        lodge: { allowedTeam: 'firefly', maxTenants: 1, tenants: [], incoming: [] },
         wispTag: true
       });
 
@@ -768,7 +774,7 @@ describe('LodgingSystem', () => {
           type: 'wisp', sprite: 'wisp', color: 0x0000ff, radius: 10,
           alpha: 1, scale: 1, tint: 0xFFFFFF, rotation: 0, rotationSpeed: 0, depth: 50, offsetY: 0
         },
-        lodge: { allowedTenants: ['firefly'], maxTenants: 1, tenants: [], incoming: [] },
+        lodge: { allowedTeam: 'firefly', maxTenants: 1, tenants: [], incoming: [] },
         wispTag: true
       });
 
@@ -784,7 +790,7 @@ describe('LodgingSystem', () => {
           type: 'wisp', sprite: 'wisp', color: 0x0000ff, radius: 10,
           alpha: 1, scale: 1, tint: 0xFFFFFF, rotation: 0, rotationSpeed: 0, depth: 50, offsetY: 0
         },
-        lodge: { allowedTenants: ['firefly'], maxTenants: 1, tenants: [], incoming: [] },
+        lodge: { allowedTeam: 'firefly', maxTenants: 1, tenants: [], incoming: [] },
         wispTag: true
       });
 
@@ -796,6 +802,7 @@ describe('LodgingSystem', () => {
           type: 'firefly', sprite: 'firefly', color: 0xffff00, radius: 5,
           alpha: 1, scale: 1, tint: 0xFFFFFF, rotation: 0, rotationSpeed: 0, depth: 50, offsetY: 0
         },
+        team: 'firefly',
         fireflyTag: true,
         fleeingToGoalTag: true
       });
@@ -812,7 +819,7 @@ describe('LodgingSystem', () => {
           type: 'wisp', sprite: 'wisp', color: 0x0000ff, radius: 10,
           alpha: 1, scale: 1, tint: 0xFFFFFF, rotation: 0, rotationSpeed: 0, depth: 50, offsetY: 0
         },
-        lodge: { allowedTenants: ['firefly'], maxTenants: 2, tenants: [], incoming: [] },
+        lodge: { allowedTeam: 'firefly', maxTenants: 2, tenants: [], incoming: [] },
         wispTag: true
       });
 
@@ -824,6 +831,7 @@ describe('LodgingSystem', () => {
           type: 'firefly', sprite: 'firefly', color: 0xffff00, radius: 5,
           alpha: 1, scale: 1, tint: 0xFFFFFF, rotation: 0, rotationSpeed: 0, depth: 50, offsetY: 0
         },
+        team: 'firefly',
         fireflyTag: true
       });
 
@@ -835,6 +843,7 @@ describe('LodgingSystem', () => {
           type: 'firefly', sprite: 'firefly', color: 0xffff00, radius: 5,
           alpha: 1, scale: 1, tint: 0xFFFFFF, rotation: 0, rotationSpeed: 0, depth: 50, offsetY: 0
         },
+        team: 'firefly',
         fireflyTag: true,
         fleeingToGoalTag: true
       });
@@ -850,7 +859,7 @@ describe('LodgingSystem', () => {
     it('should only process entities with Lodge and Position components', () => {
       world.add({
         position: { x: 100, y: 100 },
-        lodge: { allowedTenants: ['firefly'], maxTenants: 1, tenants: [], incoming: [] }
+        lodge: { allowedTeam: 'firefly', maxTenants: 1, tenants: [], incoming: [] }
       });
 
       world.add({
@@ -858,7 +867,7 @@ describe('LodgingSystem', () => {
           type: 'wisp', sprite: 'wisp', color: 0x0000ff, radius: 10,
           alpha: 1, scale: 1, tint: 0xFFFFFF, rotation: 0, rotationSpeed: 0, depth: 50, offsetY: 0
         },
-        lodge: { allowedTenants: ['firefly'], maxTenants: 1, tenants: [], incoming: [] }
+        lodge: { allowedTeam: 'firefly', maxTenants: 1, tenants: [], incoming: [] }
       });
 
       world.add({
