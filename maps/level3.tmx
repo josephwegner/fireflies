@@ -23,7 +23,7 @@
  <objectgroup id="2" name="entities">
   <object id="1" type="spawner" x="57.3256" y="258.255">
    <properties>
-    <property name="queue" value="[{&quot;unit&quot;:&quot;firefly&quot;,&quot;repeat&quot;:1,&quot;delayBetween&quot;:1000}]"/>
+    <property name="queue" value="[{&quot;unit&quot;:&quot;firefly&quot;,&quot;repeat&quot;:5,&quot;delayBetween&quot;:3000}]"/>
    </properties>
    <point/>
   </object>
@@ -65,7 +65,7 @@
    </properties>
    <point/>
   </object>
-  <object id="11" type="redirect_exit" x="458.369" y="324.041">
+  <object id="11" type="redirect_exit" x="487.739" y="305.684">
    <properties>
     <property name="for" type="object" value="9"/>
    </properties>

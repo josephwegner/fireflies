@@ -21,6 +21,7 @@ import { SpawnerSystem } from './systems/gameplay/SpawnerSystem';
 import { RedirectSystem } from './systems/gameplay/RedirectSystem';
 import { DefeatSystem } from './systems/gameplay/DefeatSystem';
 import { BuildingSystem } from './systems/gameplay/BuildingSystem';
+import { WallBreakingSystem } from './systems/gameplay/WallBreakingSystem';
 import { WallActivationSystem } from './systems/gameplay/WallActivationSystem';
 
 // Rendering systems
@@ -131,6 +132,7 @@ export class WorldManager {
     this.gameplaySystems.push(new LodgingSystem(this.world, { spatialGrid: this.spatialGrid }));
     this.gameplaySystems.push(new DamageSystem(this.world, {}));
     this.gameplaySystems.push(new MovementSystem(this.world, {}));
+    this.gameplaySystems.push(new WallBreakingSystem(this.world, {}));
     this.gameplaySystems.push(new BuildingSystem(this.world, { worker: this.pathfindingWorker }));
     this.gameplaySystems.push(new WallActivationSystem(this.world, { worker: this.pathfindingWorker }));
     this.gameplaySystems.push(new RedirectSystem(this.world, {}));

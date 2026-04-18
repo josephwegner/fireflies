@@ -43,6 +43,7 @@ export interface GameEventPayloads {
   // Wall events
   [GameEvents.WALL_BLUEPRINT_PLACED]: { entity: Entity };
   [GameEvents.WALL_ACTIVATED]: { entity: Entity };
+  [GameEvents.WALL_DESTROYED]: { entity: Entity; position: { x: number; y: number } };
   [GameEvents.NAVMESH_UPDATED]: {};
 }
 
@@ -93,6 +94,7 @@ export class GameEvents {
   // Wall events
   static readonly WALL_BLUEPRINT_PLACED = 'wall:blueprintPlaced';
   static readonly WALL_ACTIVATED = 'wall:activated';
+  static readonly WALL_DESTROYED = 'wall:destroyed';
   static readonly NAVMESH_UPDATED = 'navmesh:updated';
 
   on<K extends keyof GameEventPayloads>(

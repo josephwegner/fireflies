@@ -432,10 +432,10 @@ describe('Entity Factories', () => {
       expect(entity.wallBlueprint!.passableBy).toBeUndefined();
     });
 
-    it('should have renderable component', () => {
+    it('should not have renderable component (rendered by WallBlueprintRenderingSystem)', () => {
       const entity = createWallBlueprint(world, { x: 0, y: 0 }, { x: 100, y: 0 }, 5);
 
-      expect(entity.renderable).toBeDefined();
+      expect(entity.renderable).toBeUndefined();
     });
 
     it('should not have movement components', () => {

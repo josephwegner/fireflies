@@ -11,6 +11,7 @@ export class WallActivationSystem implements GameSystem {
   private walls: Query<With<Entity, 'wall' | 'wallTag'>>;
   private wallBlueprints: Query<With<Entity, 'wallBlueprint' | 'wallBlueprintTag' | 'buildable'>>;
   private handleBuildCompleteBound: (data: any) => void;
+  private handleWallDestroyedBound: (data: any) => void;
 
   constructor(world: GameWorld, config: Record<string, any>) {
     this.world = world;
@@ -19,11 +20,14 @@ export class WallActivationSystem implements GameSystem {
     this.wallBlueprints = world.with('wallBlueprint', 'wallBlueprintTag', 'buildable') as any;
 
     this.handleBuildCompleteBound = (data) => this.handleBuildComplete(data);
+    this.handleWallDestroyedBound = () => this.rebuildNavMesh();
     gameEvents.on(GameEvents.BUILD_COMPLETE, this.handleBuildCompleteBound);
+    gameEvents.on(GameEvents.WALL_DESTROYED, this.handleWallDestroyedBound);
   }
 
   destroy(): void {
     gameEvents.off(GameEvents.BUILD_COMPLETE, this.handleBuildCompleteBound);
+    gameEvents.off(GameEvents.WALL_DESTROYED, this.handleWallDestroyedBound);
   }
 
   update(_delta: number, _time: number): void {

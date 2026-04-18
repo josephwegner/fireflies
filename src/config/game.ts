@@ -18,13 +18,15 @@ export const GAME_CONFIG = Object.freeze({
 
   // Wall Blueprints
   WALL_BUILD_TIME: 2,
-  WALL_BLUEPRINT_COST: 150,
+  WALL_BLUEPRINT_COST: 20,
   WALL_BLUEPRINT_THICKNESS: 8,
+  WALL_HP: 100,
+  WALL_ATTACK_RANGE: 32,
 
   // Store
   STORE: Object.freeze({
     wisp: { cost: 100 },
-    wall: { cost: 150 }
+    wall: { cost: 20 }
   }),
 
   // Firefly goal visual progression

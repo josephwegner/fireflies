@@ -1,7 +1,7 @@
 import type { Query, With } from 'miniplex';
 import type { Entity, GameWorld, Team } from '@/ecs/Entity';
 import type { GameSystem } from '@/ecs/GameSystem';
-import { PHYSICS_CONFIG } from '@/config';
+import { PHYSICS_CONFIG, GAME_CONFIG } from '@/config';
 import { gameEvents, GameEvents } from '@/events';
 
 interface RecruitmentState {
@@ -33,15 +33,22 @@ export class DestinationSystem implements GameSystem {
 
       if (event.data.action === 'navmeshUpdated') {
         this.clearAllPaths();
+        this.clearAllWallAttackTargets();
         gameEvents.emit(GameEvents.NAVMESH_UPDATED, {});
         return;
       }
 
       if (event.data.action === 'error') {
         console.error('[DestinationSystem] Worker error:', event.data.error);
-        const { requestId } = event.data;
+        const { requestId, entityId } = event.data;
         if (requestId) {
           this.handleRequestResponse(requestId, null, event.data);
+        }
+        if (entityId !== undefined && event.data.error === 'no path found') {
+          const entity = this.world.entity(entityId);
+          if (entity?.monsterTag) {
+            this.handleMonsterPathBlocked(entity);
+          }
         }
         return;
       }
@@ -145,6 +152,8 @@ export class DestinationSystem implements GameSystem {
           } else if (assigned) {
             const targetPos = assigned.targetPosition ?? assigned.target.position!;
             destination = { x: targetPos.x, y: targetPos.y };
+          } else if (mover.wallAttackTarget) {
+            destination = this.wallApproachPoint(mover, mover.wallAttackTarget.wallEntity);
           } else {
             destination = { x: goal.position.x, y: goal.position.y };
           }
@@ -154,8 +163,8 @@ export class DestinationSystem implements GameSystem {
         } else if (mover.path.goalPath && !mover.path.goalPath.length) {
           if (this.navigationRequestForEntity.has(entityId)) continue;
 
-          // Don't pre-compute a goal path for assigned entities — they should stop at their target
-          if (assigned) continue;
+          // Don't pre-compute a goal path for assigned entities or wall attackers
+          if (assigned || mover.wallAttackTarget) continue;
 
           const lastPos = mover.path.currentPath[mover.path.currentPath.length - 1];
           this.fireNavRequest(mover, lastPos, { x: goal.position.x, y: goal.position.y }, 'next');
@@ -387,6 +396,78 @@ export class DestinationSystem implements GameSystem {
         this.cancelNavigationRequest(entityId);
       }
     }
+  }
+
+  private clearAllWallAttackTargets(): void {
+    for (const entity of this.world.with('wallAttackTarget')) {
+      this.world.removeComponent(entity, 'wallAttackTarget');
+    }
+  }
+
+  private handleMonsterPathBlocked(entity: Entity): void {
+    const goal = this.findGoalForTeam('monster');
+    if (!goal) return;
+
+    const triedWalls = entity.wallAttackTarget?.triedWalls ?? new Set<number>();
+
+    // If already targeting a wall that also failed, mark it as tried
+    if (entity.wallAttackTarget) {
+      const wallId = this.world.id(entity.wallAttackTarget.wallEntity);
+      if (wallId !== undefined) triedWalls.add(wallId);
+      this.world.removeComponent(entity, 'wallAttackTarget');
+    }
+
+    // Find active wall blueprints sorted by distance to the monster.
+    // The nearest wall is the one the monster can actually path to — walls
+    // further away may be blocked by closer walls.
+    const monsterPos = entity.position!;
+    const candidates: { entity: Entity; dist: number }[] = [];
+    for (const wall of this.world.with('wallBlueprint', 'wallBlueprintTag', 'position')) {
+      if (!wall.wallBlueprint.active) continue;
+      if (wall.health?.isDead) continue;
+      const wallId = this.world.id(wall);
+      if (wallId !== undefined && triedWalls.has(wallId)) continue;
+      const dx = wall.position.x - monsterPos.x;
+      const dy = wall.position.y - monsterPos.y;
+      candidates.push({ entity: wall, dist: dx * dx + dy * dy });
+    }
+
+    if (candidates.length === 0) return;
+
+    candidates.sort((a, b) => a.dist - b.dist);
+    this.world.addComponent(entity, 'wallAttackTarget', {
+      wallEntity: candidates[0].entity,
+      attackCooldown: 0,
+      triedWalls
+    });
+  }
+
+  private wallApproachPoint(mover: Entity, wall: Entity): { x: number; y: number } {
+    const sites = wall.buildable?.sites;
+    if (!sites || sites.length < 2) return { x: wall.position!.x, y: wall.position!.y };
+
+    const s0 = sites[0], s1 = sites[1];
+    const dx = s1.x - s0.x, dy = s1.y - s0.y;
+    const lenSq = dx * dx + dy * dy;
+    let t = lenSq > 0 ? ((mover.position!.x - s0.x) * dx + (mover.position!.y - s0.y) * dy) / lenSq : 0;
+    t = Math.max(0, Math.min(1, t));
+    const projX = s0.x + t * dx;
+    const projY = s0.y + t * dy;
+
+    const toMonsterX = mover.position!.x - projX;
+    const toMonsterY = mover.position!.y - projY;
+    const dist = Math.hypot(toMonsterX, toMonsterY);
+
+    if (dist < 1) return { x: wall.position!.x, y: wall.position!.y };
+
+    // Offset from the wall segment toward the monster, far enough to be on
+    // the walkable mesh (outside the grown obstacle buffer).
+    const radius = mover.renderable?.radius ?? 0;
+    const offset = GAME_CONFIG.WALL_BLUEPRINT_THICKNESS / 2 + radius * PHYSICS_CONFIG.WALL_BUFFER_MULTIPLIER + 4;
+    return {
+      x: projX + (toMonsterX / dist) * offset,
+      y: projY + (toMonsterY / dist) * offset
+    };
   }
 
   private computePathLength(path: { x: number; y: number }[]): number {

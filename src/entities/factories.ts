@@ -338,19 +338,9 @@ export function createWallBlueprint(
     buildable: { sites, buildTime, allBuilt: false },
     wallBlueprint: { active: false, passableBy },
     wallBlueprintTag: true,
-    renderable: {
-      type: 'wallBlueprint',
-      sprite: 'wallBlueprint',
-      color: 0x88AACC,
-      radius: 4,
-      alpha: 0.6,
-      scale: 1,
-      tint: 0xFFFFFF,
-      rotation: 0,
-      rotationSpeed: 0,
-      depth: 30,
-      offsetY: 0
-    }
+    health: { currentHealth: GAME_CONFIG.WALL_HP, maxHealth: GAME_CONFIG.WALL_HP, isDead: false },
+    team: 'firefly' as Team,
+    physicsBody: { collisionRadius: GAME_CONFIG.WALL_BLUEPRINT_THICKNESS / 2, mass: 0, isStatic: true }
   });
 }
 

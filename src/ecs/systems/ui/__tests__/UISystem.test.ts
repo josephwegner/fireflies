@@ -115,7 +115,7 @@ describe('UISystem', () => {
       system = new UISystem(world, {
         scene,
         energyManager,
-        levelConfig: { store: { wisp: { cost: 100 }, wall: { cost: 150 } } }
+        levelConfig: { store: { wisp: { cost: 100 }, wall: { cost: 20 } } }
       });
 
       expect(scene.add.graphics).toHaveBeenCalled();
@@ -128,7 +128,7 @@ describe('UISystem', () => {
       system = new UISystem(world, {
         scene,
         energyManager,
-        levelConfig: { store: { wisp: { cost: 100 }, wall: { cost: 150 } } }
+        levelConfig: { store: { wisp: { cost: 100 }, wall: { cost: 20 } } }
       });
 
       expect(mockText.setScrollFactor).toHaveBeenCalledWith(0);
@@ -141,7 +141,7 @@ describe('UISystem', () => {
       system = new UISystem(world, {
         scene,
         energyManager,
-        levelConfig: { store: { wisp: { cost: 100 }, wall: { cost: 150 } } }
+        levelConfig: { store: { wisp: { cost: 100 }, wall: { cost: 20 } } }
       });
 
       expect(mockSprite.setInteractive).toHaveBeenCalled();
@@ -154,7 +154,7 @@ describe('UISystem', () => {
       system = new UISystem(world, {
         scene,
         energyManager,
-        levelConfig: { store: { wisp: { cost: 100 }, wall: { cost: 150 } } }
+        levelConfig: { store: { wisp: { cost: 100 }, wall: { cost: 20 } } }
       });
 
       system.update(16, 16);
@@ -167,7 +167,7 @@ describe('UISystem', () => {
       system = new UISystem(world, {
         scene,
         energyManager,
-        levelConfig: { store: { wisp: { cost: 100 }, wall: { cost: 150 } } }
+        levelConfig: { store: { wisp: { cost: 100 }, wall: { cost: 20 } } }
       });
 
       energyManager.spend(50);
@@ -183,7 +183,7 @@ describe('UISystem', () => {
       system = new UISystem(world, {
         scene,
         energyManager: new EnergyManager(50),
-        levelConfig: { store: { wisp: { cost: 100 }, wall: { cost: 150 } } }
+        levelConfig: { store: { wisp: { cost: 100 }, wall: { cost: 20 } } }
       });
 
       system.update(16, 16);
@@ -197,7 +197,7 @@ describe('UISystem', () => {
       system = new UISystem(world, {
         scene,
         energyManager,
-        levelConfig: { store: { wisp: { cost: 100 }, wall: { cost: 150 } } }
+        levelConfig: { store: { wisp: { cost: 100 }, wall: { cost: 20 } } }
       });
 
       system.update(16, 16);
@@ -213,7 +213,7 @@ describe('UISystem', () => {
       system = new UISystem(world, {
         scene,
         energyManager,
-        levelConfig: { store: { wisp: { cost: 100 }, wall: { cost: 150 } } }
+        levelConfig: { store: { wisp: { cost: 100 }, wall: { cost: 20 } } }
       });
 
       const listener = vi.fn();
@@ -235,7 +235,7 @@ describe('UISystem', () => {
       system = new UISystem(world, {
         scene,
         energyManager,
-        levelConfig: { store: { wisp: { cost: 100 }, wall: { cost: 150 } } }
+        levelConfig: { store: { wisp: { cost: 100 }, wall: { cost: 20 } } }
       });
 
       system.destroy!();

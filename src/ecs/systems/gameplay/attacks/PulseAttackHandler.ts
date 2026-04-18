@@ -2,6 +2,7 @@ import type { AttackHandler, AttackContext } from './AttackHandler';
 import { Vector } from '@/utils';
 import { gameEvents, GameEvents } from '@/events/GameEvents';
 import type { Entity } from '@/ecs/Entity';
+import { pointToSegmentDistance } from '@/utils/geometry';
 
 export class PulseAttackHandler implements AttackHandler {
   onCharging(context: AttackContext): void {
@@ -61,9 +62,15 @@ export class PulseAttackHandler implements AttackHandler {
       if (!entity.position || !entity.physicsBody) continue;
       if (!this.isValidTarget(entity, attacker)) continue;
 
-      const dx = entity.position.x - attackerPos.x;
-      const dy = entity.position.y - attackerPos.y;
-      const distance = Vector.length(dx, dy);
+      let distance: number;
+      if (entity.wallBlueprintTag && entity.buildable?.sites?.length >= 2) {
+        const sites = entity.buildable.sites;
+        distance = pointToSegmentDistance(attackerPos, sites[0], sites[1]);
+      } else {
+        const dx = entity.position.x - attackerPos.x;
+        const dy = entity.position.y - attackerPos.y;
+        distance = Vector.length(dx, dy);
+      }
 
       const targetRadius = entity.physicsBody?.collisionRadius ?? 0;
       if (distance <= radius + targetRadius) {

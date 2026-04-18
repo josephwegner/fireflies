@@ -5,6 +5,7 @@ import type { GameSystem } from '@/ecs/GameSystem';
 import { gameEvents, GameEvents } from '@/events';
 import { Vector, SpatialGrid, getEntityType } from '@/utils';
 import { ENTITY_CONFIG } from '@/config';
+import { pointToSegmentDistance } from '@/utils/geometry';
 import { AttackHandlerRegistry } from './attacks/AttackHandlerRegistry';
 import type { AttackContext } from './attacks/AttackHandler';
 
@@ -79,11 +80,6 @@ export class CombatSystem implements GameSystem {
     if (attacker.team && target.team && attacker.team === target.team) return false;
 
     const attackerPos = attacker.position!;
-    const targetPos = target.position;
-
-    const dx = targetPos.x - attackerPos.x;
-    const dy = targetPos.y - attackerPos.y;
-    const distance = Vector.length(dx, dy);
 
     let interactionRadius = 30;
     if (attacker.interaction) {
@@ -93,7 +89,17 @@ export class CombatSystem implements GameSystem {
       interactionRadius = (entityType && ENTITY_CONFIG[entityType]?.interactionRadius) || 30;
     }
 
-    return distance <= interactionRadius;
+    // Wall blueprints are line segments — measure distance to the segment,
+    // not the midpoint, so combat works regardless of wall length.
+    if (target.wallBlueprintTag && target.buildable?.sites?.length >= 2) {
+      const sites = target.buildable.sites;
+      return pointToSegmentDistance(attackerPos, sites[0], sites[1]) <= interactionRadius;
+    }
+
+    const targetPos = target.position;
+    const dx = targetPos.x - attackerPos.x;
+    const dy = targetPos.y - attackerPos.y;
+    return Vector.length(dx, dy) <= interactionRadius;
   }
 
   private updateCombatState(

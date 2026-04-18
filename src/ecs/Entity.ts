@@ -210,6 +210,12 @@ export interface WallBlueprint {
   passableBy?: Team;
 }
 
+export interface WallAttackTarget {
+  wallEntity: Entity;
+  attackCooldown: number;
+  triedWalls: Set<number>;
+}
+
 // ─── Entity Type ────────────────────────────────────────────────────────────
 
 export type Entity = {
@@ -240,6 +246,7 @@ export type Entity = {
   // Building
   buildable?: Buildable;
   wallBlueprint?: WallBlueprint;
+  wallAttackTarget?: WallAttackTarget;
 
   // Team
   team?: Team;

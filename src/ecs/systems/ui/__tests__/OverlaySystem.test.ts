@@ -155,7 +155,7 @@ describe('OverlaySystem', () => {
     });
 
     it('should show You Win on last level', () => {
-      createSystem(1);
+      createSystem(2);
 
       gameEvents.emit(GameEvents.LEVEL_WON, { firefliesCollected: 2 });
 

@@ -818,4 +818,197 @@ describe('DestinationSystem', () => {
     });
   });
 
+  describe('Wall attack target assignment', () => {
+    function createActiveWall(x: number, y: number) {
+      return world.add({
+        position: { x, y },
+        buildable: {
+          sites: [
+            { x: x - 20, y, built: true, buildProgress: 1 },
+            { x: x + 20, y, built: true, buildProgress: 1 }
+          ],
+          buildTime: 2,
+          allBuilt: true
+        },
+        wallBlueprint: { active: true },
+        wallBlueprintTag: true,
+        health: { currentHealth: 100, maxHealth: 100, isDead: false }
+      });
+    }
+
+    it('should assign wallAttackTarget on path failure for monsters', () => {
+      const monster = createTestMonster(world, { x: 100, y: 100 });
+      createTestGoal(world, { x: 500, y: 500, for: 'monster' });
+      createActiveWall(400, 400);
+
+      system = new DestinationSystem(world, { worker: mockWorker });
+      system.update(16, 0);
+
+      const entityId = world.id(monster)!;
+      const navMsg = getPostMessages().find((m: any) => m.entityId === entityId && m.pathType === 'current');
+
+      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+      simulateWorkerResponse({
+        action: 'error',
+        error: 'no path found',
+        entityId,
+        requestId: navMsg.requestId
+      });
+      consoleSpy.mockRestore();
+
+      expect(monster.wallAttackTarget).toBeDefined();
+      expect(monster.wallAttackTarget!.wallEntity.wallBlueprint!.active).toBe(true);
+    });
+
+    it('should not assign wallAttackTarget for fireflies', () => {
+      const firefly = createTestFirefly(world, { x: 100, y: 100 });
+      createTestGoal(world, { x: 500, y: 500 });
+      createActiveWall(300, 300);
+
+      system = new DestinationSystem(world, { worker: mockWorker });
+      system.update(16, 0);
+
+      const entityId = world.id(firefly)!;
+      const navMsg = getPostMessages().find((m: any) => m.entityId === entityId && m.pathType === 'current');
+
+      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+      simulateWorkerResponse({
+        action: 'error',
+        error: 'no path found',
+        entityId,
+        requestId: navMsg.requestId
+      });
+      consoleSpy.mockRestore();
+
+      expect(firefly.wallAttackTarget).toBeUndefined();
+    });
+
+    it('should prefer wall closest to monster', () => {
+      const monster = createTestMonster(world, { x: 100, y: 100 });
+      createTestGoal(world, { x: 500, y: 500, for: 'monster' });
+      const nearWall = createActiveWall(200, 200); // close to monster
+      createActiveWall(450, 450); // far from monster
+
+      system = new DestinationSystem(world, { worker: mockWorker });
+      system.update(16, 0);
+
+      const entityId = world.id(monster)!;
+      const navMsg = getPostMessages().find((m: any) => m.entityId === entityId);
+
+      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+      simulateWorkerResponse({
+        action: 'error',
+        error: 'no path found',
+        entityId,
+        requestId: navMsg.requestId
+      });
+      consoleSpy.mockRestore();
+
+      expect(monster.wallAttackTarget!.wallEntity).toBe(nearWall);
+    });
+
+    it('should try next wall when path to first wall also fails', () => {
+      const monster = createTestMonster(world, { x: 100, y: 100 });
+      createTestGoal(world, { x: 500, y: 500, for: 'monster' });
+      const nearWall = createActiveWall(200, 200); // closer to monster
+      const farWall = createActiveWall(450, 450); // further from monster
+
+      system = new DestinationSystem(world, { worker: mockWorker });
+      system.update(16, 0);
+
+      const entityId = world.id(monster)!;
+      const firstMsg = getPostMessages().find((m: any) => m.entityId === entityId);
+
+      // First failure: assigns nearWall (closest to monster)
+      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+      simulateWorkerResponse({
+        action: 'error',
+        error: 'no path found',
+        entityId,
+        requestId: firstMsg.requestId
+      });
+      expect(monster.wallAttackTarget!.wallEntity).toBe(nearWall);
+
+      // Navigate to wall, get another request
+      system.update(16, 0);
+      const secondMsg = getPostMessages().find(
+        (m: any) => m.entityId === entityId && m.requestId !== firstMsg.requestId
+      );
+
+      // Second failure: should try farWall
+      simulateWorkerResponse({
+        action: 'error',
+        error: 'no path found',
+        entityId,
+        requestId: secondMsg.requestId
+      });
+      consoleSpy.mockRestore();
+
+      expect(monster.wallAttackTarget!.wallEntity).toBe(farWall);
+    });
+
+    it('should clear wallAttackTarget on navmesh update', () => {
+      const monster = createTestMonster(world, { x: 100, y: 100 });
+      createTestGoal(world, { x: 500, y: 500, for: 'monster' });
+      const wall = createActiveWall(300, 300);
+
+      world.addComponent(monster, 'wallAttackTarget', {
+        wallEntity: wall,
+        attackCooldown: 0,
+        triedWalls: new Set()
+      });
+
+      system = new DestinationSystem(world, { worker: mockWorker });
+      simulateWorkerResponse({ action: 'navmeshUpdated' });
+
+      expect(monster.wallAttackTarget).toBeUndefined();
+    });
+
+    it('should navigate to wall position when wallAttackTarget is set', () => {
+      const monster = createTestMonster(world, { x: 100, y: 100 });
+      createTestGoal(world, { x: 500, y: 500, for: 'monster' });
+      const wall = createActiveWall(300, 300);
+
+      world.addComponent(monster, 'wallAttackTarget', {
+        wallEntity: wall,
+        attackCooldown: 0,
+        triedWalls: new Set()
+      });
+
+      system = new DestinationSystem(world, { worker: mockWorker });
+      system.update(16, 0);
+
+      const navMsg = getPostMessages().find(
+        (m: any) => m.entityId === world.id(monster) && m.pathType === 'current'
+      );
+      // Destination should be offset from wall toward the monster (100,100),
+      // not the wall midpoint — ensures pathfinding lands on the monster's
+      // side of the navmesh obstacle
+      expect(navMsg.destination.x).toBeLessThan(300);
+      expect(navMsg.destination.y).toBeLessThan(300);
+    });
+
+    it('should skip goalPath pre-computation for entities with wallAttackTarget', () => {
+      const monster = createTestMonster(world, {
+        x: 100, y: 100,
+        currentPath: [{ x: 200, y: 200 }]
+      });
+      createTestGoal(world, { x: 500, y: 500, for: 'monster' });
+      const wall = createActiveWall(300, 300);
+
+      world.addComponent(monster, 'wallAttackTarget', {
+        wallEntity: wall,
+        attackCooldown: 0,
+        triedWalls: new Set()
+      });
+
+      system = new DestinationSystem(world, { worker: mockWorker });
+      system.update(16, 0);
+
+      const nextMsgs = getPostMessagesByType('next');
+      const monsterMsgs = nextMsgs.filter((m: any) => m.entityId === world.id(monster));
+      expect(monsterMsgs.length).toBe(0);
+    });
+  });
+
 });
