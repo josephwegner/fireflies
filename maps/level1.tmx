@@ -2,7 +2,7 @@
 <map version="1.10" tiledversion="1.12.1" orientation="orthogonal" renderorder="right-down" width="20" height="11" tilewidth="48" tileheight="48" infinite="0" nextlayerid="4" nextobjectid="27">
  <properties>
   <property name="firefliesToWin" type="int" value="1"/>
-  <property name="initialEnergy" type="int" value="200"/>
+  <property name="initialEnergy" type="int" value="100"/>
  </properties>
  <tileset firstgid="1" source="main_tiles.tsx"/>
  <layer id="1" name="Tile Layer 1" width="20" height="11">

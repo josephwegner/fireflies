@@ -226,7 +226,10 @@ export class BuildingSystem implements GameSystem {
     if (builder.assignedDestination) {
       this.world.removeComponent(builder, 'assignedDestination');
     }
-    this.world.addComponent(builder, 'fleeingToGoalTag', true);
+    if (builder.path) {
+      builder.path.currentPath = [];
+      builder.path.goalPath = [];
+    }
   }
 
   private getAvailableFireflies(): Entity[] {
