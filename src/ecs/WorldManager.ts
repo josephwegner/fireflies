@@ -41,6 +41,9 @@ import { PlacementSystem } from './systems/ui/PlacementSystem';
 import { WallPlacementSystem } from './systems/ui/WallPlacementSystem';
 import { OverlaySystem } from './systems/ui/OverlaySystem';
 
+// Audio systems
+import { SoundSystem } from './systems/audio/SoundSystem';
+
 // Attack handlers
 import { AttackHandlerRegistry } from './systems/gameplay/attacks/AttackHandlerRegistry';
 
@@ -123,6 +126,7 @@ export class WorldManager {
       onNextLevel: this.config.onNextLevel,
       onRetry: this.config.onRetry
     }));
+    this.uiSystems.push(new SoundSystem(this.world, { scene: this.scene }));
 
     // ── Gameplay systems ───────────────────────────────────────────────
     this.gameplaySystems.push(new SpawnerSystem(this.world, {}));

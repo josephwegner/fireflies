@@ -1,5 +1,5 @@
 {
-    "activeFile": "level3.tmx",
+    "activeFile": "demo.tmx",
     "expandedProjectPaths": [
     ],
     "file.lastUsedOpenFilter": "All Files (*)",
@@ -42,6 +42,9 @@
             }
         },
         "level3.tmx": {
+            "expandedObjectLayers": [
+                2
+            ],
             "scale": 1.08953125,
             "selectedLayer": 1,
             "viewCenter": {
@@ -67,10 +70,10 @@
     ],
     "project": "fireflies.tiled-project",
     "recentFiles": [
-        "demo.tmx",
-        "level1.tmx",
-        "level2.tmx",
         "level3.tmx",
+        "level2.tmx",
+        "level1.tmx",
+        "demo.tmx",
         "level1.tsx"
     ],
     "tileset.lastUsedFormat": "tsx"

@@ -23,13 +23,13 @@
  <objectgroup id="2" name="entities">
   <object id="1" type="spawner" x="57.3256" y="258.255">
    <properties>
-    <property name="queue" value="[{&quot;unit&quot;:&quot;firefly&quot;,&quot;repeat&quot;:1,&quot;delayBetween&quot;:1000}]"/>
+    <property name="queue" value="[{&quot;unit&quot;:&quot;firefly&quot;,&quot;repeat&quot;:15,&quot;delayBetween&quot;:1000}]"/>
    </properties>
    <point/>
   </object>
   <object id="2" type="spawner" x="837.085" y="258.081">
    <properties>
-    <property name="queue" value="[{&quot;unit&quot;:&quot;monster&quot;,&quot;repeat&quot;:5,&quot;delayBetween&quot;:1000}]"/>
+    <property name="queue" value="[{&quot;unit&quot;:&quot;monster&quot;,&quot;repeat&quot;:15,&quot;delayBetween&quot;:1000}]"/>
    </properties>
    <point/>
   </object>
