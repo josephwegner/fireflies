@@ -1,8 +1,8 @@
-import { defineConfig } from 'vite';
+import { defineConfig, type UserConfig } from 'vite';
 import { viteStaticCopy } from 'vite-plugin-static-copy';
 import path from 'path';
 
-export default defineConfig({
+export default defineConfig(({ command }) => ({
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src')
@@ -27,6 +27,9 @@ export default defineConfig({
     sourcemap: true,
     chunkSizeWarningLimit: 1000, // Increase limit for Phaser
     rollupOptions: {
+      input: command === 'serve'
+        ? { main: path.resolve(__dirname, 'index.html'), soundboard: path.resolve(__dirname, 'soundboard.html') }
+        : { main: path.resolve(__dirname, 'index.html') },
       output: {
         manualChunks: {
           phaser: ['phaser'],
@@ -44,4 +47,4 @@ export default defineConfig({
       }
     }
   }
-});
+}));

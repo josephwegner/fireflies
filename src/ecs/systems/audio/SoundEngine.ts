@@ -1,4 +1,4 @@
-import { DRONE_FREQUENCIES } from './scales';
+import { DRONE_FREQUENCIES, SCALE_FREQUENCIES } from './scales';
 
 // ─── Audio Tuning Constants ────────────────────────────────────────────────
 // Gain values are 0–1 where ~0.1 is quiet, ~0.5 is moderate, ~1.0 is loud.
@@ -52,23 +52,23 @@ const BASS_PULSE = {
 };
 
 const WISP_PULSE = {
-  TRIANGLE_MIX: 0.5,     // triangle oscillator blended quieter than the sine
-  HIGHPASS_FREQ: 400,     // removes low-end so it doesn't clash with bass pulse
-  ATTACK: 0.005,
+  TRIANGLE_MIX: 0.05,     // triangle oscillator blended quieter than the sine
+  HIGHPASS_FREQ: 800,     // removes low-end so it doesn't clash with bass pulse
+  ATTACK: 0.01,
   SUSTAIN_END: 0.055,
   RELEASE: 0.4,
   REVERB_SEND: 0.4,
-  DEFAULT_VELOCITY: 0.35,
+  DEFAULT_VELOCITY: 0.15,
   DURATION: 0.45,
 };
 
 const SPAWN = {
   PITCH_RISE_SEMITONES: 3,  // minor third up — a small hopeful lift
   FIREFLY_VELOCITY: 0.08,
-  MONSTER_VELOCITY_MULT: 1.5,
+  MONSTER_VELOCITY_MULT: 1.2,
   MONSTER_LOWPASS: 300,      // keeps monster spawn dark and ominous
   MONSTER_PITCH_START_MULT: 1.5,  // starts a fifth above, drops down
-  MONSTER_ATTACK: 0.4,
+  MONSTER_ATTACK: 0.2,
   FIREFLY_ATTACK: 0.1,
   RELEASE: 0.5,
   REVERB_SEND_MONSTER: 0.4,
@@ -85,8 +85,8 @@ const DEATH = {
   MONSTER_LOWPASS: 400,
   MONSTER_VELOCITY: 0.15,
   MONSTER_REVERB: 0.3,
-  WISP_NOTE_1: 392.0,   // G4 — starts high
-  WISP_NOTE_2: 261.63,  // C4 — descends to root
+  WISP_NOTE_1: 192.0,   // G4 — starts high
+  WISP_NOTE_2: 161.63,  // C4 — descends to root
   WISP_VELOCITY: 0.1,
   WISP_REVERB: 0.6,
 };
@@ -156,30 +156,48 @@ const WISP_ACTIVATION = {
 
 const DRONE = {
   FADE_IN: 3,
-  INITIAL_VOLUME: 0.02,
-  OSC_GAIN: 0.05,          // per-oscillator level within the drone bus
-  LFO_RATE_1: 0.05,        // Hz — very slow breathing modulation
-  LFO_RATE_2: 0.037,       // offset from LFO_1 so the two oscillators "drift"
-  LFO_DEPTH: 0.02,         // gain modulation amount (±0.02 around OSC_GAIN)
-  TRIANGLE_GAIN: 0.02,     // C3 triangle layer — subtle texture
-  FILTER_CENTER: 200,      // lowpass on the triangle layer
-  FILTER_LFO_RATE: 0.02,   // very slow filter sweep
-  FILTER_LFO_DEPTH: 150,   // sweeps filter ±150Hz around FILTER_CENTER
-  // Intensity maps game state (0–1) to drone volume:
-  INTENSITY_MIN_VOLUME: 0.05,
-  INTENSITY_MAX_VOLUME: 0.08,  // INTENSITY_MIN + this * intensity
+  INITIAL_VOLUME: 0.3,
+  OSC_GAIN: 0.5,            // per-oscillator level within the drone bus — droneGain controls master volume
+  LFO_RATE_1: 0.05,         // Hz — very slow breathing modulation
+  LFO_RATE_2: 0.037,        // offset from LFO_1 so the two oscillators "drift"
+  LFO_DEPTH: 0.15,          // gain modulation amount (±0.15 around OSC_GAIN)
+  TRIANGLE_GAIN: 0.3,       // C3 triangle layer — subtle texture
+  FILTER_CENTER: 200,       // lowpass on the triangle layer
+  FILTER_LFO_RATE: 0.02,    // very slow filter sweep
+  FILTER_LFO_DEPTH: 150,    // sweeps filter ±150Hz around FILTER_CENTER
+  // Intensity maps game state (0–1) to drone volume (droneGain):
+  INTENSITY_MIN_VOLUME: 0.1,
+  INTENSITY_MAX_VOLUME: 0.3, // INTENSITY_MIN + this * intensity
+};
+
+const AMBIENT = {
+  MIN_INTERVAL: 1,         // seconds — minimum time between fragments
+  MAX_INTERVAL: 5,         // seconds — maximum time between fragments
+  NOTE_SPACING: 0.18,      // seconds between notes in a fragment
+  VELOCITY_BASE: 0.04,     // quiet background presence
+  VELOCITY_FIREFLY: 0.02,  // extra velocity per firefly-density point
+  ATTACK: 0.15,            // slow fade-in for dreamy quality
+  RELEASE: 4.0,            // long tail
+  DETUNE_RATIO: 1.003,     // subtle shimmer
+  BANDPASS_FREQ: 1800,
+  BANDPASS_Q: 0.8,         // wide — soft and diffuse
+  REVERB_SEND: 0.8,        // very wet
+  OCTAVE_HIGH: 1,          // firefly-heavy → octave 4-5
+  OCTAVE_LOW: 0,           // monster-heavy → octave 3-4
+  MIN_NOTES: 2,
+  MAX_NOTES: 6,
 };
 
 const TENSION = {
   BEAT_FREQ_OFFSET: 3,    // Hz — creates unsettling 3Hz beating between two close sines
   LOWPASS_FREQ: 150,       // felt-not-heard sub-bass rumble
-  MAX_GAIN: 0.04,          // at full tension (6 monsters)
+  MAX_GAIN: 0.8,          // at full tension (6 monsters)
   FADE_TIME: 3,            // seconds — used for start/stop and intensity fades
 };
 
 // ─── Voice Management ──────────────────────────────────────────────────────
 
-const MAX_VOICES = 16;
+const MAX_VOICES = 32;
 const GAIN_FLOOR = 0.001;  // exponentialRamp target — must be >0
 const LOOKAHEAD = 0.005;   // schedule voices 5ms in the future so gain automation is in place before playback
 
@@ -205,6 +223,9 @@ export class SoundEngine {
   private lastTensionTarget = -1;
   private droneActive = false;
   private initialized = false;
+  private ambientActive = false;
+  private ambientNextTime = 0;
+  private ambientMood = 0.5;
 
   constructor(audioContext: AudioContext) {
     this.ctx = audioContext;
@@ -215,7 +236,7 @@ export class SoundEngine {
 
     if (this.ctx.state === 'suspended') {
       const resume = () => {
-        this.ctx.resume();
+        this.ctx.resume().catch(() => {});
         document.removeEventListener('pointerdown', resume);
         document.removeEventListener('keydown', resume);
       };
@@ -269,21 +290,30 @@ export class SoundEngine {
   destroy(): void {
     this.stopDrone(0);
     this.stopTension(0);
+    this.stopAmbient();
 
     for (const voice of this.activeVoices) {
       this.killVoice(voice);
     }
     this.activeVoices.clear();
 
+    try { this.reverbSend?.disconnect(); } catch { /* ok */ }
+    try { this.reverbReturn?.disconnect(); } catch { /* ok */ }
+    try { this.sfxGain?.disconnect(); } catch { /* ok */ }
+    try { this.droneGain?.disconnect(); } catch { /* ok */ }
+    try { this.masterGain?.disconnect(); } catch { /* ok */ }
+
     this.initialized = false;
     this.ctx.close().catch(() => {});
   }
 
   private killVoice(voice: VoiceNode): void {
+    this.activeVoices.delete(voice);
     const fadeOut = 0.02;
     const now = this.ctx.currentTime;
+    const nodes = voice.nodes;
 
-    for (const node of voice.nodes) {
+    for (const node of nodes) {
       if (node instanceof GainNode) {
         try {
           node.gain.cancelScheduledValues(now);
@@ -302,7 +332,7 @@ export class SoundEngine {
           voice.source.stop();
         }
       } catch { /* already stopped */ }
-      for (const node of voice.nodes) {
+      for (const node of nodes) {
         try { node.disconnect(); } catch { /* already disconnected */ }
       }
     }, fadeOut * 1000 + 5);
@@ -312,7 +342,6 @@ export class SoundEngine {
     if (this.activeVoices.size >= MAX_VOICES) {
       const oldest = this.activeVoices.values().next().value!;
       this.killVoice(oldest);
-      this.activeVoices.delete(oldest);
     }
     this.activeVoices.add(voice);
   }
@@ -324,13 +353,8 @@ export class SoundEngine {
     this.activeVoices.delete(voice);
   }
 
-  private scheduleCleanup(voice: VoiceNode, duration: number): void {
-    const source = voice.source;
-    if (source instanceof OscillatorNode) {
-      source.onended = () => this.removeVoice(voice);
-    } else {
-      setTimeout(() => this.removeVoice(voice), duration * 1000);
-    }
+  private scheduleCleanup(voice: VoiceNode): void {
+    voice.source.onended = () => this.removeVoice(voice);
   }
 
   createNoiseBuffer(duration: number): AudioBuffer {
@@ -386,7 +410,7 @@ export class SoundEngine {
 
     const voice: VoiceNode = { source: osc1, nodes: [osc1, osc2, filter, gain, reverbGain] };
     this.addVoice(voice);
-    this.scheduleCleanup(voice, CHIME.DURATION);
+    this.scheduleCleanup(voice);
   }
 
   playWispActivation(): void {
@@ -433,7 +457,7 @@ export class SoundEngine {
 
       const voice: VoiceNode = { source: osc1, nodes: [osc1, osc2, filter, gain, reverbGain] };
       this.addVoice(voice);
-      this.scheduleCleanup(voice, WISP_ACTIVATION.DURATION + i * WISP_ACTIVATION.NOTE_SPACING);
+      this.scheduleCleanup(voice);
     }
   }
 
@@ -469,7 +493,7 @@ export class SoundEngine {
 
     const voice: VoiceNode = { source: osc, nodes: [osc, filter, gain, reverbGain] };
     this.addVoice(voice);
-    this.scheduleCleanup(voice, WOOD_TAP.DURATION);
+    this.scheduleCleanup(voice);
   }
 
   playBassPulse(frequency: number, velocity = BASS_PULSE.DEFAULT_VELOCITY): void {
@@ -525,7 +549,7 @@ export class SoundEngine {
 
     const voice: VoiceNode = { source: osc1, nodes: [osc1, osc2, subGain, filter, waveshaper, gain, reverbGain] };
     this.addVoice(voice);
-    this.scheduleCleanup(voice, BASS_PULSE.DURATION);
+    this.scheduleCleanup(voice);
   }
 
   playWispPulse(frequency: number, velocity = WISP_PULSE.DEFAULT_VELOCITY): void {
@@ -572,7 +596,7 @@ export class SoundEngine {
 
     const voice: VoiceNode = { source: osc1, nodes: [osc1, osc2, triGain, filter, gain, reverbGain] };
     this.addVoice(voice);
-    this.scheduleCleanup(voice, WISP_PULSE.DURATION);
+    this.scheduleCleanup(voice);
   }
 
   playSpawn(frequency: number, type: 'firefly' | 'monster', velocity = SPAWN.FIREFLY_VELOCITY): void {
@@ -608,7 +632,7 @@ export class SoundEngine {
 
       const voice: VoiceNode = { source: osc, nodes: [osc, filter, gain, reverbGain] };
       this.addVoice(voice);
-      this.scheduleCleanup(voice, SPAWN.DURATION);
+      this.scheduleCleanup(voice);
     } else {
       const osc = this.ctx.createOscillator();
       osc.type = 'sine';
@@ -634,7 +658,7 @@ export class SoundEngine {
 
       const voice: VoiceNode = { source: osc, nodes: [osc, gain, reverbGain] };
       this.addVoice(voice);
-      this.scheduleCleanup(voice, SPAWN.DURATION);
+      this.scheduleCleanup(voice);
     }
   }
 
@@ -673,7 +697,7 @@ export class SoundEngine {
 
     const voice: VoiceNode = { source: osc, nodes: [osc, gain, reverbGain] };
     this.addVoice(voice);
-    this.scheduleCleanup(voice, 0.55);
+    this.scheduleCleanup(voice);
   }
 
   private playMonsterDeath(): void {
@@ -703,7 +727,7 @@ export class SoundEngine {
 
     const voice: VoiceNode = { source: noise, nodes: [noise, filter, gain, reverbGain] };
     this.addVoice(voice);
-    this.scheduleCleanup(voice, 0.3);
+    this.scheduleCleanup(voice);
   }
 
   private playWispDeath(): void {
@@ -722,6 +746,7 @@ export class SoundEngine {
     gain1.gain.exponentialRampToValueAtTime(GAIN_FLOOR, now + 0.8);
 
     const gain2 = this.ctx.createGain();
+    gain2.gain.value = 0;
     gain2.gain.setValueAtTime(0, now + 0.15);
     gain2.gain.linearRampToValueAtTime(DEATH.WISP_VELOCITY, now + 0.2);
     gain2.gain.exponentialRampToValueAtTime(GAIN_FLOOR, now + 1.0);
@@ -742,9 +767,9 @@ export class SoundEngine {
     osc1.stop(now + 1);
     osc2.stop(now + 1.1);
 
-    const voice: VoiceNode = { source: osc1, nodes: [osc1, osc2, gain1, gain2, reverbGain] };
+    const voice: VoiceNode = { source: osc2, nodes: [osc1, osc2, gain1, gain2, reverbGain] };
     this.addVoice(voice);
-    this.scheduleCleanup(voice, 1.1);
+    this.scheduleCleanup(voice);
   }
 
   playConstruction(bright = false, velocity = CONSTRUCTION.DEFAULT_VELOCITY): void {
@@ -791,7 +816,7 @@ export class SoundEngine {
 
     const voice: VoiceNode = { source: tone, nodes: [noise, filter, noiseGain, tone, toneGain, reverbGain] };
     this.addVoice(voice);
-    this.scheduleCleanup(voice, CONSTRUCTION.DURATION);
+    this.scheduleCleanup(voice);
   }
 
   playBreak(): void {
@@ -853,15 +878,14 @@ export class SoundEngine {
 
     const voice: VoiceNode = { source: lowOsc, nodes: allNodes };
     this.addVoice(voice);
-    this.scheduleCleanup(voice, BREAK.DURATION);
+    this.scheduleCleanup(voice);
   }
 
   playMotif(notes: number[], spacing = MOTIF.DEFAULT_SPACING, velocity = MOTIF.DEFAULT_VELOCITY, reverbAmount = MOTIF.DEFAULT_REVERB): void {
     if (!this.initialized) return;
     const now = this.ctx.currentTime + LOOKAHEAD;
     const allNodes: AudioNode[] = [];
-    let firstOsc: OscillatorNode | null = null;
-    const totalDuration = (notes.length - 1) * spacing + MOTIF.LAST_NOTE_RELEASE;
+    let lastOsc: OscillatorNode | null = null;
 
     const reverbGain = this.ctx.createGain();
     reverbGain.gain.value = reverbAmount;
@@ -876,7 +900,7 @@ export class SoundEngine {
       const osc = this.ctx.createOscillator();
       osc.type = 'sine';
       osc.frequency.value = notes[i];
-      if (!firstOsc) firstOsc = osc;
+      lastOsc = osc;
 
       const gain = this.ctx.createGain();
       gain.gain.setValueAtTime(0, t);
@@ -893,16 +917,16 @@ export class SoundEngine {
       allNodes.push(osc, gain);
     }
 
-    const voice: VoiceNode = { source: firstOsc!, nodes: allNodes };
+    const voice: VoiceNode = { source: lastOsc!, nodes: allNodes };
     this.addVoice(voice);
-    this.scheduleCleanup(voice, totalDuration);
+    this.scheduleCleanup(voice);
   }
 
   playDefeatMotif(notes: number[]): void {
     if (!this.initialized) return;
     const now = this.ctx.currentTime + LOOKAHEAD;
     const allNodes: AudioNode[] = [];
-    let firstOsc: OscillatorNode | null = null;
+    let lastOsc: OscillatorNode | null = null;
 
     const reverbGain = this.ctx.createGain();
     reverbGain.gain.value = DEFEAT_MOTIF.REVERB_SEND;
@@ -915,7 +939,7 @@ export class SoundEngine {
       const osc = this.ctx.createOscillator();
       osc.type = 'sawtooth';
       osc.frequency.value = notes[i] * Math.pow(2, DEFEAT_MOTIF.DETUNE_CENTS / 1200);
-      if (!firstOsc) firstOsc = osc;
+      lastOsc = osc;
 
       const filter = this.ctx.createBiquadFilter();
       filter.type = 'lowpass';
@@ -936,9 +960,9 @@ export class SoundEngine {
       allNodes.push(osc, filter, gain);
     }
 
-    const voice: VoiceNode = { source: firstOsc!, nodes: allNodes };
+    const voice: VoiceNode = { source: lastOsc!, nodes: allNodes };
     this.addVoice(voice);
-    this.scheduleCleanup(voice, notes.length * DEFEAT_MOTIF.SPACING + DEFEAT_MOTIF.RELEASE + 0.2);
+    this.scheduleCleanup(voice);
   }
 
   // ─── Drone system ────────────────────────────────────────────────────────
@@ -1020,27 +1044,32 @@ export class SoundEngine {
     if (!this.droneActive) return;
     this.droneActive = false;
 
+    const oscs = this.droneOscillators;
+    const lfos = this.droneLFOs;
+    const nodes = this.droneNodes;
+    this.droneOscillators = [];
+    this.droneLFOs = [];
+    this.droneNodes = [];
+
     if (fadeTime > 0) {
+      // setTargetAtTime time constant: reaches ~95% of target in 3× the constant
       this.droneGain.gain.setTargetAtTime(0, this.ctx.currentTime, fadeTime / 3);
-      setTimeout(() => this.cleanupDrone(), fadeTime * 1000 + 100);
+      setTimeout(() => this.cleanupDroneNodes(oscs, lfos, nodes), fadeTime * 1000 + 100);
     } else {
       this.droneGain.gain.value = 0;
-      this.cleanupDrone();
+      this.cleanupDroneNodes(oscs, lfos, nodes);
     }
 
     this.stopTension(0);
   }
 
-  private cleanupDrone(): void {
-    for (const osc of [...this.droneOscillators, ...this.droneLFOs]) {
+  private cleanupDroneNodes(oscs: OscillatorNode[], lfos: OscillatorNode[], nodes: AudioNode[]): void {
+    for (const osc of [...oscs, ...lfos]) {
       try { osc.stop(); osc.disconnect(); } catch { /* ok */ }
     }
-    for (const node of this.droneNodes) {
+    for (const node of nodes) {
       try { node.disconnect(); } catch { /* ok */ }
     }
-    this.droneOscillators = [];
-    this.droneLFOs = [];
-    this.droneNodes = [];
   }
 
   setDroneIntensity(intensity: number): void {
@@ -1101,10 +1130,14 @@ export class SoundEngine {
   private stopTension(fadeTime: number): void {
     if (!this.tensionGain) return;
 
+    const oscs = this.tensionOscillators;
+    const tg = this.tensionGain;
+    this.tensionOscillators = [];
+    this.tensionGain = null;
+    this.lastTensionTarget = -1;
+
     if (fadeTime > 0) {
-      this.tensionGain.gain.setTargetAtTime(0, this.ctx.currentTime, fadeTime / 3);
-      const oscs = this.tensionOscillators;
-      const tg = this.tensionGain;
+      tg.gain.setTargetAtTime(0, this.ctx.currentTime, fadeTime / 3);
       setTimeout(() => {
         for (const osc of oscs) {
           try { osc.stop(); osc.disconnect(); } catch { /* ok */ }
@@ -1112,18 +1145,92 @@ export class SoundEngine {
         try { tg.disconnect(); } catch { /* ok */ }
       }, fadeTime * 1000 + 100);
     } else {
-      for (const osc of this.tensionOscillators) {
+      for (const osc of oscs) {
         try { osc.stop(); osc.disconnect(); } catch { /* ok */ }
       }
-      try { this.tensionGain.disconnect(); } catch { /* ok */ }
+      try { tg.disconnect(); } catch { /* ok */ }
     }
+  }
 
-    this.tensionOscillators = [];
-    this.tensionGain = null;
-    this.lastTensionTarget = -1;
+  startAmbient(): void {
+    this.ambientActive = true;
+    this.ambientNextTime = this.ctx.currentTime + 2;
+  }
+
+  stopAmbient(): void {
+    this.ambientActive = false;
+  }
+
+  setAmbientMood(fireflyRatio: number): void {
+    this.ambientMood = Math.max(0, Math.min(1, fireflyRatio));
   }
 
   update(_delta: number): void {
-    // Drone evolution is handled via setDroneIntensity/setTensionLevel calls from SoundSystem
+    if (!this.initialized || !this.ambientActive) return;
+
+    if (this.ctx.currentTime >= this.ambientNextTime) {
+      this.playAmbientFragment();
+      const interval = AMBIENT.MIN_INTERVAL +
+        Math.random() * (AMBIENT.MAX_INTERVAL - AMBIENT.MIN_INTERVAL);
+      this.ambientNextTime = this.ctx.currentTime + interval;
+    }
+  }
+
+  private playAmbientFragment(): void {
+    const now = this.ctx.currentTime + LOOKAHEAD;
+    const noteCount = AMBIENT.MIN_NOTES +
+      Math.floor(Math.random() * (AMBIENT.MAX_NOTES - AMBIENT.MIN_NOTES + 1));
+
+    const octave = AMBIENT.OCTAVE_LOW + this.ambientMood * (AMBIENT.OCTAVE_HIGH - AMBIENT.OCTAVE_LOW);
+    const octaveShift = Math.pow(2, octave);
+    const velocity = AMBIENT.VELOCITY_BASE + this.ambientMood * AMBIENT.VELOCITY_FIREFLY;
+
+    const startIdx = Math.floor(Math.random() * SCALE_FREQUENCIES.length);
+    const direction = Math.random() > 0.5 ? 1 : -1;
+
+    for (let i = 0; i < noteCount; i++) {
+      const noteIdx = ((startIdx + i * direction) % SCALE_FREQUENCIES.length + SCALE_FREQUENCIES.length) % SCALE_FREQUENCIES.length;
+      const freq = SCALE_FREQUENCIES[noteIdx] * octaveShift;
+      const startTime = now + i * AMBIENT.NOTE_SPACING;
+
+      const osc1 = this.ctx.createOscillator();
+      osc1.type = 'sine';
+      osc1.frequency.value = freq;
+
+      const osc2 = this.ctx.createOscillator();
+      osc2.type = 'sine';
+      osc2.frequency.value = freq * AMBIENT.DETUNE_RATIO;
+
+      const filter = this.ctx.createBiquadFilter();
+      filter.type = 'bandpass';
+      filter.frequency.value = AMBIENT.BANDPASS_FREQ;
+      filter.Q.value = AMBIENT.BANDPASS_Q;
+
+      const gain = this.ctx.createGain();
+      gain.gain.value = 0;
+      gain.gain.setValueAtTime(0, startTime);
+      gain.gain.linearRampToValueAtTime(velocity, startTime + AMBIENT.ATTACK);
+      gain.gain.exponentialRampToValueAtTime(GAIN_FLOOR, startTime + AMBIENT.ATTACK + AMBIENT.RELEASE);
+
+      osc1.connect(filter);
+      osc2.connect(filter);
+      filter.connect(gain);
+      gain.connect(this.sfxGain);
+
+      const reverbGain = this.ctx.createGain();
+      reverbGain.gain.value = AMBIENT.REVERB_SEND;
+      gain.connect(reverbGain);
+      reverbGain.connect(this.reverbSend);
+
+      const duration = AMBIENT.ATTACK + AMBIENT.RELEASE + 0.1;
+      osc1.start(startTime);
+      osc2.start(startTime);
+      osc1.stop(startTime + duration);
+      osc2.stop(startTime + duration);
+
+      const voice: VoiceNode = { source: osc1, nodes: [osc1, osc2, filter, gain, reverbGain] };
+      this.addVoice(voice);
+      this.scheduleCleanup(voice);
+    }
   }
 }

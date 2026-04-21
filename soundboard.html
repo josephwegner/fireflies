@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sound Board — Dev</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: #0A1824;
+      color: #c8d6e5;
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      padding: 2rem;
+    }
+    h1 {
+      color: #f5cd79;
+      margin-bottom: 0.5rem;
+      font-size: 1.4rem;
+    }
+    .subtitle {
+      color: #778ca3;
+      margin-bottom: 2rem;
+      font-size: 0.85rem;
+    }
+    .section {
+      margin-bottom: 2rem;
+    }
+    .section h2 {
+      color: #78e08f;
+      font-size: 1rem;
+      margin-bottom: 0.75rem;
+      border-bottom: 1px solid #1e3a50;
+      padding-bottom: 0.25rem;
+    }
+    .buttons {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+    }
+    button {
+      background: #1e3a50;
+      color: #c8d6e5;
+      border: 1px solid #2c5270;
+      border-radius: 6px;
+      padding: 0.6rem 1.2rem;
+      font-size: 0.85rem;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    button:hover {
+      background: #2c5270;
+      border-color: #78e08f;
+      color: #fff;
+    }
+    button:active {
+      background: #78e08f;
+      color: #0A1824;
+    }
+    button.toggle {
+      position: relative;
+    }
+    button.toggle.active {
+      background: #78e08f;
+      color: #0A1824;
+      border-color: #78e08f;
+    }
+    .slider-group {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      margin-top: 0.5rem;
+    }
+    .slider-group label {
+      font-size: 0.8rem;
+      color: #778ca3;
+      min-width: 120px;
+    }
+    .slider-group input[type="range"] {
+      flex: 1;
+      max-width: 300px;
+      accent-color: #78e08f;
+    }
+    .slider-group .value {
+      font-size: 0.8rem;
+      color: #f5cd79;
+      min-width: 40px;
+    }
+    #status {
+      position: fixed;
+      bottom: 1rem;
+      right: 1rem;
+      background: #1e3a50;
+      border: 1px solid #2c5270;
+      border-radius: 6px;
+      padding: 0.5rem 1rem;
+      font-size: 0.75rem;
+      color: #778ca3;
+    }
+  </style>
+</head>
+<body>
+  <h1>Sound Board</h1>
+  <p class="subtitle">Click any button to trigger the sound. Requires a click to unlock AudioContext.</p>
+
+  <div class="section">
+    <h2>Combat</h2>
+    <div class="buttons">
+      <button data-sound="woodTap">Firefly Dash (Wood Tap)</button>
+      <button data-sound="bassPulse">Monster AoE (Bass Pulse)</button>
+      <button data-sound="wispPulse">Wisp Pulse</button>
+    </div>
+  </div>
+
+  <div class="section">
+    <h2>Placement</h2>
+    <div class="buttons">
+      <button data-sound="chime">Wisp Placement (Chime)</button>
+      <button data-sound="construction">Wall Placement</button>
+      <button data-sound="constructionBright">Wall Activated</button>
+    </div>
+  </div>
+
+  <div class="section">
+    <h2>Entity Lifecycle</h2>
+    <div class="buttons">
+      <button data-sound="fireflySpawn">Firefly Spawn</button>
+      <button data-sound="monsterSpawn">Monster Spawn</button>
+      <button data-sound="fireflyDeath">Firefly Death</button>
+      <button data-sound="monsterDeath">Monster Death</button>
+      <button data-sound="wispDeath">Wisp Death</button>
+      <button data-sound="wispActivation">Wisp Activation</button>
+    </div>
+  </div>
+
+  <div class="section">
+    <h2>Events</h2>
+    <div class="buttons">
+      <button data-sound="collect">Firefly Collected</button>
+      <button data-sound="victory">Victory</button>
+      <button data-sound="defeat">Defeat</button>
+      <button data-sound="wallBreak">Wall Break</button>
+    </div>
+  </div>
+
+  <div class="section">
+    <h2>Ambient / Drone</h2>
+    <div class="buttons">
+      <button data-sound="droneToggle" class="toggle">Drone</button>
+      <button data-sound="tensionToggle" class="toggle">Tension</button>
+      <button data-sound="ambientToggle" class="toggle">Ambient Fragments</button>
+    </div>
+    <div class="slider-group">
+      <label>Drone Intensity</label>
+      <input type="range" id="droneIntensity" min="0" max="1" step="0.01" value="0.5">
+      <span class="value" id="droneIntensityVal">0.50</span>
+    </div>
+    <div class="slider-group">
+      <label>Tension Level</label>
+      <input type="range" id="tensionLevel" min="0" max="1" step="0.01" value="0.5">
+      <span class="value" id="tensionLevelVal">0.50</span>
+    </div>
+    <div class="slider-group">
+      <label>Ambient Mood</label>
+      <input type="range" id="ambientMood" min="0" max="1" step="0.01" value="0.5">
+      <span class="value" id="ambientMoodVal">0.50</span>
+    </div>
+  </div>
+
+  <div id="status">AudioContext: not started</div>
+
+  <script type="module" src="/src/soundboard.ts"></script>
+</body>
+</html>

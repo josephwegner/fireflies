@@ -33,5 +33,7 @@ export function motifNotes(pattern: 'victory' | 'defeat' | 'collect'): number[] 
       return [233.08, 155.56]; // Bb3, Eb3
     case 'collect':
       return [261.63, 349.23, 392.0]; // C4, F4, G4
+    default:
+      return pattern satisfies never;
   }
 }

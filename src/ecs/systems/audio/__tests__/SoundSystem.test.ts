@@ -25,6 +25,9 @@ function createMockSoundEngine(): SoundEngine {
     stopDrone: vi.fn(),
     setDroneIntensity: vi.fn(),
     setTensionLevel: vi.fn(),
+    startAmbient: vi.fn(),
+    stopAmbient: vi.fn(),
+    setAmbientMood: vi.fn(),
   } as unknown as SoundEngine;
 }
 
@@ -203,21 +206,24 @@ describe('SoundSystem', () => {
   });
 
   describe('level flow events', () => {
-    it('starts drone on game started', () => {
+    it('starts drone and ambient on game started', () => {
       gameEvents.emit(GameEvents.GAME_STARTED, {});
       expect(engine.startDrone).toHaveBeenCalled();
+      expect(engine.startAmbient).toHaveBeenCalled();
     });
 
-    it('plays victory motif on level won', () => {
+    it('stops ambient on level won', () => {
       gameEvents.emit(GameEvents.LEVEL_WON, { firefliesCollected: 5 });
       expect(engine.playMotif).toHaveBeenCalled();
       expect(engine.stopDrone).toHaveBeenCalled();
+      expect(engine.stopAmbient).toHaveBeenCalled();
     });
 
-    it('plays defeat motif on level lost', () => {
+    it('stops ambient on level lost', () => {
       gameEvents.emit(GameEvents.LEVEL_LOST, { reason: 'monster_reached_goal' });
       expect(engine.playDefeatMotif).toHaveBeenCalled();
       expect(engine.stopDrone).toHaveBeenCalled();
+      expect(engine.stopAmbient).toHaveBeenCalled();
     });
   });
 
@@ -259,6 +265,18 @@ describe('SoundSystem', () => {
       system.update(16, 0);
 
       expect(engine.setTensionLevel).toHaveBeenCalledWith(0);
+    });
+
+    it('sets ambient mood based on friendly vs total entity ratio', () => {
+      gameEvents.emit(GameEvents.GAME_STARTED, {});
+      world.add({ fireflyTag: true, position: { x: 0, y: 0 } });
+      world.add({ monsterTag: true, position: { x: 0, y: 0 } });
+
+      system.update(16, 0);
+
+      expect(engine.setAmbientMood).toHaveBeenCalled();
+      const mood = (engine.setAmbientMood as Mock).mock.calls[0][0];
+      expect(mood).toBe(0.5);
     });
 
     it('stops updating after level won', () => {

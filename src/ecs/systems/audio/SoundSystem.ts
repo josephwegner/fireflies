@@ -54,7 +54,7 @@ export class SoundSystem implements GameSystem {
   }
 
   private setupDebug(): void {
-    const categories = ['attack', 'spawn', 'death', 'placement', 'activation', 'wall', 'motif', 'drone', 'tension'];
+    const categories = ['attack', 'spawn', 'death', 'placement', 'activation', 'wall', 'motif', 'drone', 'tension', 'ambient'];
     for (const cat of categories) this.muted[cat] = false;
 
     (window as any).sound = {
@@ -144,6 +144,12 @@ export class SoundSystem implements GameSystem {
       this.engine.setTensionLevel(tensionLevel);
     }
 
+    const friendlyCount = fireflyCount + wispCount;
+    const fireflyRatio = totalEntities > 0 ? friendlyCount / totalEntities : 0.5;
+    if (!this.muted.ambient) {
+      this.engine.setAmbientMood(fireflyRatio);
+    }
+
     this.engine.update(_delta);
   }
 
@@ -221,18 +227,23 @@ export class SoundSystem implements GameSystem {
     this.gameActive = false;
     this.engine.playMotif(motifNotes('victory'), 0.2, 0.15, 0.8);
     this.engine.stopDrone(3);
+    this.engine.stopAmbient();
   }
 
   private onLevelLost(_data: GameEventPayloads[typeof GameEvents.LEVEL_LOST]): void {
     this.gameActive = false;
     this.engine.playDefeatMotif(motifNotes('defeat'));
     this.engine.stopDrone(3);
+    this.engine.stopAmbient();
   }
 
   private onGameStarted(_data: GameEventPayloads[typeof GameEvents.GAME_STARTED]): void {
     this.gameActive = true;
     if (!this.muted.drone) {
       this.engine.startDrone(3);
+    }
+    if (!this.muted.ambient) {
+      this.engine.startAmbient();
     }
   }
 }
