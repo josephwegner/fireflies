@@ -6,14 +6,19 @@ import { gameEvents, GameEvents } from '@/events';
 import { Vector, SpatialGrid, getEntityType } from '@/utils';
 import { ENTITY_CONFIG } from '@/config';
 import { pointToSegmentDistance } from '@/utils';
-import { AttackHandlerRegistry } from './attacks/AttackHandlerRegistry';
-import type { AttackContext } from './attacks/AttackHandler';
+import type { AttackContext, AttackHandler } from './attacks/AttackHandler';
+import { DashAttackHandler } from './attacks/DashAttackHandler';
+import { PulseAttackHandler } from './attacks/PulseAttackHandler';
 
 type Combatant = With<Entity, 'combat' | 'health' | 'position'>;
 
 export class CombatSystem implements GameSystem {
   private combatants: Query<Combatant>;
   private spatialGrid: SpatialGrid;
+  private attackHandlers: Record<string, AttackHandler> = {
+    dash: new DashAttackHandler(),
+    pulse: new PulseAttackHandler(),
+  };
 
   constructor(private world: GameWorld, config: Record<string, any>) {
     this.combatants = world.with('combat', 'health', 'position');
@@ -108,7 +113,7 @@ export class CombatSystem implements GameSystem {
     target: Entity,
     dt: number
   ): void {
-    const handler = AttackHandlerRegistry.get(combat.attackPattern.handlerType);
+    const handler = this.attackHandlers[combat.attackPattern.handlerType];
 
     switch (combat.state) {
       case CombatState.IDLE:
@@ -223,7 +228,7 @@ export class CombatSystem implements GameSystem {
 
   private cleanupCombat(entity: Entity, combat: Entity['combat']): void {
     if (!combat) return;
-    const handler = AttackHandlerRegistry.get(combat.attackPattern.handlerType);
+    const handler = this.attackHandlers[combat.attackPattern.handlerType];
     if (handler?.cleanup) {
       const context: AttackContext = {
         attacker: entity,
