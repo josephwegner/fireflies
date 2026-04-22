@@ -4,6 +4,7 @@ import type { GameSystem } from '@/ecs/GameSystem';
 import { gameEvents, GameEvents } from '@/events';
 import { GAME_CONFIG } from '@/config';
 import { logger } from '@/utils/logger';
+import { Vector } from '@/utils';
 
 type GoalEntity = With<Entity, 'fireflyGoal' | 'renderable' | 'position' | 'goalTag'>;
 
@@ -46,7 +47,7 @@ export class FireflyGoalSystem implements GameSystem {
 
       const dx = fireflyEntity.position.x - goalPosition.x;
       const dy = fireflyEntity.position.y - goalPosition.y;
-      const distance = Math.sqrt(dx * dx + dy * dy);
+      const distance = Vector.length(dx, dy);
 
       if (distance < 50) {
         this.collectFirefly(goalEntity, fireflyEntity);
@@ -66,7 +67,7 @@ export class FireflyGoalSystem implements GameSystem {
     const goalPosition = fireflyGoal.position;
     const dx = position.x - goalPosition.x;
     const dy = position.y - goalPosition.y;
-    const distance = Math.sqrt(dx * dx + dy * dy);
+    const distance = Vector.length(dx, dy);
 
     if (distance < 50) {
       this.collectFirefly(fireflyGoal, entity);

@@ -3,6 +3,7 @@ import type { Entity, GameWorld } from '@/ecs/Entity';
 import type { GameSystem } from '@/ecs/GameSystem';
 import { PHYSICS_CONFIG } from '@/config';
 import { gameEvents, GameEvents } from '@/events';
+import { Vector, clearPath } from '@/utils';
 
 export class RedirectSystem implements GameSystem {
   private movers: Query<With<Entity, 'position' | 'velocity' | 'path'>>;
@@ -42,7 +43,7 @@ export class RedirectSystem implements GameSystem {
 
         const dx = mover.position.x - redirect.position.x;
         const dy = mover.position.y - redirect.position.y;
-        const dist = Math.sqrt(dx * dx + dy * dy);
+        const dist = Vector.length(dx, dy);
         const inRadius = dist <= redirect.redirect.radius;
 
         if (!inRadius) {
@@ -60,8 +61,7 @@ export class RedirectSystem implements GameSystem {
           y: exit.y + (Math.random() * 2 - 1) * jitter
         });
 
-        mover.path.currentPath = [];
-        mover.path.goalPath = [];
+        clearPath(mover);
 
         break;
       }

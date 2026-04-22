@@ -2,6 +2,7 @@ import type { Query, With } from 'miniplex';
 import type { Entity, GameWorld } from '@/ecs/Entity';
 import type { GameSystem } from '@/ecs/GameSystem';
 import { gameEvents, GameEvents } from '@/events';
+import { Vector } from '@/utils';
 
 export class DefeatSystem implements GameSystem {
   private monsters: Query<With<Entity, 'monsterTag' | 'position'>>;
@@ -51,7 +52,7 @@ export class DefeatSystem implements GameSystem {
       for (const monster of this.monsters) {
         const dx = monster.position.x - goal.position.x;
         const dy = monster.position.y - goal.position.y;
-        const dist = Math.sqrt(dx * dx + dy * dy);
+        const dist = Vector.length(dx, dy);
 
         if (dist < 50) {
           this.defeated = true;

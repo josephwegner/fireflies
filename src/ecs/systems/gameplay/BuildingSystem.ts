@@ -3,6 +3,7 @@ import type { Entity, GameWorld, BuildSite } from '@/ecs/Entity';
 import type { GameSystem } from '@/ecs/GameSystem';
 import { PHYSICS_CONFIG } from '@/config';
 import { gameEvents, GameEvents } from '@/events';
+import { clearPath } from '@/utils';
 
 type BuildableEntity = With<Entity, 'buildable'>;
 
@@ -104,10 +105,7 @@ export class BuildingSystem implements GameSystem {
             builder.assignedDestination.holding = false;
           }
           // Clear path so destination system re-navigates
-          if (builder.path) {
-            builder.path.currentPath = [];
-            builder.path.goalPath = [];
-          }
+          clearPath(builder);
         } else {
           // No more sites to build, release
           this.releaseBuilder(builder);
@@ -215,10 +213,7 @@ export class BuildingSystem implements GameSystem {
       targetPosition: { x: site.x, y: site.y }
     });
     // Clear path so destination system navigates to site
-    if (builder.path) {
-      builder.path.currentPath = [];
-      builder.path.goalPath = [];
-    }
+    clearPath(builder);
   }
 
   private releaseBuilder(builder: Entity): void {
@@ -226,10 +221,7 @@ export class BuildingSystem implements GameSystem {
     if (builder.assignedDestination) {
       this.world.removeComponent(builder, 'assignedDestination');
     }
-    if (builder.path) {
-      builder.path.currentPath = [];
-      builder.path.goalPath = [];
-    }
+    clearPath(builder);
   }
 
   private getAvailableFireflies(): Entity[] {
