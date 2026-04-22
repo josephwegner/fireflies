@@ -3,7 +3,7 @@ import type { Entity, GameWorld } from '@/ecs/Entity';
 import type { GameSystem } from '@/ecs/GameSystem';
 import { GAME_CONFIG } from '@/config';
 import { gameEvents, GameEvents } from '@/events';
-import { lineSegmentToRect, pointToSegmentDistance } from '@/utils';
+import { lineSegmentToRect, pointToSegmentDistance, clearPath } from '@/utils';
 
 export class WallActivationSystem implements GameSystem {
   private world: GameWorld;
@@ -80,11 +80,7 @@ export class WallActivationSystem implements GameSystem {
       pos.x += nx * pushDir * pushDist;
       pos.y += ny * pushDir * pushDist;
 
-      // Clear paths so entity re-navigates
-      if (entity.path) {
-        entity.path.currentPath = [];
-        entity.path.goalPath = [];
-      }
+      clearPath(entity);
     }
   }
 

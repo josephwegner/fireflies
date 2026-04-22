@@ -3,7 +3,7 @@ import type { Entity, GameWorld } from '@/ecs/Entity';
 import type { GameSystem } from '@/ecs/GameSystem';
 import { GAME_CONFIG } from '@/config';
 import { gameEvents, GameEvents } from '@/events';
-import { pointToSegmentDistance } from '@/utils';
+import { pointToSegmentDistance, clearPath } from '@/utils';
 
 export class WallBreakingSystem implements GameSystem {
   private wallAttackers: Query<With<Entity, 'wallAttackTarget' | 'position' | 'monsterTag'>>;
@@ -30,10 +30,7 @@ export class WallBreakingSystem implements GameSystem {
         if (entity.target?.target === wall) {
           this.world.removeComponent(entity, 'target');
         }
-        if (entity.path) {
-          entity.path.currentPath = [];
-          entity.path.goalPath = [];
-        }
+        clearPath(entity);
         continue;
       }
 

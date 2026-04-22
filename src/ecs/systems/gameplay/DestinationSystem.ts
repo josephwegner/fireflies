@@ -3,6 +3,7 @@ import type { Entity, GameWorld, Team } from '@/ecs/Entity';
 import type { GameSystem } from '@/ecs/GameSystem';
 import { PHYSICS_CONFIG, GAME_CONFIG } from '@/config';
 import { gameEvents, GameEvents } from '@/events';
+import { clearPath } from '@/utils';
 
 interface RecruitmentState {
   lodge: Entity;
@@ -371,10 +372,7 @@ export class DestinationSystem implements GameSystem {
       this.world.addComponent(entity, 'assignedDestination', { target: lodge });
 
       // Clear paths so navigation picks up the new assignment
-      if (entity.path) {
-        entity.path.currentPath = [];
-        entity.path.goalPath = [];
-      }
+      clearPath(entity);
 
       const entityId = this.world.id(entity);
       if (entityId !== undefined) {
@@ -387,10 +385,7 @@ export class DestinationSystem implements GameSystem {
 
   private clearAllPaths(): void {
     for (const mover of this.movers) {
-      if (mover.path) {
-        mover.path.currentPath = [];
-        mover.path.goalPath = [];
-      }
+      clearPath(mover);
       const entityId = this.world.id(mover);
       if (entityId !== undefined) {
         this.cancelNavigationRequest(entityId);

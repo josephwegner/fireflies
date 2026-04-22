@@ -3,7 +3,7 @@ import type { Entity, GameWorld } from '@/ecs/Entity';
 import type { GameSystem } from '@/ecs/GameSystem';
 import { gameEvents, GameEvents } from '@/events';
 import { ENTITY_CONFIG } from '@/config';
-import { teamForUnitType } from '@/utils';
+import { teamForUnitType, clearPath } from '@/utils';
 import { logger } from '@/utils/logger';
 
 export class VictorySystem implements GameSystem {
@@ -64,8 +64,7 @@ export class VictorySystem implements GameSystem {
         this.world.removeComponent(firefly, 'assignedDestination');
       }
 
-      firefly.path.currentPath = [];
-      firefly.path.goalPath = [];
+      clearPath(firefly);
 
       this.world.addComponent(firefly, 'fleeingToGoalTag', true);
     }

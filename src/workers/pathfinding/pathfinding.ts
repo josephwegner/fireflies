@@ -1,13 +1,17 @@
 import { Point, NavMesh } from './types';
 
+function distance(x1: number, y1: number, x2: number, y2: number): number {
+  const dx = x2 - x1;
+  const dy = y2 - y1;
+  return Math.sqrt(dx * dx + dy * dy);
+}
+
 function snapToMesh(navMesh: NavMesh, point: Point, label: string): { snapped: Point; wasInMesh: boolean; didSnap: boolean } {
   if (navMesh.isPointInMesh(point)) return { snapped: point, wasInMesh: true, didSnap: false };
   const vec = {
     ...point,
     distance(other: Point) {
-      const dx = point.x - other.x;
-      const dy = point.y - other.y;
-      return Math.sqrt(dx * dx + dy * dy);
+      return distance(point.x, point.y, other.x, other.y);
     }
   };
   const closest = navMesh.findClosestMeshPoint(vec as any, 20);
@@ -24,7 +28,7 @@ function snapToMesh(navMesh: NavMesh, point: Point, label: string): { snapped: P
     if (centroid) {
       const dx = centroid.x - snapped.x;
       const dy = centroid.y - snapped.y;
-      const dist = Math.sqrt(dx * dx + dy * dy);
+      const dist = distance(snapped.x, snapped.y, centroid.x, centroid.y);
       if (dist > 0) {
         snapped.x += (dx / dist) * 1;
         snapped.y += (dy / dist) * 1;
