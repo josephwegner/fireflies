@@ -5,8 +5,6 @@ import { gameEvents, GameEvents } from '@/events';
 import { PHYSICS_CONFIG } from '@/config';
 import { Vector } from '@/utils';
 
-const STRUCTURE_DEATH_DURATION = 800;
-
 interface DyingEntity {
   entity: Entity;
   timeElapsed: number;
@@ -121,7 +119,7 @@ export class DamageSystem implements GameSystem {
     this.dyingEntities.forEach((dying, index) => {
       dying.timeElapsed += dt;
       const isStructure = dying.entity.physicsBody?.isStatic;
-      const duration = isStructure ? STRUCTURE_DEATH_DURATION : PHYSICS_CONFIG.DEATH_ANIMATION_DURATION;
+      const duration = isStructure ? PHYSICS_CONFIG.STRUCTURE_DEATH_ANIMATION_DURATION : PHYSICS_CONFIG.DEATH_ANIMATION_DURATION;
 
       if (dying.entity.renderable) {
         if (isStructure) {
@@ -149,15 +147,15 @@ export class DamageSystem implements GameSystem {
     const progress = dying.timeElapsed / duration;
     const renderable = dying.entity.renderable!;
 
-    if (progress < 0.4) {
+    if (progress < PHYSICS_CONFIG.STRUCTURE_DEATH_FLICKER_END) {
       const flicker = Math.sin(dying.timeElapsed * 0.15) * 0.5 + 0.5;
       renderable.alpha = 0.3 + flicker * 0.7;
-    } else if (progress < 0.7) {
-      const shrinkProgress = (progress - 0.4) / 0.3;
+    } else if (progress < PHYSICS_CONFIG.STRUCTURE_DEATH_SHRINK_END) {
+      const shrinkProgress = (progress - PHYSICS_CONFIG.STRUCTURE_DEATH_FLICKER_END) / 0.3;
       renderable.scale = Math.max(0.1, 1 - shrinkProgress * 0.9);
       renderable.alpha = 1 - shrinkProgress * 0.3;
     } else {
-      const fadeProgress = (progress - 0.7) / 0.3;
+      const fadeProgress = (progress - PHYSICS_CONFIG.STRUCTURE_DEATH_SHRINK_END) / 0.3;
       renderable.alpha = Math.max(0, 0.7 * (1 - fadeProgress));
       renderable.scale = Math.max(0.05, 0.1 * (1 - fadeProgress));
     }

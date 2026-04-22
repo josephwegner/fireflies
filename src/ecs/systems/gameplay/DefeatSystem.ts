@@ -2,6 +2,7 @@ import type { Query, With } from 'miniplex';
 import type { Entity, GameWorld } from '@/ecs/Entity';
 import type { GameSystem } from '@/ecs/GameSystem';
 import { gameEvents, GameEvents } from '@/events';
+import { PHYSICS_CONFIG } from '@/config';
 import { Vector } from '@/utils';
 
 export class DefeatSystem implements GameSystem {
@@ -54,7 +55,7 @@ export class DefeatSystem implements GameSystem {
         const dy = monster.position.y - goal.position.y;
         const dist = Vector.length(dx, dy);
 
-        if (dist < 50) {
+        if (dist < PHYSICS_CONFIG.GOAL_ARRIVAL_DISTANCE) {
           this.defeated = true;
           gameEvents.emit(GameEvents.LEVEL_LOST, { reason: 'monster_reached_goal' });
           return;

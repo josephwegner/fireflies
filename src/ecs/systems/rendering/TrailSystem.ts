@@ -2,6 +2,7 @@ import type { Query, With } from 'miniplex';
 import Phaser from 'phaser';
 import type { Entity, GameWorld, Trail } from '@/ecs/Entity';
 import type { GameSystem } from '@/ecs/GameSystem';
+import { PHYSICS_CONFIG } from '@/config';
 
 type TrailedEntity = With<Entity, 'position' | 'velocity' | 'trail'>;
 
@@ -26,7 +27,7 @@ export class TrailSystem implements GameSystem {
 
       if (!trail.enabled || !trail.config) continue;
 
-      const isMoving = Math.abs(velocity.vx) > 0.1 || Math.abs(velocity.vy) > 0.1;
+      const isMoving = Math.abs(velocity.vx) > PHYSICS_CONFIG.TRAIL_VELOCITY_THRESHOLD || Math.abs(velocity.vy) > PHYSICS_CONFIG.TRAIL_VELOCITY_THRESHOLD;
 
       if (isMoving) {
         trail.points.push({ x: position.x, y: position.y, timestamp: time });

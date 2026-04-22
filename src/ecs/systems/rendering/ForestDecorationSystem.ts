@@ -4,6 +4,8 @@ import type { GameSystem } from '@/ecs/GameSystem';
 import { GAME_CONFIG } from '@/config';
 import { logger } from '@/utils/logger';
 
+const TREE_SPAWN_THRESHOLD = 0.3;
+
 export class ForestDecorationSystem implements GameSystem {
   private scene: Phaser.Scene;
   private map: number[][];
@@ -33,7 +35,7 @@ export class ForestDecorationSystem implements GameSystem {
     for (let row = 0; row < this.map.length; row++) {
       for (let col = 0; col < this.map[row].length; col++) {
         if (this.map[row][col] === 0) {
-          if (Math.random() > 0.3) {
+          if (Math.random() > TREE_SPAWN_THRESHOLD) {
             const x = col * TILE + TILE / 2;
             const y = (row - 1) * TILE + TILE / 2;
 

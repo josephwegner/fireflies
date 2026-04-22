@@ -4,6 +4,8 @@ import { gameEvents, GameEvents } from '@/events/GameEvents';
 import type { Entity } from '@/ecs/Entity';
 import { pointToSegmentDistance } from '@/utils';
 
+const PULSE_BASE_SPEED = 16;
+
 export class PulseAttackHandler implements AttackHandler {
   onCharging(context: AttackContext): void {
     const { combat, target, position, velocity } = context;
@@ -25,7 +27,7 @@ export class PulseAttackHandler implements AttackHandler {
 
         if (Math.abs(distanceToTarget - optimalDistance) > tolerance) {
           const direction = Vector.normalize(dx, dy);
-          const moveSpeed = 16 * (0.2 + clampedProgress * 0.6);
+          const moveSpeed = PULSE_BASE_SPEED * (0.2 + clampedProgress * 0.6);
           const shouldMoveCloser = distanceToTarget > optimalDistance;
           const directionMultiplier = shouldMoveCloser ? 1 : -1;
 
