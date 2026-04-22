@@ -44,9 +44,6 @@ import { OverlaySystem } from './systems/ui/OverlaySystem';
 // Audio systems
 import { SoundSystem } from './systems/audio/SoundSystem';
 
-// Attack handlers
-import { AttackHandlerRegistry } from './systems/gameplay/attacks/AttackHandlerRegistry';
-
 interface WorldManagerConfig {
   energyManager: EnergyManager;
   levelConfig: { initialEnergy: number; firefliesToWin: number; store: Record<string, { cost: number }> };
@@ -74,7 +71,6 @@ export class WorldManager {
     this.world = new World<Entity>();
     this.spatialGrid = new SpatialGrid(PHYSICS_CONFIG.SPATIAL_GRID_CELL_SIZE);
 
-    AttackHandlerRegistry.initialize();
     this.registerSystems();
   }
 

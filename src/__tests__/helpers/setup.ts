@@ -1,7 +1,6 @@
 import { World } from 'miniplex';
 import type { Entity, GameWorld } from '@/ecs/Entity';
 import { CombatSystem } from '@/ecs/systems/gameplay/CombatSystem';
-import { AttackHandlerRegistry } from '@/ecs/systems/gameplay/attacks/AttackHandlerRegistry';
 import { gameEvents } from '@/events';
 import { createTestFirefly, createTestMonster } from './entities';
 import { SpatialGrid } from '@/utils';
@@ -14,8 +13,6 @@ export interface TestSetup {
 
 export function setup(): TestSetup {
   const world = new World<Entity>();
-
-  AttackHandlerRegistry.initialize();
 
   const spatialGrid = new SpatialGrid(100);
   const combatSystem = new CombatSystem(world, { spatialGrid });

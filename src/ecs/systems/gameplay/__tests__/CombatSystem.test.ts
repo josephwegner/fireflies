@@ -5,7 +5,6 @@ import { CombatState } from '@/ecs/Entity';
 import { CombatSystem } from '../CombatSystem';
 import { gameEvents, GameEvents } from '@/events';
 import { ENTITY_CONFIG } from '@/config';
-import { AttackHandlerRegistry } from '../attacks/AttackHandlerRegistry';
 import { setup, getEntities, TestSetup, executeWithSpatialGrid } from '@/__tests__/helpers';
 import { SpatialGrid } from '@/utils';
 import { createCombatFirefly, createCombatMonster } from '@/__tests__/helpers';
@@ -41,8 +40,6 @@ describe('CombatSystem', () => {
 
   beforeEach(() => {
     world = new World<Entity>();
-
-    AttackHandlerRegistry.initialize();
 
     spatialGrid = new SpatialGrid(100);
     combatSystem = new CombatSystem(world, { spatialGrid });
@@ -897,8 +894,8 @@ describe('CombatSystem', () => {
         hasHit: false
       });
 
-      const handler = AttackHandlerRegistry.get('dash');
-      const onChargingSpy = vi.spyOn(handler!, 'onCharging');
+      const handler = (combatSystem as any).attackHandlers['dash'];
+      const onChargingSpy = vi.spyOn(handler, 'onCharging');
 
       executeWithSpatialGrid(world, spatialGrid, 16);
       combatSystem.update(16, 16);
@@ -926,8 +923,8 @@ describe('CombatSystem', () => {
         hasHit: true
       });
 
-      const handler = AttackHandlerRegistry.get('dash');
-      const onRecoveringSpy = vi.spyOn(handler!, 'onRecovering');
+      const handler = (combatSystem as any).attackHandlers['dash'];
+      const onRecoveringSpy = vi.spyOn(handler, 'onRecovering');
 
       executeWithSpatialGrid(world, spatialGrid, 16);
       combatSystem.update(16, 16);
@@ -960,8 +957,8 @@ describe('CombatSystem', () => {
         hasHit: false
       });
 
-      const handler = AttackHandlerRegistry.get('dash');
-      const cleanupSpy = vi.spyOn(handler!, 'cleanup');
+      const handler = (combatSystem as any).attackHandlers['dash'];
+      const cleanupSpy = vi.spyOn(handler, 'cleanup');
 
       executeWithSpatialGrid(world, spatialGrid, 16);
       combatSystem.update(16, 16);
@@ -984,8 +981,8 @@ describe('CombatSystem', () => {
         hasHit: true
       });
 
-      const handler = AttackHandlerRegistry.get('dash');
-      const cleanupSpy = vi.spyOn(handler!, 'cleanup');
+      const handler = (combatSystem as any).attackHandlers['dash'];
+      const cleanupSpy = vi.spyOn(handler, 'cleanup');
 
       for (let i = 0; i < 3; i++) {
         executeWithSpatialGrid(world, spatialGrid, 16);
