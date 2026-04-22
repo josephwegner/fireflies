@@ -2,7 +2,7 @@ import type { Query, With } from 'miniplex';
 import type { Entity, GameWorld, Team } from '@/ecs/Entity';
 import type { GameSystem } from '@/ecs/GameSystem';
 import { Vector, SpatialGrid } from '@/utils';
-import { pointToSegmentDistance } from '@/utils/geometry';
+import { pointToSegmentDistance } from '@/utils';
 
 type InteractiveEntity = With<Entity, 'interaction' | 'position' | 'targeting'>;
 
