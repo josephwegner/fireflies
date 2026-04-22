@@ -1,4 +1,6 @@
-export const PHYSICS_CONFIG = Object.freeze({
+import { deepFreeze } from '@/utils/deepFreeze';
+
+export const PHYSICS_CONFIG = deepFreeze({
   // Movement
   DEFAULT_SPEED: 20,
   FRICTION: 0.975,

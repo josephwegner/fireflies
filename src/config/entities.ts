@@ -1,4 +1,5 @@
 import type { Team } from '@/ecs/Entity';
+import { deepFreeze } from '@/utils/deepFreeze';
 
 export interface EntityConfig {
   type: string;
@@ -25,8 +26,8 @@ export interface EntityConfig {
   };
 }
 
-export const ENTITY_CONFIG: Readonly<Record<string, Readonly<EntityConfig>>> = Object.freeze({
-  firefly: Object.freeze({
+export const ENTITY_CONFIG: Readonly<Record<string, Readonly<EntityConfig>>> = deepFreeze({
+  firefly: {
     type: 'firefly',
     team: 'firefly' as const,
     color: 0xDEF4B4,
@@ -37,7 +38,7 @@ export const ENTITY_CONFIG: Readonly<Record<string, Readonly<EntityConfig>>> = O
     interactionRadius: 45,
     direction: 'r',
     health: 50,
-    combat: Object.freeze({
+    combat: {
       chargeTime: 1800,
       attackDuration: 500,
       recoveryTime: 600,
@@ -45,9 +46,9 @@ export const ENTITY_CONFIG: Readonly<Record<string, Readonly<EntityConfig>>> = O
       handlerType: 'dash',
       dashSpeed: 150,
       knockbackForce: 20
-    })
-  }),
-  wisp: Object.freeze({
+    }
+  },
+  wisp: {
     type: 'wisp',
     team: 'firefly' as const,
     color: 0xB0C4DE,
@@ -55,7 +56,7 @@ export const ENTITY_CONFIG: Readonly<Record<string, Readonly<EntityConfig>>> = O
     radius: 18,
     mass: 1,
     isStatic: true,
-    combat: Object.freeze({
+    combat: {
       handlerType: 'pulse',
       chargeTime: 2200,
       attackDuration: 400,
@@ -63,9 +64,9 @@ export const ENTITY_CONFIG: Readonly<Record<string, Readonly<EntityConfig>>> = O
       damage: 100,
       radius: 112,
       color: 0xB0C4DE
-    })
-  }),
-  monster: Object.freeze({
+    }
+  },
+  monster: {
     type: 'monster',
     team: 'monster' as const,
     color: 0xC65D3B,
@@ -76,7 +77,7 @@ export const ENTITY_CONFIG: Readonly<Record<string, Readonly<EntityConfig>>> = O
     direction: 'l',
     interactionRadius: 45,
     health: 50,
-    combat: Object.freeze({
+    combat: {
       chargeTime: 2200,
       attackDuration: 400,
       recoveryTime: 500,
@@ -85,13 +86,13 @@ export const ENTITY_CONFIG: Readonly<Record<string, Readonly<EntityConfig>>> = O
       radius: 45,
       knockbackForce: 0,
       color: 0xC65D3B
-    })
-  }),
-  goal: Object.freeze({
+    }
+  },
+  goal: {
     type: 'goal',
-    color: 0xC3D08B, // Firefly glow soft (subtle goal marker)
+    color: 0xC3D08B,
     radius: 15,
     mass: 1,
     isStatic: true
-  })
+  }
 });
