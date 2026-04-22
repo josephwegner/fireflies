@@ -3,7 +3,7 @@ import type { Entity, GameWorld } from '@/ecs/Entity';
 import type { GameSystem } from '@/ecs/GameSystem';
 import { GAME_CONFIG } from '@/config';
 import { gameEvents, GameEvents } from '@/events';
-import { pointToSegmentDistance } from '@/utils/geometry';
+import { pointToSegmentDistance } from '@/utils';
 
 export class WallBreakingSystem implements GameSystem {
   private wallAttackers: Query<With<Entity, 'wallAttackTarget' | 'position' | 'monsterTag'>>;

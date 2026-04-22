@@ -2,7 +2,7 @@ import type { AttackHandler, AttackContext } from './AttackHandler';
 import { Vector } from '@/utils';
 import { gameEvents, GameEvents } from '@/events/GameEvents';
 import type { Entity } from '@/ecs/Entity';
-import { pointToSegmentDistance } from '@/utils/geometry';
+import { pointToSegmentDistance } from '@/utils';
 
 export class PulseAttackHandler implements AttackHandler {
   onCharging(context: AttackContext): void {

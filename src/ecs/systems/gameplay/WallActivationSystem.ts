@@ -3,7 +3,7 @@ import type { Entity, GameWorld } from '@/ecs/Entity';
 import type { GameSystem } from '@/ecs/GameSystem';
 import { GAME_CONFIG } from '@/config';
 import { gameEvents, GameEvents } from '@/events';
-import { lineSegmentToRect, pointToSegmentDistance } from '@/utils/geometry';
+import { lineSegmentToRect, pointToSegmentDistance } from '@/utils';
 
 export class WallActivationSystem implements GameSystem {
   private world: GameWorld;

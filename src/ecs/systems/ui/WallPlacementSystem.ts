@@ -5,7 +5,7 @@ import type { EnergyManager } from '@/ui/EnergyManager';
 import { GAME_CONFIG } from '@/config';
 import { gameEvents, GameEvents } from '@/events';
 import { createWallBlueprint } from '@/entities/factories';
-import { nearestPointOnPolyline, raySegmentIntersection } from '@/utils/geometry';
+import { nearestPointOnPolyline, raySegmentIntersection } from '@/utils';
 
 type WallPlacementState = 'idle' | 'selectingFirst' | 'selectingSecond';
 

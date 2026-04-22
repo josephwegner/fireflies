@@ -5,7 +5,7 @@ import type { GameSystem } from '@/ecs/GameSystem';
 import { gameEvents, GameEvents } from '@/events';
 import { Vector, SpatialGrid, getEntityType } from '@/utils';
 import { ENTITY_CONFIG } from '@/config';
-import { pointToSegmentDistance } from '@/utils/geometry';
+import { pointToSegmentDistance } from '@/utils';
 import { AttackHandlerRegistry } from './attacks/AttackHandlerRegistry';
 import type { AttackContext } from './attacks/AttackHandler';
 
