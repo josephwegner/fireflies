@@ -1,6 +1,7 @@
 import type { Query, With } from 'miniplex';
 import type { Entity, GameWorld } from '@/ecs/Entity';
 import type { GameSystem } from '@/ecs/GameSystem';
+import { GAME_CONFIG } from '@/config';
 
 type BlueprintEntity = With<Entity, 'wallBlueprint' | 'wallBlueprintTag' | 'buildable'>;
 
@@ -80,8 +81,6 @@ export class WallBlueprintRenderingSystem implements GameSystem {
     const len = Math.hypot(dx, dy);
     if (len === 0) return;
 
-    const dashLen = 8;
-    const gapLen = 6;
     const nx = dx / len;
     const ny = dy / len;
 
@@ -89,12 +88,12 @@ export class WallBlueprintRenderingSystem implements GameSystem {
 
     let traveled = 0;
     while (traveled < len) {
-      const segEnd = Math.min(traveled + dashLen, len);
+      const segEnd = Math.min(traveled + GAME_CONFIG.WALL_DASH_LENGTH, len);
       this.graphics.lineBetween(
         s0.x + nx * traveled, s0.y + ny * traveled,
         s0.x + nx * segEnd, s0.y + ny * segEnd
       );
-      traveled = segEnd + gapLen;
+      traveled = segEnd + GAME_CONFIG.WALL_GAP_LENGTH;
     }
   }
 

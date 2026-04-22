@@ -12,8 +12,6 @@ type WallPlacementState = 'idle' | 'selectingFirst' | 'selectingSecond';
 const SNAP_THRESHOLD = 30;
 const BLUEPRINT_COLOR = 0x88AACC;
 const NODE_RADIUS = 5;
-const DASH_LEN = 8;
-const GAP_LEN = 6;
 
 export class WallPlacementSystem implements GameSystem {
   private scene: Phaser.Scene;
@@ -188,12 +186,12 @@ export class WallPlacementSystem implements GameSystem {
     this.graphics.lineStyle(2, BLUEPRINT_COLOR, 0.5);
     let traveled = 0;
     while (traveled < len) {
-      const segEnd = Math.min(traveled + DASH_LEN, len);
+      const segEnd = Math.min(traveled + GAME_CONFIG.WALL_DASH_LENGTH, len);
       this.graphics.lineBetween(
         from.x + nx * traveled, from.y + ny * traveled,
         from.x + nx * segEnd, from.y + ny * segEnd
       );
-      traveled = segEnd + GAP_LEN;
+      traveled = segEnd + GAME_CONFIG.WALL_GAP_LENGTH;
     }
   }
 

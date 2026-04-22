@@ -2,7 +2,7 @@ import type { Query, With } from 'miniplex';
 import type { Entity, GameWorld } from '@/ecs/Entity';
 import type { GameSystem } from '@/ecs/GameSystem';
 import { gameEvents, GameEvents } from '@/events';
-import { GAME_CONFIG } from '@/config';
+import { GAME_CONFIG, PHYSICS_CONFIG } from '@/config';
 import { logger } from '@/utils/logger';
 import { Vector } from '@/utils';
 
@@ -49,7 +49,7 @@ export class FireflyGoalSystem implements GameSystem {
       const dy = fireflyEntity.position.y - goalPosition.y;
       const distance = Vector.length(dx, dy);
 
-      if (distance < 50) {
+      if (distance < PHYSICS_CONFIG.GOAL_ARRIVAL_DISTANCE) {
         this.collectFirefly(goalEntity, fireflyEntity);
       }
     }
@@ -69,7 +69,7 @@ export class FireflyGoalSystem implements GameSystem {
     const dy = position.y - goalPosition.y;
     const distance = Vector.length(dx, dy);
 
-    if (distance < 50) {
+    if (distance < PHYSICS_CONFIG.GOAL_ARRIVAL_DISTANCE) {
       this.collectFirefly(fireflyGoal, entity);
     }
   };

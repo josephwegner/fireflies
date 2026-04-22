@@ -4,6 +4,8 @@ import type { GameSystem } from '@/ecs/GameSystem';
 import type { RenderingSystem } from './RenderingSystem';
 import { gameEvents, GameEvents } from '@/events';
 
+const PULSE_CHARGING_RING_COUNT = 4;
+
 interface ActiveVisual {
   rings: Phaser.GameObjects.Graphics[];
   particles: Phaser.GameObjects.Shape[];
@@ -113,7 +115,7 @@ export class CombatVisualsSystem implements GameSystem {
     maxRadius: number,
     color: number
   ): void {
-    const ringCount = 4;
+    const ringCount = PULSE_CHARGING_RING_COUNT;
 
     visual.rings.forEach(ring => {
       if (ring.scene) ring.destroy();

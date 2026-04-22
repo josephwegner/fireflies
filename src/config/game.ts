@@ -24,6 +24,8 @@ export const GAME_CONFIG = deepFreeze({
   WALL_BLUEPRINT_THICKNESS: 8,
   WALL_HP: 100,
   WALL_ATTACK_RANGE: 32,
+  WALL_DASH_LENGTH: 8,
+  WALL_GAP_LENGTH: 6,
 
   // Store
   STORE: {
