@@ -1,4 +1,6 @@
-export const GAME_CONFIG = Object.freeze({
+import { deepFreeze } from '@/utils/deepFreeze';
+
+export const GAME_CONFIG = deepFreeze({
   // Map
   TILE_SIZE: 48,
   MAP_WIDTH: 20,
@@ -24,18 +26,18 @@ export const GAME_CONFIG = Object.freeze({
   WALL_ATTACK_RANGE: 32,
 
   // Store
-  STORE: Object.freeze({
+  STORE: {
     wisp: { cost: 100 },
     wall: { cost: 20 }
-  }),
+  },
 
   // Firefly goal visual progression
-  FIREFLY_GOAL_GLOW: Object.freeze({
-    startColor: 0xC65D3B, // Red when empty
-    endColor: 0xFFFFFF,   // White when full
+  FIREFLY_GOAL_GLOW: {
+    startColor: 0xC65D3B,
+    endColor: 0xFFFFFF,
     minRadius: 45,
     maxRadius: 90,
     minIntensity: 0.4,
     maxIntensity: 0.8
-  })
+  }
 });
