@@ -27,6 +27,7 @@ export class PulseAttackHandler implements AttackHandler {
 
         if (Math.abs(distanceToTarget - optimalDistance) > tolerance) {
           const direction = Vector.normalize(dx, dy);
+          // Speed scales from 20% to 80% of base during charge-up
           const moveSpeed = PULSE_BASE_SPEED * (0.2 + clampedProgress * 0.6);
           const shouldMoveCloser = distanceToTarget > optimalDistance;
           const directionMultiplier = shouldMoveCloser ? 1 : -1;
