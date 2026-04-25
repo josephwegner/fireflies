@@ -57,13 +57,34 @@ describe('Entity Factories', () => {
       expect(entity.path!.direction).toBe(ENTITY_CONFIG.firefly.direction);
     });
 
-    it('should initialize renderable with correct properties', () => {
+    it('should initialize renderable from visual config', () => {
       const entity = createFirefly(world, 100, 200);
+      const visual = ENTITY_CONFIG.firefly.visual!;
 
       expect(entity.renderable!.type).toBe('firefly');
-      expect(entity.renderable!.sprite).toBe('firefly');
+      expect(entity.renderable!.sprite).toBe(visual.sprite);
       expect(entity.renderable!.color).toBe(ENTITY_CONFIG.firefly.color);
       expect(entity.renderable!.radius).toBe(ENTITY_CONFIG.firefly.radius);
+      expect(entity.renderable!.depth).toBe(visual.depth);
+      expect(entity.renderable!.rotationSpeed).toBe(visual.rotationSpeed);
+      expect(entity.renderable!.tint).toBe(visual.tint);
+      expect(entity.renderable!.glow).toEqual(expect.objectContaining({
+        radius: visual.glow!.radius,
+        color: visual.glow!.color,
+        intensity: visual.glow!.intensity
+      }));
+    });
+
+    it('should initialize trail from visual config', () => {
+      const entity = createFirefly(world, 100, 200);
+      const trail = ENTITY_CONFIG.firefly.visual!.trail!;
+
+      expect(entity.trail).toBeDefined();
+      expect(entity.trail!.config.length).toBe(trail.length);
+      expect(entity.trail!.config.fadeTime).toBe(trail.fadeTime);
+      expect(entity.trail!.config.color).toBe(trail.color);
+      expect(entity.trail!.config.width).toBe(trail.width);
+      expect(entity.trail!.config.minAlpha).toBe(trail.minAlpha);
     });
 
     it('should initialize physics body with correct properties', () => {
@@ -132,13 +153,18 @@ describe('Entity Factories', () => {
       expect(entity.destination!.forTeam).toBe('firefly');
     });
 
-    it('should initialize renderable with correct properties', () => {
+    it('should initialize renderable from visual config', () => {
       const entity = createWisp(world, 100, 200);
+      const visual = ENTITY_CONFIG.wisp.visual!;
 
       expect(entity.renderable!.type).toBe('wisp');
-      expect(entity.renderable!.sprite).toBe('wisp');
+      expect(entity.renderable!.sprite).toBe(visual.sprite);
       expect(entity.renderable!.color).toBe(ENTITY_CONFIG.wisp.color);
       expect(entity.renderable!.radius).toBe(ENTITY_CONFIG.wisp.radius);
+      expect(entity.renderable!.depth).toBe(visual.depth);
+      expect(entity.renderable!.rotationSpeed).toBe(visual.rotationSpeed);
+      expect(entity.renderable!.tint).toBe(visual.tint);
+      expect(entity.physicsBody!.collisionRadius).toBe(visual.collisionRadius);
     });
 
     it('should be static', () => {
@@ -202,13 +228,17 @@ describe('Entity Factories', () => {
       expect(entity.path!.direction).toBe(ENTITY_CONFIG.monster.direction);
     });
 
-    it('should initialize renderable with correct properties', () => {
+    it('should initialize renderable from visual config', () => {
       const entity = createMonster(world, 100, 200);
+      const visual = ENTITY_CONFIG.monster.visual!;
 
       expect(entity.renderable!.type).toBe('monster');
-      expect(entity.renderable!.sprite).toBe('monster1');
+      expect(entity.renderable!.sprite).toBe(visual.sprite);
       expect(entity.renderable!.color).toBe(ENTITY_CONFIG.monster.color);
       expect(entity.renderable!.radius).toBe(ENTITY_CONFIG.monster.radius);
+      expect(entity.renderable!.depth).toBe(visual.depth);
+      expect(entity.renderable!.rotationSpeed).toBe(visual.rotationSpeed);
+      expect(entity.renderable!.tint).toBe(visual.tint);
     });
 
     it('should not be static', () => {
@@ -250,12 +280,23 @@ describe('Entity Factories', () => {
       expect(monsterGoal.destination!.forTeam).toBe('monster');
     });
 
-    it('should initialize renderable with correct properties', () => {
-      const entity = createGoal(world, 100, 200, 'firefly');
+    it('should initialize renderable from visual config', () => {
+      const fireflyGoal = createGoal(world, 100, 200, 'firefly');
+      const monsterGoal = createGoal(world, 300, 400, 'monster');
+      const fireflyVisual = ENTITY_CONFIG.goalFirefly.visual!;
+      const monsterVisual = ENTITY_CONFIG.goalMonster.visual!;
 
-      expect(entity.renderable!.type).toBe('goal');
-      expect(entity.renderable!.sprite).toBe('greattree');
-      expect(entity.renderable!.color).toBe(ENTITY_CONFIG.goal.color);
+      expect(fireflyGoal.renderable!.sprite).toBe(fireflyVisual.sprite);
+      expect(fireflyGoal.renderable!.radius).toBe(fireflyVisual.spriteRadius);
+      expect(fireflyGoal.renderable!.depth).toBe(fireflyVisual.depth);
+      expect(fireflyGoal.renderable!.offsetY).toBe(fireflyVisual.offsetY);
+      expect(fireflyGoal.renderable!.glow).toBeDefined();
+
+      expect(monsterGoal.renderable!.sprite).toBe(monsterVisual.sprite);
+      expect(monsterGoal.renderable!.radius).toBe(monsterVisual.spriteRadius);
+      expect(monsterGoal.renderable!.depth).toBe(monsterVisual.depth);
+      expect(monsterGoal.renderable!.offsetY).toBe(monsterVisual.offsetY);
+      expect(monsterGoal.renderable!.glow).toBeUndefined();
     });
 
     it('should be static', () => {
@@ -267,7 +308,7 @@ describe('Entity Factories', () => {
     it('should have correct mass from config', () => {
       const entity = createGoal(world, 100, 200, 'firefly');
 
-      expect(entity.physicsBody!.mass).toBe(ENTITY_CONFIG.goal.mass);
+      expect(entity.physicsBody!.mass).toBe(ENTITY_CONFIG.goalFirefly.mass);
     });
   });
 
@@ -465,7 +506,7 @@ describe('Entity Factories', () => {
       const monster = createMonster(world, 0, 0);
 
       expect(firefly.physicsBody!.collisionRadius).toBe(firefly.renderable!.radius);
-      expect(wisp.physicsBody!.collisionRadius).toBe(45);
+      expect(wisp.physicsBody!.collisionRadius).toBe(ENTITY_CONFIG.wisp.visual!.collisionRadius);
       expect(monster.physicsBody!.collisionRadius).toBe(monster.renderable!.radius);
     });
 

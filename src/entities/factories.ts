@@ -4,6 +4,7 @@ import { ENTITY_CONFIG, PHYSICS_CONFIG, GAME_CONFIG } from '@/config';
 
 export function createFirefly(world: GameWorld, x: number, y: number): Entity {
   const config = ENTITY_CONFIG.firefly;
+  const visual = config.visual!;
 
   return world.add({
     position: {
@@ -18,27 +19,17 @@ export function createFirefly(world: GameWorld, x: number, y: number): Entity {
     },
     renderable: {
       type: config.type,
-      sprite: config.type,
+      sprite: visual.sprite,
       color: config.color,
       radius: config.radius,
       alpha: 1,
       scale: 1,
-      tint: 0xFFFFFF,
+      tint: visual.tint,
       rotation: 0,
-      rotationSpeed: 0,
-      depth: 50,
+      rotationSpeed: visual.rotationSpeed,
+      depth: visual.depth,
       offsetY: 0,
-      glow: {
-        radius: 22,
-        color: 0xDEF4B4,
-        intensity: 0.4,
-        pulse: {
-          enabled: true,
-          speed: 0.6,
-          minIntensity: 0.4,
-          maxIntensity: 0.7
-        }
-      }
+      glow: structuredClone(visual.glow)
     },
     physicsBody: {
       mass: config.mass,
@@ -61,18 +52,12 @@ export function createFirefly(world: GameWorld, x: number, y: number): Entity {
       chargeTime: 0,
       attackElapsed: 0,
       recoveryElapsed: 0,
-      attackPattern: config.combat!,
+      attackPattern: structuredClone(config.combat!),
       hasHit: false
     },
     trail: {
       enabled: true,
-      config: {
-        length: 100,
-        fadeTime: 800,
-        color: 0xDEF4B4,
-        width: 4,
-        minAlpha: 0.05
-      },
+      config: structuredClone(visual.trail!),
       points: []
     },
     team: 'firefly',
@@ -82,38 +67,29 @@ export function createFirefly(world: GameWorld, x: number, y: number): Entity {
 
 export function createWisp(world: GameWorld, x: number, y: number): Entity {
   const config = ENTITY_CONFIG.wisp;
+  const visual = config.visual!;
 
   return world.add({
     position: { x, y },
     destination: { forTeam: 'firefly' },
     renderable: {
       type: config.type,
-      sprite: config.type,
+      sprite: visual.sprite,
       color: config.color,
       radius: config.radius,
       alpha: 1,
       scale: 1,
-      tint: config.color,
+      tint: visual.tint,
       rotation: 0,
-      rotationSpeed: Math.PI * 0.5,
-      depth: 40,
+      rotationSpeed: visual.rotationSpeed,
+      depth: visual.depth,
       offsetY: 0,
-      glow: {
-        radius: 45,
-        color: 0xB0C4DE,
-        intensity: 0.5,
-        pulse: {
-          enabled: true,
-          speed: 0.5,
-          minIntensity: 0.3,
-          maxIntensity: 0.6
-        }
-      }
+      glow: structuredClone(visual.glow)
     },
     physicsBody: {
       mass: config.mass,
       isStatic: config.isStatic,
-      collisionRadius: 45
+      collisionRadius: visual.collisionRadius!
     },
     health: {
       currentHealth: 100,
@@ -134,17 +110,7 @@ export function createWisp(world: GameWorld, x: number, y: number): Entity {
           componentName: 'renderable',
           config: {
             tint: config.activeColor,
-            glow: {
-              radius: 30,
-              color: 0x5ED6FE,
-              intensity: 0.8,
-              pulse: {
-                enabled: true,
-                speed: 1.0,
-                minIntensity: 1,
-                maxIntensity: 1.5
-              }
-            }
+            glow: structuredClone(visual.activeGlow)
           }
         },
         {
@@ -163,7 +129,7 @@ export function createWisp(world: GameWorld, x: number, y: number): Entity {
           componentName: 'combat',
           config: {
             state: CombatState.IDLE,
-            attackPattern: config.combat!,
+            attackPattern: structuredClone(config.combat!),
             hasHit: false
           }
         }
@@ -173,17 +139,7 @@ export function createWisp(world: GameWorld, x: number, y: number): Entity {
           componentName: 'renderable',
           config: {
             tint: config.color,
-            glow: {
-              radius: 45,
-              color: 0xB0C4DE,
-              intensity: 0.5,
-              pulse: {
-                enabled: true,
-                speed: 0.5,
-                minIntensity: 0.3,
-                maxIntensity: 0.6
-              }
-            }
+            glow: structuredClone(visual.glow)
           }
         }
       ]
@@ -193,6 +149,7 @@ export function createWisp(world: GameWorld, x: number, y: number): Entity {
 
 export function createMonster(world: GameWorld, x: number, y: number): Entity {
   const config = ENTITY_CONFIG.monster;
+  const visual = config.visual!;
 
   return world.add({
     position: {
@@ -207,15 +164,15 @@ export function createMonster(world: GameWorld, x: number, y: number): Entity {
     },
     renderable: {
       type: config.type,
-      sprite: 'monster1',
+      sprite: visual.sprite,
       color: config.color,
       radius: config.radius,
       alpha: 1,
       scale: 1,
-      tint: 0xFFFFFF,
+      tint: visual.tint,
       rotation: 0,
-      rotationSpeed: Math.PI * 0.2,
-      depth: 100,
+      rotationSpeed: visual.rotationSpeed,
+      depth: visual.depth,
       offsetY: 0
     },
     physicsBody: {
@@ -239,7 +196,7 @@ export function createMonster(world: GameWorld, x: number, y: number): Entity {
       chargeTime: 0,
       attackElapsed: 0,
       recoveryElapsed: 0,
-      attackPattern: config.combat!,
+      attackPattern: structuredClone(config.combat!),
       hasHit: false
     },
     team: 'monster',
@@ -253,41 +210,32 @@ export function createGoal(
   y: number,
   forTeam: Team
 ): Entity {
-  const config = ENTITY_CONFIG.goal;
+  const goalConfig = forTeam === 'monster' ? ENTITY_CONFIG.goalMonster : ENTITY_CONFIG.goalFirefly;
+  const visual = goalConfig.visual!;
 
-  const spriteKey = forTeam === 'monster' ? 'fireflywell' : 'greattree';
-  const spriteRadius = forTeam === 'monster' ? 30 : 60;
-
-  const renderableConfig: any = {
-    type: config.type,
-    sprite: spriteKey,
-    color: config.color,
-    radius: spriteRadius,
+  const renderableConfig: Entity['renderable'] = {
+    type: goalConfig.type,
+    sprite: visual.sprite,
+    color: goalConfig.color,
+    radius: visual.spriteRadius!,
     alpha: 1,
     scale: 1,
-    tint: 0xFFFFFF,
+    tint: visual.tint,
     rotation: 0,
-    rotationSpeed: 0,
-    depth: 10,
-    offsetY: -spriteRadius + 12
+    rotationSpeed: visual.rotationSpeed,
+    depth: visual.depth,
+    offsetY: visual.offsetY ?? 0,
+    glow: structuredClone(visual.glow)
   };
-
-  if (forTeam === 'firefly') {
-    renderableConfig.glow = {
-      radius: 45,
-      color: 0xC65D3B,
-      intensity: 0.4
-    };
-  }
 
   const entity: Partial<Entity> = {
     position: { x, y },
     destination: { forTeam },
     renderable: renderableConfig,
     physicsBody: {
-      mass: config.mass,
-      isStatic: config.isStatic,
-      collisionRadius: config.radius
+      mass: goalConfig.mass,
+      isStatic: goalConfig.isStatic,
+      collisionRadius: goalConfig.radius
     },
     goalTag: true
   };
