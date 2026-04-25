@@ -1,5 +1,5 @@
 import type { GameWorld } from '@/ecs/Entity';
-import { GameSystemBase } from '@/ecs/GameSystem';
+import { GameSystemBase, type SystemConfig } from '@/ecs/GameSystem';
 import { gameEvents, GameEvents } from '@/events';
 import { GAME_CONFIG } from '@/config';
 import { LEVELS } from '@/levels/levelRegistry';
@@ -22,7 +22,7 @@ export class OverlaySystem extends GameSystemBase {
   private subtitleText!: Phaser.GameObjects.Text;
   private actionButton!: Phaser.GameObjects.Text;
 
-  constructor(_world: GameWorld, config: Record<string, any>) {
+  constructor(_world: GameWorld, config: Pick<SystemConfig, 'scene' | 'levelIndex' | 'onNextLevel' | 'onRetry'>) {
     super();
     this.scene = config.scene;
     this.levelIndex = config.levelIndex;

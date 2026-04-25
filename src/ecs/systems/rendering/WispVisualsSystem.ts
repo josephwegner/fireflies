@@ -7,7 +7,7 @@ type WispEntity = With<Entity, 'wispTag' | 'lodge' | 'renderable'>;
 export class WispVisualsSystem implements GameSystem {
   private wisps: Query<WispEntity>;
 
-  constructor(world: GameWorld, _config: Record<string, any>) {
+  constructor(world: GameWorld, _config: Record<string, never>) {
     this.wisps = world.with('wispTag', 'lodge', 'renderable') as any;
   }
 

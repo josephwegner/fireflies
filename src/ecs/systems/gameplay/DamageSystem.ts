@@ -13,7 +13,7 @@ interface DyingEntity {
 export class DamageSystem extends GameSystemBase {
   private dyingEntities: DyingEntity[] = [];
 
-  constructor(private world: GameWorld, _config: Record<string, any>) {
+  constructor(private world: GameWorld, _config: Record<string, never>) {
     super();
     this.listen(GameEvents.ATTACK_HIT, this.handleDamage);
   }

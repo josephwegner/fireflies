@@ -1,7 +1,7 @@
 import type { Query, With } from 'miniplex';
 import type { Entity, GameWorld, CombatState as CombatStateType } from '@/ecs/Entity';
 import { CombatState } from '@/ecs/Entity';
-import type { GameSystem } from '@/ecs/GameSystem';
+import type { GameSystem, SystemConfig } from '@/ecs/GameSystem';
 import { gameEvents, GameEvents } from '@/events';
 import { Vector, SpatialGrid, getEntityType } from '@/utils';
 import { ENTITY_CONFIG } from '@/config';
@@ -20,7 +20,7 @@ export class CombatSystem implements GameSystem {
     pulse: new PulseAttackHandler(),
   };
 
-  constructor(private world: GameWorld, config: Record<string, any>) {
+  constructor(private world: GameWorld, config: Pick<SystemConfig, 'spatialGrid'>) {
     this.combatants = world.with('combat', 'health', 'position');
     this.spatialGrid = config.spatialGrid;
   }

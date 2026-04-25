@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 import type { GameWorld } from '@/ecs/Entity';
-import type { GameSystem } from '@/ecs/GameSystem';
+import type { GameSystem, SystemConfig } from '@/ecs/GameSystem';
 import { GAME_CONFIG } from '@/config';
 import { logger } from '@/utils/logger';
 
@@ -12,7 +12,7 @@ export class ForestDecorationSystem implements GameSystem {
   private decorations: Phaser.GameObjects.Image[] = [];
   private treesCreated = false;
 
-  constructor(_world: GameWorld, config: Record<string, any>) {
+  constructor(_world: GameWorld, config: Pick<SystemConfig, 'scene' | 'map'>) {
     this.scene = config.scene;
     this.map = config.map;
   }

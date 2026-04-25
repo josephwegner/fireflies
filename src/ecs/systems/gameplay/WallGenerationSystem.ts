@@ -1,5 +1,5 @@
 import type { GameWorld } from '@/ecs/Entity';
-import type { GameSystem } from '@/ecs/GameSystem';
+import type { GameSystem, SystemConfig } from '@/ecs/GameSystem';
 import { GAME_CONFIG } from '@/config';
 
 interface Point {
@@ -19,7 +19,7 @@ export class WallGenerationSystem implements GameSystem {
   private worker: Worker;
   private map: number[][];
 
-  constructor(private world: GameWorld, config: Record<string, any>) {
+  constructor(private world: GameWorld, config: Pick<SystemConfig, 'worker' | 'map'>) {
     this.worker = config.worker;
     this.map = config.map;
   }

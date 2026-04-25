@@ -1,5 +1,5 @@
 import type { GameWorld } from '@/ecs/Entity';
-import { GameSystemBase } from '@/ecs/GameSystem';
+import { GameSystemBase, type SystemConfig } from '@/ecs/GameSystem';
 import { gameEvents, GameEvents, type GameEventPayloads } from '@/events';
 import { SoundEngine } from './SoundEngine';
 import { randomNote, noteWithDetune, motifNotes } from './scales';
@@ -21,7 +21,7 @@ export class SoundSystem extends GameSystemBase {
   private wisps;
   private combatants;
 
-  constructor(world: GameWorld, config: { soundEngine?: SoundEngine; [key: string]: any }) {
+  constructor(world: GameWorld, config: Partial<Pick<SystemConfig, 'soundEngine'>>) {
     super();
     this.world = world;
 

@@ -1,7 +1,7 @@
 import type { Query, With } from 'miniplex';
 import Phaser from 'phaser';
 import type { Entity, GameWorld, Trail } from '@/ecs/Entity';
-import type { GameSystem } from '@/ecs/GameSystem';
+import type { GameSystem, SystemConfig } from '@/ecs/GameSystem';
 import { PHYSICS_CONFIG } from '@/config';
 
 type TrailedEntity = With<Entity, 'position' | 'velocity' | 'trail'>;
@@ -11,7 +11,7 @@ export class TrailSystem implements GameSystem {
   private scene: Phaser.Scene;
   private trailGraphics: Phaser.GameObjects.Graphics;
 
-  constructor(_world: GameWorld, config: Record<string, any>) {
+  constructor(_world: GameWorld, config: Pick<SystemConfig, 'scene'>) {
     this.scene = config.scene;
     this.trailGraphics = this.scene.add.graphics();
     this.trailGraphics.setDepth(-0.5);

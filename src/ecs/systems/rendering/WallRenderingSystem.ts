@@ -1,7 +1,7 @@
 import type { Query, With } from 'miniplex';
 import Phaser from 'phaser';
 import type { Entity, GameWorld } from '@/ecs/Entity';
-import type { GameSystem } from '@/ecs/GameSystem';
+import type { GameSystem, SystemConfig } from '@/ecs/GameSystem';
 
 export class WallRenderingSystem implements GameSystem {
   private walls: Query<With<Entity, 'wall'>>;
@@ -9,7 +9,7 @@ export class WallRenderingSystem implements GameSystem {
   private graphics: Phaser.GameObjects.Graphics;
   private wallsDrawn = false;
 
-  constructor(private world: GameWorld, config: Record<string, any>) {
+  constructor(private world: GameWorld, config: Pick<SystemConfig, 'scene'>) {
     this.scene = config.scene;
     this.graphics = this.scene.add.graphics();
     this.walls = world.with('wall') as any;

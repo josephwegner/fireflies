@@ -15,7 +15,7 @@ const DEFAULT_DELAY_BETWEEN = 100;
 export class SpawnerSystem implements GameSystem {
   private spawners: Query<With<Entity, 'spawner' | 'position' | 'spawnerTag'>>;
 
-  constructor(private world: GameWorld, _config: Record<string, any>) {
+  constructor(private world: GameWorld, _config: Record<string, never>) {
     this.spawners = world.with('spawner', 'position', 'spawnerTag');
   }
 

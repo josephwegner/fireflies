@@ -1,6 +1,6 @@
 import type { Query, With } from 'miniplex';
 import type { Entity, GameWorld } from '@/ecs/Entity';
-import { GameSystemBase } from '@/ecs/GameSystem';
+import { GameSystemBase, type SystemConfig } from '@/ecs/GameSystem';
 import { gameEvents, GameEvents } from '@/events';
 import { GAME_CONFIG, PHYSICS_CONFIG } from '@/config';
 import { logger } from '@/utils/logger';
@@ -14,7 +14,7 @@ export class FireflyGoalSystem extends GameSystemBase {
   private firefliesToWin: number;
   private wonEmitted = false;
 
-  constructor(private world: GameWorld, config: Record<string, any>) {
+  constructor(private world: GameWorld, config: Pick<SystemConfig, 'firefliesToWin'>) {
     super();
     this.firefliesToWin = config.firefliesToWin ?? 1;
     this.fireflyGoals = world.with('fireflyGoal', 'renderable', 'position', 'goalTag') as any;

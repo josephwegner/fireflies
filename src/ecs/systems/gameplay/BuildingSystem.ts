@@ -12,7 +12,7 @@ export class BuildingSystem implements GameSystem {
   private movers: Query<With<Entity, 'position' | 'velocity' | 'path'>>;
   private recruitingFor = new Set<number>();
 
-  constructor(private world: GameWorld, _config: Record<string, any>) {
+  constructor(private world: GameWorld, _config: Record<string, never>) {
     this.buildables = world.with('buildable');
     this.movers = world.with('position', 'velocity', 'path');
   }

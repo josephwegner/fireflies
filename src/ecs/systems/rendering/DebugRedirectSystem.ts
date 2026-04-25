@@ -1,6 +1,6 @@
 import type { Query, With } from 'miniplex';
 import type { Entity, GameWorld } from '@/ecs/Entity';
-import type { GameSystem } from '@/ecs/GameSystem';
+import type { GameSystem, SystemConfig } from '@/ecs/GameSystem';
 
 type RedirectEntity = With<Entity, 'position' | 'redirect' | 'redirectTag'>;
 
@@ -9,7 +9,7 @@ export class DebugRedirectSystem implements GameSystem {
   private scene: Phaser.Scene;
   private graphics: Phaser.GameObjects.Graphics;
 
-  constructor(private world: GameWorld, config: Record<string, any>) {
+  constructor(private world: GameWorld, config: Pick<SystemConfig, 'scene'>) {
     this.scene = config.scene;
     this.redirects = world.with('position', 'redirect', 'redirectTag') as any;
     this.graphics = this.scene.add.graphics();

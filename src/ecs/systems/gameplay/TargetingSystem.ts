@@ -8,7 +8,7 @@ type NeedsTargeting = With<Entity, 'targeting'>;
 export class TargetingSystem implements GameSystem {
   private needsTargeting: Query<NeedsTargeting>;
 
-  constructor(private world: GameWorld, _config: Record<string, any>) {
+  constructor(private world: GameWorld, _config: Record<string, never>) {
     this.needsTargeting = world.with('targeting').without('target');
   }
 

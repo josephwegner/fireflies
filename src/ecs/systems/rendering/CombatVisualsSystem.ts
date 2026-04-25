@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 import type { Entity, GameWorld, AttackPattern } from '@/ecs/Entity';
-import { GameSystemBase } from '@/ecs/GameSystem';
+import { GameSystemBase, type SystemConfig } from '@/ecs/GameSystem';
 import type { RenderingSystem } from './RenderingSystem';
 import { gameEvents, GameEvents } from '@/events';
 
@@ -19,7 +19,7 @@ export class CombatVisualsSystem extends GameSystemBase {
   private renderingSystem: RenderingSystem;
   private activeVisuals = new Map<Entity, ActiveVisual>();
 
-  constructor(_world: GameWorld, config: Record<string, any>) {
+  constructor(_world: GameWorld, config: Pick<SystemConfig, 'scene' | 'renderingSystem'>) {
     super();
     this.scene = config.scene;
     this.renderingSystem = config.renderingSystem;

@@ -1,6 +1,6 @@
 import type { Query, With } from 'miniplex';
 import type { Entity, GameWorld, Team } from '@/ecs/Entity';
-import type { GameSystem } from '@/ecs/GameSystem';
+import type { GameSystem, SystemConfig } from '@/ecs/GameSystem';
 import type { PathfindingService } from './PathfindingService';
 import { PHYSICS_CONFIG } from '@/config';
 import { clearPath } from '@/utils';
@@ -19,7 +19,7 @@ export class RecruitmentSystem implements GameSystem {
   private activeRecruitments = new Map<number, RecruitmentState>();
   private pathfinding: PathfindingService;
 
-  constructor(private world: GameWorld, config: Record<string, any>) {
+  constructor(private world: GameWorld, config: Pick<SystemConfig, 'pathfinding'>) {
     this.movers = world.with('position', 'velocity', 'path');
     this.lodges = world.with('lodge', 'position', 'destination');
     this.goals = world.with('position', 'destination', 'goalTag');

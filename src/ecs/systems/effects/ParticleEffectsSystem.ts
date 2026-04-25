@@ -1,12 +1,12 @@
 import Phaser from 'phaser';
 import type { Entity, GameWorld } from '@/ecs/Entity';
-import { GameSystemBase } from '@/ecs/GameSystem';
+import { GameSystemBase, type SystemConfig } from '@/ecs/GameSystem';
 import { gameEvents, GameEvents } from '@/events';
 
 export class ParticleEffectsSystem extends GameSystemBase {
   private scene: Phaser.Scene;
 
-  constructor(_world: GameWorld, config: Record<string, any>) {
+  constructor(_world: GameWorld, config: Pick<SystemConfig, 'scene'>) {
     super();
     this.scene = config.scene;
 

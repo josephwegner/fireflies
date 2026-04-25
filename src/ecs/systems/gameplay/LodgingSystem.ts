@@ -1,6 +1,6 @@
 import type { Query, With } from 'miniplex';
 import type { Entity, GameWorld, Team } from '@/ecs/Entity';
-import { GameSystemBase } from '@/ecs/GameSystem';
+import { GameSystemBase, type SystemConfig } from '@/ecs/GameSystem';
 import { ENTITY_CONFIG, PHYSICS_CONFIG } from '@/config';
 import { SpatialGrid, Vector } from '@/utils';
 import { gameEvents, GameEventPayloads, GameEvents } from '@/events';
@@ -20,7 +20,7 @@ export class LodgingSystem extends GameSystemBase {
   private lodges: Query<LodgeEntity>;
   private spatialGrid: SpatialGrid;
 
-  constructor(private world: GameWorld, config: Record<string, any>) {
+  constructor(private world: GameWorld, config: Pick<SystemConfig, 'spatialGrid'>) {
     super();
     this.lodges = world.with('lodge', 'position');
     this.spatialGrid = config.spatialGrid;

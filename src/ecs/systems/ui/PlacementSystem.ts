@@ -1,5 +1,5 @@
 import type { GameWorld } from '@/ecs/Entity';
-import { GameSystemBase } from '@/ecs/GameSystem';
+import { GameSystemBase, type SystemConfig } from '@/ecs/GameSystem';
 import type { EnergyManager } from '@/ui/EnergyManager';
 import { GAME_CONFIG } from '@/config';
 import { gameEvents, GameEvents } from '@/events';
@@ -21,7 +21,7 @@ export class PlacementSystem extends GameSystemBase {
   private onPointerDown: (pointer: Phaser.Input.Pointer) => void;
   private onEscKey: () => void;
 
-  constructor(world: GameWorld, config: Record<string, any>) {
+  constructor(world: GameWorld, config: Pick<SystemConfig, 'scene' | 'energyManager' | 'map' | 'levelConfig'>) {
     super();
     this.world = world;
     this.scene = config.scene;

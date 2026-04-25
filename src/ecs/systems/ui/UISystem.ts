@@ -1,5 +1,5 @@
 import type { GameWorld } from '@/ecs/Entity';
-import type { GameSystem } from '@/ecs/GameSystem';
+import type { GameSystem, SystemConfig } from '@/ecs/GameSystem';
 import type { EnergyManager } from '@/ui/EnergyManager';
 import { GAME_CONFIG } from '@/config';
 import { gameEvents, GameEvents } from '@/events';
@@ -28,7 +28,7 @@ export class UISystem implements GameSystem {
   private wispCost: number;
   private wallCost: number;
 
-  constructor(_world: GameWorld, config: Record<string, any>) {
+  constructor(_world: GameWorld, config: Pick<SystemConfig, 'scene' | 'energyManager' | 'levelConfig'>) {
     this.scene = config.scene;
     this.energyManager = config.energyManager;
     this.levelConfig = config.levelConfig;

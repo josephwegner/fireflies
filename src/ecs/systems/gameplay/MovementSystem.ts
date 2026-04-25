@@ -10,7 +10,7 @@ type MovingEntity = With<Entity, 'position' | 'velocity'>;
 export class MovementSystem implements GameSystem {
   private moving: Query<MovingEntity>;
 
-  constructor(private world: GameWorld, _config: Record<string, any>) {
+  constructor(private world: GameWorld, _config: Record<string, never>) {
     this.moving = world.with('position', 'velocity');
   }
 

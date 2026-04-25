@@ -1,6 +1,6 @@
 import type { Query, With } from 'miniplex';
 import type { Entity, GameWorld, Team } from '@/ecs/Entity';
-import type { GameSystem } from '@/ecs/GameSystem';
+import type { GameSystem, SystemConfig } from '@/ecs/GameSystem';
 import { Vector, SpatialGrid } from '@/utils';
 import { pointToSegmentDistance } from '@/utils';
 
@@ -10,7 +10,7 @@ export class InteractionSystem implements GameSystem {
   private interactive: Query<InteractiveEntity>;
   private spatialGrid: SpatialGrid;
 
-  constructor(private world: GameWorld, config: Record<string, any>) {
+  constructor(private world: GameWorld, config: Pick<SystemConfig, 'spatialGrid'>) {
     this.interactive = world.with('interaction', 'position', 'targeting');
     this.spatialGrid = config.spatialGrid;
   }

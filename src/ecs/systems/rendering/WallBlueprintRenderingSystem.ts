@@ -1,6 +1,6 @@
 import type { Query, With } from 'miniplex';
 import type { Entity, GameWorld } from '@/ecs/Entity';
-import type { GameSystem } from '@/ecs/GameSystem';
+import type { GameSystem, SystemConfig } from '@/ecs/GameSystem';
 import { GAME_CONFIG } from '@/config';
 
 type BlueprintEntity = With<Entity, 'wallBlueprint' | 'wallBlueprintTag' | 'buildable'>;
@@ -19,7 +19,7 @@ export class WallBlueprintRenderingSystem implements GameSystem {
   private scene: Phaser.Scene;
   private graphics: Phaser.GameObjects.Graphics;
 
-  constructor(private world: GameWorld, config: Record<string, any>) {
+  constructor(private world: GameWorld, config: Pick<SystemConfig, 'scene'>) {
     this.scene = config.scene;
     this.blueprints = world.with('wallBlueprint', 'wallBlueprintTag', 'buildable') as any;
     this.graphics = this.scene.add.graphics();

@@ -13,7 +13,7 @@ export class VictorySystem extends GameSystemBase {
   private spawners: Query<With<Entity, 'spawner' | 'spawnerTag'>>;
   private victoryTriggered = false;
 
-  constructor(private world: GameWorld, _config: Record<string, any>) {
+  constructor(private world: GameWorld, _config: Record<string, never>) {
     super();
     this.monsters = world.with('monsterTag', 'health');
     this.lodges = world.with('lodge', 'position');

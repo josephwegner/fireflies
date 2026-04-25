@@ -125,7 +125,7 @@ export class WorldManager {
       onNextLevel: this.config.onNextLevel,
       onRetry: this.config.onRetry
     }));
-    this.uiSystems.push(new SoundSystem(this.world, { scene: this.scene }));
+    this.uiSystems.push(new SoundSystem(this.world, {}));
 
     // ── Gameplay systems ───────────────────────────────────────────────
     this.pathfindingService = new PathfindingService(this.pathfindingWorker, this.world);
@@ -137,7 +137,7 @@ export class WorldManager {
     this.gameplaySystems.push(new DamageSystem(this.world, {}));
     this.gameplaySystems.push(new MovementSystem(this.world, {}));
     this.gameplaySystems.push(new WallBreakingSystem(this.world, {}));
-    this.gameplaySystems.push(new BuildingSystem(this.world, { worker: this.pathfindingWorker }));
+    this.gameplaySystems.push(new BuildingSystem(this.world, {}));
     this.gameplaySystems.push(new WallActivationSystem(this.world, { worker: this.pathfindingWorker }));
     this.gameplaySystems.push(new RedirectSystem(this.world, {}));
     this.gameplaySystems.push(new RecruitmentSystem(this.world, { pathfinding: this.pathfindingService }));

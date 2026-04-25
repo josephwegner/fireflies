@@ -1,7 +1,7 @@
 import type { Query, With } from 'miniplex';
 import Phaser from 'phaser';
 import type { Entity, GameWorld, Renderable } from '@/ecs/Entity';
-import type { GameSystem } from '@/ecs/GameSystem';
+import type { GameSystem, SystemConfig } from '@/ecs/GameSystem';
 
 type RenderableEntity = With<Entity, 'position' | 'renderable'>;
 
@@ -12,7 +12,7 @@ export class RenderingSystem implements GameSystem {
   private glowMap = new Map<Entity, Phaser.GameObjects.Graphics>();
   private lastTime = 0;
 
-  constructor(private world: GameWorld, config: Record<string, any>) {
+  constructor(private world: GameWorld, config: Pick<SystemConfig, 'scene'>) {
     this.scene = config.scene;
     this.renderables = world.with('position', 'renderable') as any;
 

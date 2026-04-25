@@ -8,7 +8,7 @@ import { pointToSegmentDistance, clearPath } from '@/utils';
 export class WallBreakingSystem extends GameSystemBase {
   private wallAttackers: Query<With<Entity, 'wallAttackTarget' | 'position' | 'monsterTag'>>;
 
-  constructor(private world: GameWorld, _config: Record<string, any>) {
+  constructor(private world: GameWorld, _config: Record<string, never>) {
     super();
     this.wallAttackers = world.with('wallAttackTarget', 'position', 'monsterTag');
 

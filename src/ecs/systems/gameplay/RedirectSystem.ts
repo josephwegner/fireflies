@@ -11,7 +11,7 @@ export class RedirectSystem implements GameSystem {
 
   private entityRedirectTracking = new Map<number, Set<number>>();
 
-  constructor(private world: GameWorld, _config: Record<string, any>) {
+  constructor(private world: GameWorld, _config: Record<string, never>) {
     this.movers = world.with('position', 'velocity', 'path');
     this.redirects = world.with('position', 'redirect', 'redirectTag');
   }

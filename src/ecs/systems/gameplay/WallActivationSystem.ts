@@ -1,6 +1,6 @@
 import type { Query, With } from 'miniplex';
 import type { Entity, GameWorld } from '@/ecs/Entity';
-import { GameSystemBase } from '@/ecs/GameSystem';
+import { GameSystemBase, type SystemConfig } from '@/ecs/GameSystem';
 import { GAME_CONFIG } from '@/config';
 import { gameEvents, GameEvents } from '@/events';
 import { lineSegmentToRect, pointToSegmentDistance, clearPath } from '@/utils';
@@ -11,7 +11,7 @@ export class WallActivationSystem extends GameSystemBase {
   private walls: Query<With<Entity, 'wall' | 'wallTag'>>;
   private wallBlueprints: Query<With<Entity, 'wallBlueprint' | 'wallBlueprintTag' | 'buildable'>>;
 
-  constructor(world: GameWorld, config: Record<string, any>) {
+  constructor(world: GameWorld, config: Pick<SystemConfig, 'worker'>) {
     super();
     this.world = world;
     this.worker = config.worker;
