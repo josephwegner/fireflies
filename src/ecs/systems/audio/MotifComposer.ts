@@ -28,6 +28,7 @@ export class MotifComposer {
   }
 
   playMotif(notes: number[], spacing = MOTIF.DEFAULT_SPACING, velocity = MOTIF.DEFAULT_VELOCITY, reverbAmount = MOTIF.DEFAULT_REVERB): void {
+    if (notes.length === 0) return;
     const { ctx, sfxGain, reverbSend, voicePool } = this.graph;
     const now = ctx.currentTime + LOOKAHEAD;
     const allNodes: AudioNode[] = [];
@@ -69,6 +70,7 @@ export class MotifComposer {
   }
 
   playDefeatMotif(notes: number[]): void {
+    if (notes.length === 0) return;
     const { ctx, sfxGain, reverbSend, voicePool } = this.graph;
     const now = ctx.currentTime + LOOKAHEAD;
     const allNodes: AudioNode[] = [];

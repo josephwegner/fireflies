@@ -113,7 +113,7 @@ export class SoundEngine {
   }
 
   destroy(): void {
-    this.drone?.stopDrone(0);
+    this.drone?.destroy();
     this.ambient?.stop();
     this.voicePool?.killAll();
 

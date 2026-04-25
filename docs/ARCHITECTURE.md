@@ -105,6 +105,7 @@ src/
 │   └── systems/
 │       ├── gameplay/    # Game logic systems
 │       ├── rendering/   # Rendering systems (Phaser-dependent)
+│       ├── audio/       # Sound engine, instruments, drone, ambient
 │       ├── ui/          # UI overlay and placement systems
 │       └── effects/     # Particle effects
 ├── entities/            # Entity factories (world.add pattern)
@@ -224,6 +225,33 @@ export class MovementSystem implements GameSystem {
 | **FireflyGoalSystem** | Tracks firefly collection progress, emits LEVEL_WON when threshold met |
 | **DefeatSystem** | Emits LEVEL_LOST when a monster reaches its goal or insufficient fireflies remain |
 | **VictorySystem** | Listens for ENTITY_DIED, checks if all monsters defeated, evicts fireflies |
+
+### Audio Systems
+
+Audio lives in `src/ecs/systems/audio/` and is split into focused modules:
+
+```
+audio/
+├── SoundEngine.ts          # Orchestrator: AudioContext, gain graph, reverb network.
+│                            # Delegates all sound production to subsystems.
+├── VoicePool.ts            # Voice tracking, polyphony limiting (32 max), cleanup scheduling
+├── instruments/
+│   ├── ChimeGenerator.ts   # Detuned dual-oscillator bell tones (placement, wisp activation)
+│   ├── WoodTapGenerator.ts # Pitch-dropping percussive transient (firefly dash attack)
+│   ├── BassPulseGenerator.ts # Sub-harmonic bass with waveshaper (monster attack, wisp pulse)
+│   └── SfxGenerator.ts     # Spawn, death, construction, and break one-shots
+├── DroneSystem.ts          # Background drone with LFO modulation, tension sub-bass layer
+├── MotifComposer.ts        # Victory/defeat/collect note sequences
+├── AmbientGenerator.ts     # Periodic ambient fragments driven by game mood
+├── scales.ts               # Scale frequencies and drone pitches
+└── SoundSystem.ts          # ECS system: listens to game events, calls SoundEngine methods
+```
+
+**SoundSystem** is the ECS bridge — it subscribes to game events (`COMBAT_ATTACK_BURST`, `ENTITY_SPAWNED`, `LEVEL_WON`, etc.) and translates them into `SoundEngine` calls. It also drives continuous audio state (drone intensity, tension level, ambient mood) from entity counts each frame.
+
+**SoundEngine** owns the Web Audio `AudioContext` and gain graph (master → sfx/drone buses, 4-tap reverb network). It constructs all subsystems at initialization and delegates to them, keeping the same public API that SoundSystem depends on.
+
+All instrument generators receive an `AudioGraph` (ctx, sfxGain, reverbSend, voicePool) via constructor injection rather than creating their own audio nodes.
 
 ### Rendering Systems
 

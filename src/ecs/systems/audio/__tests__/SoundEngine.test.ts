@@ -168,5 +168,20 @@ describe('SoundEngine', () => {
       engine.destroy();
       expect(() => engine.playChime(440)).not.toThrow();
     });
+
+    it('cleans up tension oscillators even when drone is not active', () => {
+      engine.setTensionLevel(0.5);
+      expect(() => engine.destroy()).not.toThrow();
+    });
+  });
+
+  describe('empty notes guard', () => {
+    it('playMotif does not crash on empty notes', () => {
+      expect(() => engine.playMotif([])).not.toThrow();
+    });
+
+    it('playDefeatMotif does not crash on empty notes', () => {
+      expect(() => engine.playDefeatMotif([])).not.toThrow();
+    });
   });
 });

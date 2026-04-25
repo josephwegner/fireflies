@@ -1,4 +1,4 @@
-import { LOOKAHEAD, GAIN_FLOOR } from './VoicePool';
+import { LOOKAHEAD } from './VoicePool';
 import { DRONE_FREQUENCIES } from './scales';
 
 const DRONE = {
@@ -44,6 +44,11 @@ export class DroneSystem {
 
   get isActive(): boolean {
     return this.droneActive;
+  }
+
+  destroy(): void {
+    this.stopDrone(0);
+    this.stopTension(0);
   }
 
   startDrone(fadeTime = DRONE.FADE_IN): void {
