@@ -16,7 +16,7 @@ export class FireflyGoalSystem extends GameSystemBase {
 
   constructor(private world: GameWorld, config: Pick<SystemConfig, 'firefliesToWin'>) {
     super();
-    this.firefliesToWin = config.firefliesToWin ?? 1;
+    this.firefliesToWin = config.firefliesToWin;
     this.fireflyGoals = world.with('fireflyGoal', 'renderable', 'position', 'goalTag') as any;
 
     this.listen(GameEvents.PATH_COMPLETED, this.handlePathCompleted);

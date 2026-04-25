@@ -18,7 +18,7 @@ export class DefeatSystem extends GameSystemBase {
 
   constructor(private world: GameWorld, config: Pick<SystemConfig, 'firefliesToWin'>) {
     super();
-    this.firefliesToWin = config.firefliesToWin ?? 1;
+    this.firefliesToWin = config.firefliesToWin;
 
     this.monsters = world.with('monsterTag', 'position');
     this.monsterGoals = world.with('goalTag', 'destination', 'position');
