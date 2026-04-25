@@ -1,32 +1,35 @@
 {
-    "name": "firefly-lantern-keepers-poc",
-    "version": "1.0.0",
-    "description": "PoC for Firefly Lantern Keepers using Phaser 3, Miniplex, and Web Workers.",
-    "type": "module",
-    "scripts": {
-        "dev": "vite",
-        "build": "tsc && vite build",
-        "preview": "vite preview",
-        "test": "vitest",
-        "test:ui": "vitest --ui"
-    },
-    "dependencies": {
-        "@doodle3d/clipper-js": "^1.0.11",
-        "earcut": "^3.0.1",
-        "miniplex": "^2.0.0",
-        "navmesh": "^2.3.1",
-        "phaser": "^3.55.2"
-    },
-    "devDependencies": {
-        "@types/earcut": "^3.0.0",
-        "@types/node": "^24.8.1",
-        "@vitest/ui": "^3.2.4",
-        "jsdom": "^27.0.0",
-        "phaser3spectorjs": "^0.0.8",
-        "terser": "^5.44.0",
-        "typescript": "^5.9.3",
-        "vite": "^7.1.10",
-        "vite-plugin-static-copy": "^3.1.4",
-        "vitest": "^3.2.4"
-    }
+  "name": "firefly-lantern-keepers-poc",
+  "version": "1.0.0",
+  "description": "PoC for Firefly Lantern Keepers using Phaser 3, Miniplex, and Web Workers.",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "npm run build && wrangler dev",
+    "test": "vitest",
+    "test:ui": "vitest --ui",
+    "deploy": "npm run build && wrangler deploy"
+  },
+  "dependencies": {
+    "@doodle3d/clipper-js": "^1.0.11",
+    "earcut": "^3.0.1",
+    "miniplex": "^2.0.0",
+    "navmesh": "^2.3.1",
+    "phaser": "^3.55.2"
+  },
+  "devDependencies": {
+    "@cloudflare/vite-plugin": "^1.33.2",
+    "@types/earcut": "^3.0.0",
+    "@types/node": "^24.8.1",
+    "@vitest/ui": "^3.2.4",
+    "jsdom": "^27.0.0",
+    "phaser3spectorjs": "^0.0.8",
+    "terser": "^5.44.0",
+    "typescript": "^5.9.3",
+    "vite": "^7.1.10",
+    "vite-plugin-static-copy": "^3.1.4",
+    "vitest": "^3.2.4",
+    "wrangler": "^4.85.0"
+  }
 }
