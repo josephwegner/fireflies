@@ -4,3 +4,10 @@ node_modules
 .ai
 dist
 .claude
+
+# wrangler files
+.wrangler
+.dev.vars*
+!.dev.vars.example
+.env*
+!.env.example
