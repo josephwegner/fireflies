@@ -4,22 +4,7 @@ import type { Entity, GameWorld } from '@/ecs/Entity';
 import { UISystem } from '../UISystem';
 import { EnergyManager } from '@/ui/EnergyManager';
 import { gameEvents, GameEvents } from '@/events';
-
-function createMockGraphics() {
-  return {
-    setScrollFactor: vi.fn().mockReturnThis(),
-    setDepth: vi.fn().mockReturnThis(),
-    setOrigin: vi.fn().mockReturnThis(),
-    fillStyle: vi.fn().mockReturnThis(),
-    fillRect: vi.fn().mockReturnThis(),
-    fillCircle: vi.fn().mockReturnThis(),
-    lineStyle: vi.fn().mockReturnThis(),
-    lineBetween: vi.fn().mockReturnThis(),
-    clear: vi.fn().mockReturnThis(),
-    setAlpha: vi.fn().mockReturnThis(),
-    destroy: vi.fn()
-  };
-}
+import { createMockGraphics } from '@/__tests__/helpers';
 
 function createMockScene() {
   const mockText = {

@@ -5,6 +5,7 @@ import { LodgingSystem } from '../LodgingSystem';
 import { SpatialGrid } from '@/utils';
 import { gameEvents, GameEvents } from '@/events';
 import { PHYSICS_CONFIG, ENTITY_CONFIG } from '@/config';
+import { populateGridAndExecute } from '@/__tests__/helpers';
 
 describe('LodgingSystem', () => {
   let world: GameWorld;
@@ -22,12 +23,8 @@ describe('LodgingSystem', () => {
     gameEvents.clear();
   });
 
-  const populateGridAndExecute = () => {
-    spatialGrid.clear();
-    for (const entity of world.with('position')) {
-      spatialGrid.insert(entity, entity.position.x, entity.position.y);
-    }
-    system.update(16, 16);
+  const runLodging = () => {
+    populateGridAndExecute(world, spatialGrid, system);
   };
 
   describe('Tenant detection and addition', () => {
@@ -54,7 +51,7 @@ describe('LodgingSystem', () => {
         fireflyTag: true
       });
 
-      populateGridAndExecute();
+      runLodging();
 
       expect(wisp.lodge!.tenants).toHaveLength(1);
     });
@@ -82,7 +79,7 @@ describe('LodgingSystem', () => {
         fireflyTag: true
       });
 
-      populateGridAndExecute();
+      runLodging();
 
       expect(wisp.lodge!.tenants).toHaveLength(0);
     });
@@ -122,7 +119,7 @@ describe('LodgingSystem', () => {
         fireflyTag: true
       });
 
-      populateGridAndExecute();
+      runLodging();
 
       expect(wisp.lodge!.tenants).toHaveLength(1);
     });
@@ -150,7 +147,7 @@ describe('LodgingSystem', () => {
         fireflyTag: true
       });
 
-      populateGridAndExecute();
+      runLodging();
 
       expect(wisp.lodge!.tenants).toHaveLength(0);
     });
@@ -166,7 +163,7 @@ describe('LodgingSystem', () => {
         wispTag: true
       });
 
-      populateGridAndExecute();
+      runLodging();
 
       expect(wisp.lodge!.tenants).toHaveLength(0);
     });
@@ -249,7 +246,7 @@ describe('LodgingSystem', () => {
         fireflyTag: true
       });
 
-      populateGridAndExecute();
+      runLodging();
 
       expect(eventSpy).toHaveBeenCalledTimes(1);
       expect(eventSpy).toHaveBeenCalledWith({
@@ -281,7 +278,7 @@ describe('LodgingSystem', () => {
         fireflyTag: true
       });
 
-      populateGridAndExecute();
+      runLodging();
 
       expect(firefly.position).toBeUndefined();
       expect(firefly.velocity).toBeUndefined();
@@ -319,7 +316,7 @@ describe('LodgingSystem', () => {
         fireflyTag: true
       });
 
-      populateGridAndExecute();
+      runLodging();
 
       expect(wisp.renderable!.tint).toBe(ENTITY_CONFIG.wisp.activeColor);
     });
@@ -349,7 +346,7 @@ describe('LodgingSystem', () => {
         fireflyTag: true
       });
 
-      populateGridAndExecute();
+      runLodging();
 
       expect(wisp.renderable!.tint).toBe(originalColor);
     });
@@ -381,7 +378,7 @@ describe('LodgingSystem', () => {
         fireflyTag: true
       });
 
-      populateGridAndExecute();
+      runLodging();
 
       expect(wisp.lodge!.tenants).toHaveLength(1);
     });
@@ -410,7 +407,7 @@ describe('LodgingSystem', () => {
         fireflyTag: true
       });
 
-      populateGridAndExecute();
+      runLodging();
 
       expect(wisp.lodge!.tenants).toHaveLength(1);
     });
@@ -462,7 +459,7 @@ describe('LodgingSystem', () => {
         fireflyTag: true
       });
 
-      populateGridAndExecute();
+      runLodging();
 
       expect(wisp1.lodge!.tenants).toHaveLength(1);
       expect(wisp2.lodge!.tenants).toHaveLength(1);
@@ -503,7 +500,7 @@ describe('LodgingSystem', () => {
         fireflyTag: true
       });
 
-      populateGridAndExecute();
+      runLodging();
 
       expect(wisp.lodge!.tenants).toHaveLength(2);
     });
@@ -535,7 +532,7 @@ describe('LodgingSystem', () => {
 
       world.addComponent(firefly, 'assignedDestination', { target: wisp });
 
-      populateGridAndExecute();
+      runLodging();
 
       expect(wisp.lodge!.tenants).toContain(firefly);
       expect(wisp.lodge!.incoming).not.toContain(firefly);
@@ -566,7 +563,7 @@ describe('LodgingSystem', () => {
 
       world.addComponent(firefly, 'assignedDestination', { target: wisp });
 
-      populateGridAndExecute();
+      runLodging();
 
       expect(firefly.assignedDestination).toBeUndefined();
     });
@@ -594,7 +591,7 @@ describe('LodgingSystem', () => {
         wispTag: true
       });
 
-      populateGridAndExecute();
+      runLodging();
 
       expect(wisp.lodge!.incoming).toHaveLength(0);
     });
@@ -624,7 +621,7 @@ describe('LodgingSystem', () => {
 
       world.remove(firefly);
 
-      populateGridAndExecute();
+      runLodging();
 
       expect(wisp.lodge!.incoming).toHaveLength(0);
     });
@@ -664,7 +661,7 @@ describe('LodgingSystem', () => {
         wispTag: true
       });
 
-      populateGridAndExecute();
+      runLodging();
 
       expect(wisp.lodge!.tenants).toHaveLength(0);
       expect(wisp.lodge!.incoming).toContain(incomingFirefly);
@@ -705,7 +702,7 @@ describe('LodgingSystem', () => {
         wispTag: true
       });
 
-      populateGridAndExecute();
+      runLodging();
 
       expect(wisp.lodge!.incoming).toHaveLength(0);
       expect(wisp.lodge!.tenants).toHaveLength(1);
@@ -724,7 +721,7 @@ describe('LodgingSystem', () => {
         wispTag: true
       });
 
-      expect(() => populateGridAndExecute()).not.toThrow();
+      expect(() => runLodging()).not.toThrow();
     });
 
     it('should handle tenant without Renderable component', () => {
@@ -744,11 +741,11 @@ describe('LodgingSystem', () => {
         path: { currentPath: [], goalPath: [], direction: 'r' }
       });
 
-      expect(() => populateGridAndExecute()).not.toThrow();
+      expect(() => runLodging()).not.toThrow();
     });
 
     it('should handle no lodges in world', () => {
-      expect(() => populateGridAndExecute()).not.toThrow();
+      expect(() => runLodging()).not.toThrow();
     });
 
     it('should handle no tenants near lodge', () => {
@@ -762,7 +759,7 @@ describe('LodgingSystem', () => {
         wispTag: true
       });
 
-      populateGridAndExecute();
+      runLodging();
 
       expect(wisp.lodge!.tenants).toHaveLength(0);
     });
@@ -807,7 +804,7 @@ describe('LodgingSystem', () => {
         fleeingToGoalTag: true
       });
 
-      populateGridAndExecute();
+      runLodging();
 
       expect(wisp.lodge!.tenants).toHaveLength(0);
     });
@@ -848,7 +845,7 @@ describe('LodgingSystem', () => {
         fleeingToGoalTag: true
       });
 
-      populateGridAndExecute();
+      runLodging();
 
       expect(wisp.lodge!.tenants).toHaveLength(1);
       expect(wisp.lodge!.tenants[0]).toBe(normalFirefly);
@@ -878,7 +875,7 @@ describe('LodgingSystem', () => {
         }
       });
 
-      expect(() => populateGridAndExecute()).not.toThrow();
+      expect(() => runLodging()).not.toThrow();
     });
   });
 });

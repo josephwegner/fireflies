@@ -5,6 +5,10 @@ import { gameEvents } from '@/events';
 import { createTestFirefly, createTestMonster } from './entities';
 import { SpatialGrid } from '@/utils';
 
+export interface GameSystem {
+  update(delta: number, elapsed: number): void;
+}
+
 export interface TestSetup {
   world: GameWorld;
   combatSystem: CombatSystem;
@@ -28,6 +32,13 @@ export function executeWithSpatialGrid(world: GameWorld, spatialGrid: SpatialGri
   for (const entity of positioned) {
     spatialGrid.insert(entity, entity.position.x, entity.position.y);
   }
+}
+
+export function populateGridAndExecute(
+  world: GameWorld, spatialGrid: SpatialGrid, system: GameSystem, delta: number = 16
+): void {
+  executeWithSpatialGrid(world, spatialGrid, delta);
+  system.update(delta, delta);
 }
 
 export interface TestEntities {

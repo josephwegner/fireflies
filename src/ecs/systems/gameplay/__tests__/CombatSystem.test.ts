@@ -5,7 +5,7 @@ import { CombatState } from '@/ecs/Entity';
 import { CombatSystem } from '../CombatSystem';
 import { gameEvents, GameEvents } from '@/events';
 import { ENTITY_CONFIG } from '@/config';
-import { setup, getEntities, TestSetup, executeWithSpatialGrid } from '@/__tests__/helpers';
+import { setup, getEntities, TestSetup, executeWithSpatialGrid, populateGridAndExecute } from '@/__tests__/helpers';
 import { SpatialGrid } from '@/utils';
 import { createCombatFirefly, createCombatMonster } from '@/__tests__/helpers';
 
@@ -47,12 +47,8 @@ describe('CombatSystem', () => {
     gameEvents.clear();
   });
 
-  const populateGridAndExecute = (delta: number = 16) => {
-    spatialGrid.clear();
-    for (const entity of world.with('position')) {
-      spatialGrid.insert(entity, entity.position.x, entity.position.y);
-    }
-    combatSystem.update(delta, delta);
+  const runCombat = (delta: number = 16) => {
+    populateGridAndExecute(world, spatialGrid, combatSystem, delta);
   };
 
   describe('state transitions', () => {
@@ -77,7 +73,7 @@ describe('CombatSystem', () => {
         }
       });
 
-      populateGridAndExecute(16);
+      runCombat(16);
 
       expect(attacker.combat!.state).toBe(CombatState.CHARGING);
     });
@@ -104,7 +100,7 @@ describe('CombatSystem', () => {
       });
 
       for (let i = 0; i < 5; i++) {
-        populateGridAndExecute(16);
+        runCombat(16);
       }
 
       expect(attacker.combat!.state).toBe(CombatState.ATTACKING);
@@ -133,7 +129,7 @@ describe('CombatSystem', () => {
       });
 
       for (let i = 0; i < 5; i++) {
-        populateGridAndExecute(16);
+        runCombat(16);
       }
 
       expect(attacker.combat!.state).toBe(CombatState.RECOVERING);
@@ -162,7 +158,7 @@ describe('CombatSystem', () => {
       });
 
       for (let i = 0; i < 10; i++) {
-        populateGridAndExecute(16);
+        runCombat(16);
       }
 
       expect(attacker.combat!.state).toBe(CombatState.CHARGING);
@@ -410,7 +406,7 @@ describe('CombatSystem', () => {
         }
       });
 
-      populateGridAndExecute(16);
+      runCombat(16);
 
       expect(attacker.target).toBeUndefined();
     });
@@ -437,7 +433,7 @@ describe('CombatSystem', () => {
         fireflyTag: true
       });
 
-      populateGridAndExecute(16);
+      runCombat(16);
 
       expect(attacker.target).toBeUndefined();
     });
@@ -464,7 +460,7 @@ describe('CombatSystem', () => {
         fireflyTag: true
       });
 
-      populateGridAndExecute(16);
+      runCombat(16);
 
       expect(attacker.combat!.state).toBe(CombatState.IDLE);
       expect(attacker.combat!.chargeTime).toBe(0);
@@ -488,7 +484,7 @@ describe('CombatSystem', () => {
       });
 
       expect(() => {
-        populateGridAndExecute(16);
+        runCombat(16);
       }).not.toThrow();
     });
 
@@ -514,7 +510,7 @@ describe('CombatSystem', () => {
       });
 
       expect(() => {
-        populateGridAndExecute(16);
+        runCombat(16);
       }).not.toThrow();
 
       expect(attacker.target).toBeUndefined();
@@ -541,7 +537,7 @@ describe('CombatSystem', () => {
       });
 
       expect(() => {
-        populateGridAndExecute(16);
+        runCombat(16);
       }).not.toThrow();
     });
   });

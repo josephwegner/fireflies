@@ -2,26 +2,7 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { World } from 'miniplex';
 import { WallRenderingSystem } from '../WallRenderingSystem';
 import type { Entity, GameWorld } from '@/ecs/Entity';
-
-function createMockGraphics() {
-  return {
-    lineStyle: vi.fn(),
-    beginPath: vi.fn(),
-    moveTo: vi.fn(),
-    lineTo: vi.fn(),
-    strokePath: vi.fn(),
-    clear: vi.fn(),
-    destroy: vi.fn()
-  };
-}
-
-function createMockScene(mockGraphics: any) {
-  return {
-    add: {
-      graphics: vi.fn(() => mockGraphics)
-    }
-  } as any;
-}
+import { createMockGraphics, createMockScene } from '@/__tests__/helpers';
 
 describe('WallRenderingSystem', () => {
   let world: GameWorld;
@@ -32,7 +13,7 @@ describe('WallRenderingSystem', () => {
   beforeEach(() => {
     world = new World<Entity>();
     mockGraphics = createMockGraphics();
-    mockScene = createMockScene(mockGraphics);
+    mockScene = createMockScene({ graphicsFactory: () => mockGraphics });
     system = new WallRenderingSystem(world, { scene: mockScene });
   });
 

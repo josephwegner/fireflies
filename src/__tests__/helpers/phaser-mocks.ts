@@ -9,16 +9,18 @@ export function createMockContainer() {
     setPosition: vi.fn().mockReturnThis(),
     setScale: vi.fn().mockReturnThis(),
     setRotation: vi.fn().mockReturnThis(),
+    setDepth: vi.fn().mockReturnThis(),
     destroy: vi.fn(),
-    add: vi.fn()
+    add: vi.fn(),
+    remove: vi.fn(),
+    addAt: vi.fn()
   };
-  
-  // Manually implement add to ensure it works correctly
+
   container.add.mockImplementation((child: any) => {
     container.list.push(child);
     return container;
   });
-  
+
   return container;
 }
 
@@ -29,14 +31,16 @@ export function createMockSprite(width = 100, height = 100) {
   const sprite = {
     width,
     height,
-    tintTopLeft: 0xFFFFFF, // Track the current tint
+    tintTopLeft: 0xFFFFFF,
     setScale: vi.fn().mockReturnThis(),
+    setPosition: vi.fn().mockReturnThis(),
     setTint: vi.fn().mockImplementation(function(this: any, tint: number) {
-      this.tintTopLeft = tint; // Update tint when setTint is called
+      this.tintTopLeft = tint;
       return this;
-    })
+    }),
+    destroy: vi.fn()
   };
-  
+
   return sprite;
 }
 
@@ -45,7 +49,9 @@ export function createMockSprite(width = 100, height = 100) {
  */
 export function createMockCircle() {
   return {
+    setPosition: vi.fn().mockReturnThis(),
     setFillStyle: vi.fn().mockReturnThis(),
+    setTint: vi.fn().mockReturnThis(),
     setAlpha: vi.fn().mockReturnThis(),
     setDepth: vi.fn().mockReturnThis(),
     setBlendMode: vi.fn().mockReturnThis(),
@@ -81,15 +87,23 @@ export function createMockTriangle() {
 export function createMockGraphics() {
   return {
     lineStyle: vi.fn().mockReturnThis(),
+    lineBetween: vi.fn().mockReturnThis(),
     beginPath: vi.fn().mockReturnThis(),
     moveTo: vi.fn().mockReturnThis(),
     lineTo: vi.fn().mockReturnThis(),
     strokePath: vi.fn().mockReturnThis(),
     clear: vi.fn().mockReturnThis(),
     fillStyle: vi.fn().mockReturnThis(),
+    fillRect: vi.fn().mockReturnThis(),
     fillCircle: vi.fn().mockReturnThis(),
     strokeCircle: vi.fn().mockReturnThis(),
+    setScrollFactor: vi.fn().mockReturnThis(),
+    setDepth: vi.fn().mockReturnThis(),
+    setOrigin: vi.fn().mockReturnThis(),
     setAlpha: vi.fn().mockReturnThis(),
+    setBlendMode: vi.fn().mockReturnThis(),
+    setData: vi.fn().mockReturnThis(),
+    getData: vi.fn(),
     destroy: vi.fn(),
     scene: {},
     name: ''

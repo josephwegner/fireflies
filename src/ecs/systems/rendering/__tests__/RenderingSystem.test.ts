@@ -2,74 +2,13 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { World } from 'miniplex';
 import { RenderingSystem } from '../RenderingSystem';
 import type { Entity, GameWorld } from '@/ecs/Entity';
-
-function createMockContainer() {
-  return {
-    add: vi.fn(),
-    setPosition: vi.fn(),
-    setScale: vi.fn(),
-    setDepth: vi.fn(),
-    setRotation: vi.fn(),
-    destroy: vi.fn(),
-    remove: vi.fn(),
-    addAt: vi.fn(),
-    list: [] as any[]
-  };
-}
-
-function createMockSprite(width = 100, height = 100) {
-  return {
-    width,
-    height,
-    setScale: vi.fn(),
-    setPosition: vi.fn(),
-    setTint: vi.fn(),
-    destroy: vi.fn()
-  };
-}
-
-function createMockCircle() {
-  return {
-    setPosition: vi.fn(),
-    setFillStyle: vi.fn(),
-    setTint: vi.fn(),
-    destroy: vi.fn()
-  };
-}
-
-function createMockGraphics() {
-  return {
-    fillStyle: vi.fn(),
-    fillCircle: vi.fn(),
-    setAlpha: vi.fn(),
-    setBlendMode: vi.fn(),
-    setData: vi.fn(),
-    getData: vi.fn(),
-    destroy: vi.fn()
-  };
-}
-
-function createMockScene(opts: {
-  textureExists?: (key: string) => boolean;
-  spriteFactory?: () => any;
-  containerFactory?: () => any;
-} = {}) {
-  const mockContainer = opts.containerFactory ?? createMockContainer;
-  const mockSprite = opts.spriteFactory ?? (() => createMockSprite());
-  const mockCircle = createMockCircle;
-
-  return {
-    add: {
-      container: vi.fn((_x: number, _y: number) => mockContainer()),
-      sprite: vi.fn((_x: number, _y: number, _key: string) => mockSprite()),
-      circle: vi.fn((_x: number, _y: number, _r: number, _c: number) => mockCircle()),
-      graphics: vi.fn(() => createMockGraphics())
-    },
-    textures: {
-      exists: vi.fn(opts.textureExists ?? (() => false))
-    }
-  } as any;
-}
+import {
+  createMockContainer,
+  createMockSprite,
+  createMockCircle,
+  createMockGraphics,
+  createMockScene
+} from '@/__tests__/helpers';
 
 function makeRenderable(overrides: Partial<Entity['renderable']> = {}): NonNullable<Entity['renderable']> {
   return {

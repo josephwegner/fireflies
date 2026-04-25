@@ -213,14 +213,21 @@ export interface CombatEntityOptions extends TestEntityOptions {
   state?: CombatState;
 }
 
-export function createCombatFirefly(
+const COMBAT_DEFAULTS: Record<'firefly' | 'monster', { health: number; collisionRadius: number; team: 'firefly' | 'monster'; tag: 'fireflyTag' | 'monsterTag' }> = {
+  firefly: { health: 50, collisionRadius: 5, team: 'firefly', tag: 'fireflyTag' },
+  monster: { health: 100, collisionRadius: 8, team: 'monster', tag: 'monsterTag' }
+};
+
+function createCombatEntity(
   world: GameWorld,
+  type: 'firefly' | 'monster',
   options: CombatEntityOptions = {}
 ): Entity {
+  const defaults = COMBAT_DEFAULTS[type];
   const {
     x = 100, y = 100, vx = 0, vy = 0,
-    health = 50, maxHealth = 50, isDead = false,
-    mass = 1, collisionRadius = 5
+    health = defaults.health, maxHealth = defaults.health, isDead = false,
+    mass = 1, collisionRadius = defaults.collisionRadius
   } = options;
 
   return world.add({
@@ -228,29 +235,23 @@ export function createCombatFirefly(
     velocity: { vx, vy },
     health: { currentHealth: health, maxHealth, isDead },
     physicsBody: { mass, isStatic: false, collisionRadius },
-    team: 'firefly',
-    fireflyTag: true
+    team: defaults.team,
+    [defaults.tag]: true
   });
+}
+
+export function createCombatFirefly(
+  world: GameWorld,
+  options: CombatEntityOptions = {}
+): Entity {
+  return createCombatEntity(world, 'firefly', options);
 }
 
 export function createCombatMonster(
   world: GameWorld,
   options: CombatEntityOptions = {}
 ): Entity {
-  const {
-    x = 100, y = 100, vx = 0, vy = 0,
-    health = 100, maxHealth = 100, isDead = false,
-    mass = 1, collisionRadius = 8
-  } = options;
-
-  return world.add({
-    position: { x, y },
-    velocity: { vx, vy },
-    health: { currentHealth: health, maxHealth, isDead },
-    physicsBody: { mass, isStatic: false, collisionRadius },
-    team: 'monster',
-    monsterTag: true
-  });
+  return createCombatEntity(world, 'monster', options);
 }
 
 export function createCombatAttacker(
