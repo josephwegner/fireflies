@@ -2,22 +2,22 @@ import { defineConfig, type UserConfig } from 'vite';
 import { viteStaticCopy } from 'vite-plugin-static-copy';
 import path from 'path';
 
+import { cloudflare } from "@cloudflare/vite-plugin";
+
 export default defineConfig(({ command }) => ({
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src')
     }
   },
-  plugins: [
-    viteStaticCopy({
-      targets: [
-        {
-          src: 'assets/**/*',
-          dest: 'assets'
-        }
-      ]
-    })
-  ],
+  plugins: [viteStaticCopy({
+    targets: [
+      {
+        src: 'assets/**/*',
+        dest: 'assets'
+      }
+    ]
+  }), cloudflare()],
   server: {
     port: 8080,
     open: false
