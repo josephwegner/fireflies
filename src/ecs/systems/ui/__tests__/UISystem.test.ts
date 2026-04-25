@@ -4,83 +4,35 @@ import type { Entity, GameWorld } from '@/ecs/Entity';
 import { UISystem } from '../UISystem';
 import { EnergyManager } from '@/ui/EnergyManager';
 import { gameEvents, GameEvents } from '@/events';
-import { createMockGraphics } from '@/__tests__/helpers';
+import { createMockGraphics, createMockText, createMockSprite, createMockRectangle, createMockScene } from '@/__tests__/helpers';
 
-function createMockScene() {
-  const mockText = {
-    setScrollFactor: vi.fn().mockReturnThis(),
-    setDepth: vi.fn().mockReturnThis(),
-    setOrigin: vi.fn().mockReturnThis(),
-    setText: vi.fn().mockReturnThis(),
-    setStyle: vi.fn().mockReturnThis(),
-    destroy: vi.fn()
-  };
-
+function createUITestScene() {
+  const mockText = createMockText();
+  const mockCostText = createMockText();
   const mockBackground = createMockGraphics();
   const mockWallIcon = createMockGraphics();
+  const mockSprite = createMockSprite(24, 24);
+  const mockRect = createMockRectangle();
 
-  const mockRect = {
-    setScrollFactor: vi.fn().mockReturnThis(),
-    setDepth: vi.fn().mockReturnThis(),
-    setAlpha: vi.fn().mockReturnThis(),
-    setInteractive: vi.fn().mockReturnThis(),
-    disableInteractive: vi.fn().mockReturnThis(),
-    on: vi.fn().mockReturnThis(),
-    destroy: vi.fn()
-  };
+  const scene = createMockScene({ textureExists: () => true });
 
-  const mockSprite = {
-    setScrollFactor: vi.fn().mockReturnThis(),
-    setDepth: vi.fn().mockReturnThis(),
-    setOrigin: vi.fn().mockReturnThis(),
-    setScale: vi.fn().mockReturnThis(),
-    setInteractive: vi.fn().mockReturnThis(),
-    disableInteractive: vi.fn().mockReturnThis(),
-    setTint: vi.fn().mockReturnThis(),
-    clearTint: vi.fn().mockReturnThis(),
-    setAlpha: vi.fn().mockReturnThis(),
-    on: vi.fn().mockReturnThis(),
-    destroy: vi.fn(),
-    displayWidth: 24,
-    displayHeight: 24
-  };
+  scene.add.text
+    .mockReset()
+    .mockReturnValueOnce(mockText)
+    .mockReturnValueOnce(mockCostText)
+    .mockReturnValue(mockCostText);
+  scene.add.graphics
+    .mockReset()
+    .mockReturnValueOnce(mockBackground)
+    .mockReturnValue(mockWallIcon);
+  scene.add.sprite
+    .mockReset()
+    .mockReturnValue(mockSprite);
+  scene.add.rectangle
+    .mockReset()
+    .mockReturnValue(mockRect);
 
-  const mockCostText = {
-    setScrollFactor: vi.fn().mockReturnThis(),
-    setDepth: vi.fn().mockReturnThis(),
-    setOrigin: vi.fn().mockReturnThis(),
-    setText: vi.fn().mockReturnThis(),
-    setStyle: vi.fn().mockReturnThis(),
-    setAlpha: vi.fn().mockReturnThis(),
-    destroy: vi.fn()
-  };
-
-  return {
-    scene: {
-      add: {
-        text: vi.fn().mockReturnValueOnce(mockText)
-          .mockReturnValueOnce(mockCostText)
-          .mockReturnValue(mockCostText),
-        graphics: vi.fn().mockReturnValueOnce(mockBackground).mockReturnValue(mockWallIcon),
-        sprite: vi.fn().mockReturnValue(mockSprite),
-        rectangle: vi.fn().mockReturnValue(mockRect)
-      },
-      scale: {
-        width: 1200,
-        height: 800,
-        on: vi.fn()
-      },
-      textures: {
-        exists: vi.fn().mockReturnValue(true)
-      }
-    },
-    mockText,
-    mockBackground,
-    mockWallIcon,
-    mockRect,
-    mockSprite,
-    mockCostText
-  };
+  return { scene, mockText, mockCostText, mockBackground, mockWallIcon, mockSprite, mockRect };
 }
 
 describe('UISystem', () => {
@@ -96,7 +48,7 @@ describe('UISystem', () => {
 
   describe('initialization', () => {
     it('should create HUD elements', () => {
-      const { scene } = createMockScene();
+      const { scene } = createUITestScene();
       system = new UISystem(world, {
         scene,
         energyManager,
@@ -109,7 +61,7 @@ describe('UISystem', () => {
     });
 
     it('should set scroll factor 0 on HUD elements', () => {
-      const { scene, mockText, mockBackground, mockSprite } = createMockScene();
+      const { scene, mockText, mockBackground, mockSprite } = createUITestScene();
       system = new UISystem(world, {
         scene,
         energyManager,
@@ -122,7 +74,7 @@ describe('UISystem', () => {
     });
 
     it('should make wisp icon interactive', () => {
-      const { scene, mockSprite } = createMockScene();
+      const { scene, mockSprite } = createUITestScene();
       system = new UISystem(world, {
         scene,
         energyManager,
@@ -135,7 +87,7 @@ describe('UISystem', () => {
 
   describe('energy display', () => {
     it('should show initial energy value', () => {
-      const { scene, mockText } = createMockScene();
+      const { scene, mockText } = createUITestScene();
       system = new UISystem(world, {
         scene,
         energyManager,
@@ -148,7 +100,7 @@ describe('UISystem', () => {
     });
 
     it('should update energy display after spending', () => {
-      const { scene, mockText } = createMockScene();
+      const { scene, mockText } = createUITestScene();
       system = new UISystem(world, {
         scene,
         energyManager,
@@ -164,7 +116,7 @@ describe('UISystem', () => {
 
   describe('store affordability', () => {
     it('should grey out wisp when unaffordable', () => {
-      const { scene, mockSprite } = createMockScene();
+      const { scene, mockSprite } = createUITestScene();
       system = new UISystem(world, {
         scene,
         energyManager: new EnergyManager(50),
@@ -178,7 +130,7 @@ describe('UISystem', () => {
     });
 
     it('should keep wisp active when affordable', () => {
-      const { scene, mockSprite } = createMockScene();
+      const { scene, mockSprite } = createUITestScene();
       system = new UISystem(world, {
         scene,
         energyManager,
@@ -194,7 +146,7 @@ describe('UISystem', () => {
 
   describe('store click', () => {
     it('should emit PLACEMENT_STARTED when wisp icon is clicked', () => {
-      const { scene, mockSprite } = createMockScene();
+      const { scene, mockSprite } = createUITestScene();
       system = new UISystem(world, {
         scene,
         energyManager,
@@ -216,7 +168,7 @@ describe('UISystem', () => {
 
   describe('cleanup', () => {
     it('should destroy HUD elements on destroy', () => {
-      const { scene, mockText, mockBackground, mockSprite, mockCostText } = createMockScene();
+      const { scene, mockText, mockBackground, mockSprite, mockCostText } = createUITestScene();
       system = new UISystem(world, {
         scene,
         energyManager,

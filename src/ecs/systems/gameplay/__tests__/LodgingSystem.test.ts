@@ -23,8 +23,8 @@ describe('LodgingSystem', () => {
     gameEvents.clear();
   });
 
-  const runLodging = () => {
-    populateGridAndExecute(world, spatialGrid, system);
+  const runLodging = (delta: number = 16) => {
+    populateGridAndExecute(world, spatialGrid, system, delta);
   };
 
   describe('Tenant detection and addition', () => {

@@ -5,6 +5,7 @@ import { PlacementSystem } from '../PlacementSystem';
 import { EnergyManager } from '@/ui/EnergyManager';
 import { gameEvents, GameEvents } from '@/events';
 import { GAME_CONFIG } from '@/config';
+import { createMockScene, createMockSprite } from '@/__tests__/helpers';
 
 const TILE = GAME_CONFIG.TILE_SIZE;
 
@@ -16,48 +17,22 @@ const TEST_MAP = [
   [0, 0, 0, 0, 0]
 ];
 
-function createMockScene() {
-  const ghostSprite = {
-    setAlpha: vi.fn().mockReturnThis(),
-    setTint: vi.fn().mockReturnThis(),
-    clearTint: vi.fn().mockReturnThis(),
-    setScrollFactor: vi.fn().mockReturnThis(),
-    setPosition: vi.fn().mockReturnThis(),
-    setDepth: vi.fn().mockReturnThis(),
-    destroy: vi.fn()
-  };
-
+function createPlacementTestScene() {
+  const ghostSprite = createMockSprite();
   const pointerHandlers: Record<string, Function> = {};
   const keyHandlers: Record<string, Function> = {};
 
-  return {
-    scene: {
-      add: {
-        sprite: vi.fn().mockReturnValue(ghostSprite)
-      },
-      input: {
-        on: vi.fn((event: string, handler: Function) => {
-          pointerHandlers[event] = handler;
-        }),
-        off: vi.fn(),
-        activePointer: { x: 0, y: 0 },
-        keyboard: {
-          on: vi.fn((event: string, handler: Function) => {
-            keyHandlers[event] = handler;
-          }),
-          off: vi.fn()
-        }
-      },
-      cameras: {
-        main: {
-          getWorldPoint: vi.fn((x: number, y: number) => ({ x, y }))
-        }
-      }
-    },
-    ghostSprite,
-    pointerHandlers,
-    keyHandlers
-  };
+  const scene = createMockScene();
+  scene.add.sprite.mockReset().mockReturnValue(ghostSprite);
+
+  scene.input.on = vi.fn((event: string, handler: Function) => {
+    pointerHandlers[event] = handler;
+  });
+  scene.input.keyboard!.on = vi.fn((event: string, handler: Function) => {
+    keyHandlers[event] = handler;
+  });
+
+  return { scene, ghostSprite, pointerHandlers, keyHandlers };
 }
 
 describe('PlacementSystem', () => {
@@ -73,7 +48,7 @@ describe('PlacementSystem', () => {
 
   describe('idle state', () => {
     it('should start in idle state', () => {
-      const { scene } = createMockScene();
+      const { scene } = createPlacementTestScene();
       system = new PlacementSystem(world, {
         scene, energyManager, map: TEST_MAP,
         levelConfig: { store: { wisp: { cost: 100 } } }
@@ -83,7 +58,7 @@ describe('PlacementSystem', () => {
     });
 
     it('should not create ghost sprite in idle', () => {
-      const { scene } = createMockScene();
+      const { scene } = createPlacementTestScene();
       system = new PlacementSystem(world, {
         scene, energyManager, map: TEST_MAP,
         levelConfig: { store: { wisp: { cost: 100 } } }
@@ -97,7 +72,7 @@ describe('PlacementSystem', () => {
 
   describe('placement start', () => {
     it('should enter placing state on PLACEMENT_STARTED event', () => {
-      const { scene } = createMockScene();
+      const { scene } = createPlacementTestScene();
       system = new PlacementSystem(world, {
         scene, energyManager, map: TEST_MAP,
         levelConfig: { store: { wisp: { cost: 100 } } }
@@ -109,7 +84,7 @@ describe('PlacementSystem', () => {
     });
 
     it('should create ghost sprite on placement start', () => {
-      const { scene, ghostSprite } = createMockScene();
+      const { scene, ghostSprite } = createPlacementTestScene();
       system = new PlacementSystem(world, {
         scene, energyManager, map: TEST_MAP,
         levelConfig: { store: { wisp: { cost: 100 } } }
@@ -124,7 +99,7 @@ describe('PlacementSystem', () => {
 
   describe('cursor tracking', () => {
     it('should move ghost sprite to world pointer position during update', () => {
-      const { scene, ghostSprite } = createMockScene();
+      const { scene, ghostSprite } = createPlacementTestScene();
       system = new PlacementSystem(world, {
         scene, energyManager, map: TEST_MAP,
         levelConfig: { store: { wisp: { cost: 100 } } }
@@ -142,7 +117,7 @@ describe('PlacementSystem', () => {
     });
 
     it('should show valid tint on walkable tile', () => {
-      const { scene, ghostSprite } = createMockScene();
+      const { scene, ghostSprite } = createPlacementTestScene();
       system = new PlacementSystem(world, {
         scene, energyManager, map: TEST_MAP,
         levelConfig: { store: { wisp: { cost: 100 } } }
@@ -163,7 +138,7 @@ describe('PlacementSystem', () => {
     });
 
     it('should show invalid tint on non-walkable tile', () => {
-      const { scene, ghostSprite } = createMockScene();
+      const { scene, ghostSprite } = createPlacementTestScene();
       system = new PlacementSystem(world, {
         scene, energyManager, map: TEST_MAP,
         levelConfig: { store: { wisp: { cost: 100 } } }
@@ -186,7 +161,7 @@ describe('PlacementSystem', () => {
 
   describe('placement execution', () => {
     it('should place wisp on valid tile click', () => {
-      const { scene, pointerHandlers } = createMockScene();
+      const { scene, pointerHandlers } = createPlacementTestScene();
       system = new PlacementSystem(world, {
         scene, energyManager, map: TEST_MAP,
         levelConfig: { store: { wisp: { cost: 100 } } }
@@ -211,7 +186,7 @@ describe('PlacementSystem', () => {
     });
 
     it('should deduct energy on placement', () => {
-      const { scene, pointerHandlers } = createMockScene();
+      const { scene, pointerHandlers } = createPlacementTestScene();
       system = new PlacementSystem(world, {
         scene, energyManager, map: TEST_MAP,
         levelConfig: { store: { wisp: { cost: 100 } } }
@@ -229,7 +204,7 @@ describe('PlacementSystem', () => {
     });
 
     it('should create a wisp entity on placement', () => {
-      const { scene, pointerHandlers } = createMockScene();
+      const { scene, pointerHandlers } = createPlacementTestScene();
       system = new PlacementSystem(world, {
         scene, energyManager, map: TEST_MAP,
         levelConfig: { store: { wisp: { cost: 100 } } }
@@ -250,7 +225,7 @@ describe('PlacementSystem', () => {
     });
 
     it('should return to idle after placement', () => {
-      const { scene, pointerHandlers } = createMockScene();
+      const { scene, pointerHandlers } = createPlacementTestScene();
       system = new PlacementSystem(world, {
         scene, energyManager, map: TEST_MAP,
         levelConfig: { store: { wisp: { cost: 100 } } }
@@ -268,7 +243,7 @@ describe('PlacementSystem', () => {
     });
 
     it('should not place wisp on non-walkable tile', () => {
-      const { scene, pointerHandlers } = createMockScene();
+      const { scene, pointerHandlers } = createPlacementTestScene();
       system = new PlacementSystem(world, {
         scene, energyManager, map: TEST_MAP,
         levelConfig: { store: { wisp: { cost: 100 } } }
@@ -287,7 +262,7 @@ describe('PlacementSystem', () => {
     });
 
     it('should not place wisp outside map bounds', () => {
-      const { scene, pointerHandlers } = createMockScene();
+      const { scene, pointerHandlers } = createPlacementTestScene();
       system = new PlacementSystem(world, {
         scene, energyManager, map: TEST_MAP,
         levelConfig: { store: { wisp: { cost: 100 } } }
@@ -306,7 +281,7 @@ describe('PlacementSystem', () => {
 
   describe('cancellation', () => {
     it('should cancel on right-click', () => {
-      const { scene, pointerHandlers, ghostSprite } = createMockScene();
+      const { scene, pointerHandlers, ghostSprite } = createPlacementTestScene();
       system = new PlacementSystem(world, {
         scene, energyManager, map: TEST_MAP,
         levelConfig: { store: { wisp: { cost: 100 } } }
@@ -325,7 +300,7 @@ describe('PlacementSystem', () => {
     });
 
     it('should cancel on Escape key', () => {
-      const { scene, keyHandlers, ghostSprite } = createMockScene();
+      const { scene, keyHandlers, ghostSprite } = createPlacementTestScene();
       system = new PlacementSystem(world, {
         scene, energyManager, map: TEST_MAP,
         levelConfig: { store: { wisp: { cost: 100 } } }
@@ -344,7 +319,7 @@ describe('PlacementSystem', () => {
     });
 
     it('should not deduct energy on cancellation', () => {
-      const { scene, pointerHandlers } = createMockScene();
+      const { scene, pointerHandlers } = createPlacementTestScene();
       system = new PlacementSystem(world, {
         scene, energyManager, map: TEST_MAP,
         levelConfig: { store: { wisp: { cost: 100 } } }
@@ -359,7 +334,7 @@ describe('PlacementSystem', () => {
 
   describe('cleanup', () => {
     it('should clean up on destroy', () => {
-      const { scene } = createMockScene();
+      const { scene } = createPlacementTestScene();
       system = new PlacementSystem(world, {
         scene, energyManager, map: TEST_MAP,
         levelConfig: { store: { wisp: { cost: 100 } } }
@@ -369,7 +344,7 @@ describe('PlacementSystem', () => {
     });
 
     it('should destroy ghost sprite on destroy if placing', () => {
-      const { scene, ghostSprite } = createMockScene();
+      const { scene, ghostSprite } = createPlacementTestScene();
       system = new PlacementSystem(world, {
         scene, energyManager, map: TEST_MAP,
         levelConfig: { store: { wisp: { cost: 100 } } }
