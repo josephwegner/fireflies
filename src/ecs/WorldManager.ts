@@ -14,6 +14,8 @@ import { CombatSystem } from './systems/gameplay/CombatSystem';
 import { DamageSystem } from './systems/gameplay/DamageSystem';
 import { LodgingSystem } from './systems/gameplay/LodgingSystem';
 import { DestinationSystem } from './systems/gameplay/DestinationSystem';
+import { RecruitmentSystem } from './systems/gameplay/RecruitmentSystem';
+import { PathfindingService } from './systems/gameplay/PathfindingService';
 import { WallGenerationSystem } from './systems/gameplay/WallGenerationSystem';
 import { FireflyGoalSystem } from './systems/gameplay/FireflyGoalSystem';
 import { VictorySystem } from './systems/gameplay/VictorySystem';
@@ -60,6 +62,7 @@ export class WorldManager {
   private uiSystems: GameSystem[] = [];
   private gameplaySystems: GameSystem[] = [];
   private renderingSystem!: RenderingSystem;
+  private pathfindingService!: PathfindingService;
   private _paused = true;
 
   constructor(
@@ -125,6 +128,7 @@ export class WorldManager {
     this.uiSystems.push(new SoundSystem(this.world, { scene: this.scene }));
 
     // ── Gameplay systems ───────────────────────────────────────────────
+    this.pathfindingService = new PathfindingService(this.pathfindingWorker, this.world);
     this.gameplaySystems.push(new SpawnerSystem(this.world, {}));
     this.gameplaySystems.push(new InteractionSystem(this.world, { spatialGrid: this.spatialGrid }));
     this.gameplaySystems.push(new TargetingSystem(this.world, {}));
@@ -136,7 +140,8 @@ export class WorldManager {
     this.gameplaySystems.push(new BuildingSystem(this.world, { worker: this.pathfindingWorker }));
     this.gameplaySystems.push(new WallActivationSystem(this.world, { worker: this.pathfindingWorker }));
     this.gameplaySystems.push(new RedirectSystem(this.world, {}));
-    this.gameplaySystems.push(new DestinationSystem(this.world, { worker: this.pathfindingWorker }));
+    this.gameplaySystems.push(new RecruitmentSystem(this.world, { pathfinding: this.pathfindingService }));
+    this.gameplaySystems.push(new DestinationSystem(this.world, { pathfinding: this.pathfindingService }));
     this.gameplaySystems.push(new FireflyGoalSystem(this.world, {
       firefliesToWin: this.config.levelConfig.firefliesToWin
     }));
@@ -179,6 +184,7 @@ export class WorldManager {
     for (const system of allSystems) {
       system.destroy?.();
     }
+    this.pathfindingService.destroy();
     this.renderingSystems = [];
     this.uiSystems = [];
     this.gameplaySystems = [];

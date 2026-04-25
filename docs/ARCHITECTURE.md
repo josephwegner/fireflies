@@ -41,7 +41,8 @@ The game follows ECS patterns using Miniplex:
               │
               ├──► MovementSystem
               ├──► TargetingSystem
-              ├──► DestinationSystem
+              ├──► RecruitmentSystem ──┐
+              ├──► DestinationSystem ──┤── PathfindingService
               └──► RenderingSystem
 ```
 
@@ -208,7 +209,8 @@ export class MovementSystem implements GameSystem {
 | System | Responsibility |
 |--------|---------------|
 | **MovementSystem** | Moves entities along paths, applies friction, emits PATH_COMPLETED |
-| **DestinationSystem** | Requests pathfinding from worker, manages path queues |
+| **DestinationSystem** | Requests navigation pathfinding, manages path queues, wall attack targeting |
+| **RecruitmentSystem** | Finds candidates for lodges, scores by path distance, assigns closest entity |
 | **TargetingSystem** | Acquires targets from potentialTargets using `world.with().without()` |
 | **InteractionSystem** | Detects nearby entities via spatial grid, populates potentialTargets |
 | **CombatSystem** | State machine (IDLE → CHARGING → ATTACKING → RECOVERING), emits visual events |
