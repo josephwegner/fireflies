@@ -96,8 +96,9 @@ export class CombatSystem implements GameSystem {
 
     // Wall blueprints are line segments — measure distance to the segment,
     // not the midpoint, so combat works regardless of wall length.
-    if (target.wallBlueprintTag && target.buildable?.sites?.length >= 2) {
-      const sites = target.buildable.sites;
+    const buildable = target.buildable;
+    if (target.wallBlueprintTag && buildable && buildable.sites.length >= 2) {
+      const sites = buildable.sites;
       return pointToSegmentDistance(attackerPos, sites[0], sites[1]) <= interactionRadius;
     }
 

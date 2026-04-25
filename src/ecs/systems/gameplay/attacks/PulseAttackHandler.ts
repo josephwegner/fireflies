@@ -66,8 +66,9 @@ export class PulseAttackHandler implements AttackHandler {
       if (!this.isValidTarget(entity, attacker)) continue;
 
       let distance: number;
-      if (entity.wallBlueprintTag && entity.buildable?.sites?.length >= 2) {
-        const sites = entity.buildable.sites;
+      const buildable = entity.buildable;
+      if (entity.wallBlueprintTag && buildable && buildable.sites.length >= 2) {
+        const sites = buildable.sites;
         distance = pointToSegmentDistance(attackerPos, sites[0], sites[1]);
       } else {
         const dx = entity.position.x - attackerPos.x;

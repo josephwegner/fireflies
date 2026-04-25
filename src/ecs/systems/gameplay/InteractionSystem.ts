@@ -38,8 +38,9 @@ export class InteractionSystem implements GameSystem {
         if (!otherPos) continue;
 
         let distance: number;
-        if (other.wallBlueprintTag && other.buildable?.sites?.length >= 2) {
-          const sites = other.buildable.sites;
+        const buildable = other.buildable;
+        if (other.wallBlueprintTag && buildable && buildable.sites.length >= 2) {
+          const sites = buildable.sites;
           distance = pointToSegmentDistance(position, sites[0], sites[1]);
         } else {
           const dx = otherPos.x - position.x;
