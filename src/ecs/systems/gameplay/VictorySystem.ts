@@ -1,31 +1,26 @@
 import type { Query, With } from 'miniplex';
 import type { Entity, GameWorld } from '@/ecs/Entity';
-import type { GameSystem } from '@/ecs/GameSystem';
+import { GameSystemBase } from '@/ecs/GameSystem';
 import { gameEvents, GameEvents } from '@/events';
 import { ENTITY_CONFIG } from '@/config';
 import { teamForUnitType, clearPath } from '@/utils';
 import { logger } from '@/utils/logger';
 
-export class VictorySystem implements GameSystem {
+export class VictorySystem extends GameSystemBase {
   private monsters: Query<With<Entity, 'monsterTag' | 'health'>>;
   private lodges: Query<With<Entity, 'lodge' | 'position'>>;
   private fireflies: Query<With<Entity, 'fireflyTag' | 'position' | 'velocity' | 'path'>>;
   private spawners: Query<With<Entity, 'spawner' | 'spawnerTag'>>;
   private victoryTriggered = false;
-  private handleEntityDiedBound: (data: any) => void;
 
   constructor(private world: GameWorld, _config: Record<string, any>) {
+    super();
     this.monsters = world.with('monsterTag', 'health');
     this.lodges = world.with('lodge', 'position');
     this.fireflies = world.with('fireflyTag', 'position', 'velocity', 'path');
     this.spawners = world.with('spawner', 'spawnerTag');
 
-    this.handleEntityDiedBound = this.handleEntityDied.bind(this);
-    gameEvents.on(GameEvents.ENTITY_DIED, this.handleEntityDiedBound);
-  }
-
-  destroy(): void {
-    gameEvents.off(GameEvents.ENTITY_DIED, this.handleEntityDiedBound);
+    this.listen(GameEvents.ENTITY_DIED, this.handleEntityDied);
   }
 
   update(_delta: number, _time: number): void {

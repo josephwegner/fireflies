@@ -1,26 +1,17 @@
 import Phaser from 'phaser';
 import type { Entity, GameWorld } from '@/ecs/Entity';
-import type { GameSystem } from '@/ecs/GameSystem';
+import { GameSystemBase } from '@/ecs/GameSystem';
 import { gameEvents, GameEvents } from '@/events';
 
-export class ParticleEffectsSystem implements GameSystem {
+export class ParticleEffectsSystem extends GameSystemBase {
   private scene: Phaser.Scene;
-  private handleTenantAddedBound: (data: any) => void;
-  private handleEntityDiedBound: (data: any) => void;
 
   constructor(_world: GameWorld, config: Record<string, any>) {
+    super();
     this.scene = config.scene;
 
-    this.handleTenantAddedBound = this.handleTenantAdded.bind(this);
-    this.handleEntityDiedBound = this.handleEntityDied.bind(this);
-
-    gameEvents.on(GameEvents.TENANT_ADDED_TO_LODGE, this.handleTenantAddedBound);
-    gameEvents.on(GameEvents.ENTITY_DIED, this.handleEntityDiedBound);
-  }
-
-  destroy(): void {
-    gameEvents.off(GameEvents.TENANT_ADDED_TO_LODGE, this.handleTenantAddedBound);
-    gameEvents.off(GameEvents.ENTITY_DIED, this.handleEntityDiedBound);
+    this.listen(GameEvents.TENANT_ADDED_TO_LODGE, this.handleTenantAdded);
+    this.listen(GameEvents.ENTITY_DIED, this.handleEntityDied);
   }
 
   update(_delta: number, _time: number): void {

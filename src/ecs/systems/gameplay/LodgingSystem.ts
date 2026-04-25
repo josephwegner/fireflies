@@ -1,6 +1,6 @@
 import type { Query, With } from 'miniplex';
 import type { Entity, GameWorld, Team } from '@/ecs/Entity';
-import type { GameSystem } from '@/ecs/GameSystem';
+import { GameSystemBase } from '@/ecs/GameSystem';
 import { ENTITY_CONFIG, PHYSICS_CONFIG } from '@/config';
 import { SpatialGrid, Vector } from '@/utils';
 import { gameEvents, GameEventPayloads, GameEvents } from '@/events';
@@ -16,25 +16,17 @@ const COMPONENT_REGISTRY: Record<string, keyof Entity> = {
   combat: 'combat',
 };
 
-export class LodgingSystem implements GameSystem {
+export class LodgingSystem extends GameSystemBase {
   private lodges: Query<LodgeEntity>;
   private spatialGrid: SpatialGrid;
-  private handleTenantAddedBound: (data: any) => void;
-  private handleTenantRemovedBound: (data: any) => void;
 
   constructor(private world: GameWorld, config: Record<string, any>) {
+    super();
     this.lodges = world.with('lodge', 'position');
     this.spatialGrid = config.spatialGrid;
 
-    this.handleTenantAddedBound = this.handleTenantAdded.bind(this);
-    this.handleTenantRemovedBound = this.handleTenantRemoved.bind(this);
-    gameEvents.on(GameEvents.TENANT_ADDED_TO_LODGE, this.handleTenantAddedBound);
-    gameEvents.on(GameEvents.TENANT_REMOVED_FROM_LODGE, this.handleTenantRemovedBound);
-  }
-
-  destroy(): void {
-    gameEvents.off(GameEvents.TENANT_ADDED_TO_LODGE, this.handleTenantAddedBound);
-    gameEvents.off(GameEvents.TENANT_REMOVED_FROM_LODGE, this.handleTenantRemovedBound);
+    this.listen(GameEvents.TENANT_ADDED_TO_LODGE, this.handleTenantAdded);
+    this.listen(GameEvents.TENANT_REMOVED_FROM_LODGE, this.handleTenantRemoved);
   }
 
   update(_delta: number, _time: number): void {

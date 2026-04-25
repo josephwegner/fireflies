@@ -1,5 +1,5 @@
 import type { GameWorld } from '@/ecs/Entity';
-import type { GameSystem } from '@/ecs/GameSystem';
+import { GameSystemBase } from '@/ecs/GameSystem';
 import type { EnergyManager } from '@/ui/EnergyManager';
 import { GAME_CONFIG } from '@/config';
 import { gameEvents, GameEvents } from '@/events';
@@ -7,7 +7,7 @@ import { createWisp } from '@/entities/factories';
 
 type PlacementState = 'idle' | 'placing';
 
-export class PlacementSystem implements GameSystem {
+export class PlacementSystem extends GameSystemBase {
   private scene: Phaser.Scene;
   private world: GameWorld;
   private energyManager: EnergyManager;
@@ -18,24 +18,27 @@ export class PlacementSystem implements GameSystem {
   private ghostSprite: Phaser.GameObjects.Sprite | null = null;
   private selectedItemType: string | null = null;
 
-  private onPlacementStarted: (data: { itemType: string; cost: number }) => void;
   private onPointerDown: (pointer: Phaser.Input.Pointer) => void;
   private onEscKey: () => void;
 
   constructor(world: GameWorld, config: Record<string, any>) {
+    super();
     this.world = world;
     this.scene = config.scene;
     this.energyManager = config.energyManager;
     this.map = config.map;
     this.cost = config.levelConfig.store.wisp.cost;
 
-    this.onPlacementStarted = (data) => this.startPlacement(data.itemType, data.cost);
+    this.listen(GameEvents.PLACEMENT_STARTED, this.handlePlacementStarted);
+
     this.onPointerDown = (pointer) => this.handlePointerDown(pointer);
     this.onEscKey = () => this.cancelPlacement();
-
-    gameEvents.on(GameEvents.PLACEMENT_STARTED, this.onPlacementStarted);
     this.scene.input.on('pointerdown', this.onPointerDown);
     this.scene.input.keyboard!.on('keydown-ESC', this.onEscKey);
+  }
+
+  private handlePlacementStarted(data: { itemType: string; cost: number }): void {
+    this.startPlacement(data.itemType, data.cost);
   }
 
   private startPlacement(itemType: string, cost: number): void {
@@ -130,8 +133,8 @@ export class PlacementSystem implements GameSystem {
   }
 
   destroy(): void {
+    super.destroy();
     this.cleanupGhost();
-    gameEvents.off(GameEvents.PLACEMENT_STARTED, this.onPlacementStarted);
     this.scene.input.off('pointerdown', this.onPointerDown);
     this.scene.input.keyboard?.off('keydown-ESC', this.onEscKey);
   }

@@ -1,23 +1,18 @@
 import type { Query, With } from 'miniplex';
 import type { Entity, GameWorld } from '@/ecs/Entity';
-import type { GameSystem } from '@/ecs/GameSystem';
+import { GameSystemBase } from '@/ecs/GameSystem';
 import { GAME_CONFIG } from '@/config';
 import { gameEvents, GameEvents } from '@/events';
 import { pointToSegmentDistance, clearPath } from '@/utils';
 
-export class WallBreakingSystem implements GameSystem {
+export class WallBreakingSystem extends GameSystemBase {
   private wallAttackers: Query<With<Entity, 'wallAttackTarget' | 'position' | 'monsterTag'>>;
-  private handleEntityDiedBound: (data: any) => void;
 
   constructor(private world: GameWorld, _config: Record<string, any>) {
+    super();
     this.wallAttackers = world.with('wallAttackTarget', 'position', 'monsterTag');
 
-    this.handleEntityDiedBound = (data) => this.handleEntityDied(data);
-    gameEvents.on(GameEvents.ENTITY_DIED, this.handleEntityDiedBound);
-  }
-
-  destroy(): void {
-    gameEvents.off(GameEvents.ENTITY_DIED, this.handleEntityDiedBound);
+    this.listen(GameEvents.ENTITY_DIED, this.handleEntityDied);
   }
 
   update(_delta: number, _time: number): void {

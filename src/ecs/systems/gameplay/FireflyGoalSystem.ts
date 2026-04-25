@@ -1,6 +1,6 @@
 import type { Query, With } from 'miniplex';
 import type { Entity, GameWorld } from '@/ecs/Entity';
-import type { GameSystem } from '@/ecs/GameSystem';
+import { GameSystemBase } from '@/ecs/GameSystem';
 import { gameEvents, GameEvents } from '@/events';
 import { GAME_CONFIG, PHYSICS_CONFIG } from '@/config';
 import { logger } from '@/utils/logger';
@@ -8,23 +8,18 @@ import { Vector } from '@/utils';
 
 type GoalEntity = With<Entity, 'fireflyGoal' | 'renderable' | 'position' | 'goalTag'>;
 
-export class FireflyGoalSystem implements GameSystem {
+export class FireflyGoalSystem extends GameSystemBase {
   private fireflyGoals: Query<GoalEntity>;
   private processedFireflies = new Set<Entity>();
-  private handlePathCompletedBound: (data: any) => void;
   private firefliesToWin: number;
   private wonEmitted = false;
 
   constructor(private world: GameWorld, config: Record<string, any>) {
+    super();
     this.firefliesToWin = config.firefliesToWin ?? 1;
     this.fireflyGoals = world.with('fireflyGoal', 'renderable', 'position', 'goalTag') as any;
 
-    this.handlePathCompletedBound = this.handlePathCompleted.bind(this);
-    gameEvents.on(GameEvents.PATH_COMPLETED, this.handlePathCompletedBound);
-  }
-
-  destroy(): void {
-    gameEvents.off(GameEvents.PATH_COMPLETED, this.handlePathCompletedBound);
+    this.listen(GameEvents.PATH_COMPLETED, this.handlePathCompleted);
   }
 
   update(_delta: number, _time: number): void {

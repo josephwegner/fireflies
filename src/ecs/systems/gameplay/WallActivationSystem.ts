@@ -1,37 +1,33 @@
 import type { Query, With } from 'miniplex';
 import type { Entity, GameWorld } from '@/ecs/Entity';
-import type { GameSystem } from '@/ecs/GameSystem';
+import { GameSystemBase } from '@/ecs/GameSystem';
 import { GAME_CONFIG } from '@/config';
 import { gameEvents, GameEvents } from '@/events';
 import { lineSegmentToRect, pointToSegmentDistance, clearPath } from '@/utils';
 
-export class WallActivationSystem implements GameSystem {
+export class WallActivationSystem extends GameSystemBase {
   private world: GameWorld;
   private worker: Worker;
   private walls: Query<With<Entity, 'wall' | 'wallTag'>>;
   private wallBlueprints: Query<With<Entity, 'wallBlueprint' | 'wallBlueprintTag' | 'buildable'>>;
-  private handleBuildCompleteBound: (data: any) => void;
-  private handleWallDestroyedBound: (data: any) => void;
 
   constructor(world: GameWorld, config: Record<string, any>) {
+    super();
     this.world = world;
     this.worker = config.worker;
     this.walls = world.with('wall', 'wallTag') as any;
     this.wallBlueprints = world.with('wallBlueprint', 'wallBlueprintTag', 'buildable') as any;
 
-    this.handleBuildCompleteBound = (data) => this.handleBuildComplete(data);
-    this.handleWallDestroyedBound = () => this.rebuildNavMesh();
-    gameEvents.on(GameEvents.BUILD_COMPLETE, this.handleBuildCompleteBound);
-    gameEvents.on(GameEvents.WALL_DESTROYED, this.handleWallDestroyedBound);
-  }
-
-  destroy(): void {
-    gameEvents.off(GameEvents.BUILD_COMPLETE, this.handleBuildCompleteBound);
-    gameEvents.off(GameEvents.WALL_DESTROYED, this.handleWallDestroyedBound);
+    this.listen(GameEvents.BUILD_COMPLETE, this.handleBuildComplete);
+    this.listen(GameEvents.WALL_DESTROYED, this.handleWallDestroyed);
   }
 
   update(_delta: number, _time: number): void {
     // Event-driven — no per-frame work needed
+  }
+
+  private handleWallDestroyed(): void {
+    this.rebuildNavMesh();
   }
 
   private handleBuildComplete(data: { entity: Entity }): void {

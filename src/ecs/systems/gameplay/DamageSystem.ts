@@ -1,6 +1,6 @@
 import type { Query, With } from 'miniplex';
 import type { Entity, GameWorld } from '@/ecs/Entity';
-import type { GameSystem } from '@/ecs/GameSystem';
+import { GameSystemBase } from '@/ecs/GameSystem';
 import { gameEvents, GameEvents } from '@/events';
 import { PHYSICS_CONFIG } from '@/config';
 import { Vector } from '@/utils';
@@ -10,13 +10,12 @@ interface DyingEntity {
   timeElapsed: number;
 }
 
-export class DamageSystem implements GameSystem {
+export class DamageSystem extends GameSystemBase {
   private dyingEntities: DyingEntity[] = [];
-  private handleDamageBound: (data: any) => void;
 
   constructor(private world: GameWorld, _config: Record<string, any>) {
-    this.handleDamageBound = this.handleDamage.bind(this);
-    gameEvents.on(GameEvents.ATTACK_HIT, this.handleDamageBound);
+    super();
+    this.listen(GameEvents.ATTACK_HIT, this.handleDamage);
   }
 
   update(delta: number, _time: number): void {
@@ -25,7 +24,7 @@ export class DamageSystem implements GameSystem {
   }
 
   destroy(): void {
-    gameEvents.off(GameEvents.ATTACK_HIT, this.handleDamageBound);
+    super.destroy();
     this.dyingEntities = [];
   }
 

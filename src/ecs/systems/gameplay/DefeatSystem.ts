@@ -1,11 +1,11 @@
 import type { Query, With } from 'miniplex';
 import type { Entity, GameWorld } from '@/ecs/Entity';
-import type { GameSystem } from '@/ecs/GameSystem';
+import { GameSystemBase } from '@/ecs/GameSystem';
 import { gameEvents, GameEvents } from '@/events';
 import { PHYSICS_CONFIG } from '@/config';
 import { Vector } from '@/utils';
 
-export class DefeatSystem implements GameSystem {
+export class DefeatSystem extends GameSystemBase {
   private monsters: Query<With<Entity, 'monsterTag' | 'position'>>;
   private monsterGoals: Query<With<Entity, 'goalTag' | 'destination' | 'position'>>;
   private fireflyGoals: Query<With<Entity, 'fireflyGoal'>>;
@@ -14,12 +14,10 @@ export class DefeatSystem implements GameSystem {
   private defeated = false;
   private monstersDefeated = false;
   private firefliesToWin: number;
-
-  private handleMonstersDefeatedBound: () => void;
-  private handleLevelWonBound: () => void;
   private levelWon = false;
 
   constructor(private world: GameWorld, config: Record<string, any>) {
+    super();
     this.firefliesToWin = config.firefliesToWin ?? 1;
 
     this.monsters = world.with('monsterTag', 'position');
@@ -27,16 +25,8 @@ export class DefeatSystem implements GameSystem {
     this.fireflyGoals = world.with('fireflyGoal');
     this.activeFireflies = world.with('fireflyTag', 'position');
 
-    this.handleMonstersDefeatedBound = () => { this.monstersDefeated = true; };
-    this.handleLevelWonBound = () => { this.levelWon = true; };
-
-    gameEvents.on(GameEvents.ALL_MONSTERS_DEFEATED, this.handleMonstersDefeatedBound);
-    gameEvents.on(GameEvents.LEVEL_WON, this.handleLevelWonBound);
-  }
-
-  destroy(): void {
-    gameEvents.off(GameEvents.ALL_MONSTERS_DEFEATED, this.handleMonstersDefeatedBound);
-    gameEvents.off(GameEvents.LEVEL_WON, this.handleLevelWonBound);
+    this.listen(GameEvents.ALL_MONSTERS_DEFEATED, this.handleMonstersDefeated);
+    this.listen(GameEvents.LEVEL_WON, this.handleLevelWon);
   }
 
   update(_delta: number, _time: number): void {
@@ -44,6 +34,14 @@ export class DefeatSystem implements GameSystem {
 
     this.checkMonsterReachedGoal();
     this.checkInsufficientFireflies();
+  }
+
+  private handleMonstersDefeated(): void {
+    this.monstersDefeated = true;
+  }
+
+  private handleLevelWon(): void {
+    this.levelWon = true;
   }
 
   private checkMonsterReachedGoal(): void {

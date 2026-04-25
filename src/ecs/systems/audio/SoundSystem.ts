@@ -1,5 +1,5 @@
 import type { GameWorld } from '@/ecs/Entity';
-import type { GameSystem } from '@/ecs/GameSystem';
+import { GameSystemBase } from '@/ecs/GameSystem';
 import { gameEvents, GameEvents, type GameEventPayloads } from '@/events';
 import { SoundEngine } from './SoundEngine';
 import { randomNote, noteWithDetune, motifNotes } from './scales';
@@ -10,10 +10,9 @@ interface SoundDebug {
   status(): void;
 }
 
-export class SoundSystem implements GameSystem {
+export class SoundSystem extends GameSystemBase {
   private engine: SoundEngine;
   private world: GameWorld;
-  private handlers: Map<string, (data: any) => void> = new Map();
   private gameActive = false;
   private muted: Record<string, boolean> = {};
 
@@ -23,6 +22,7 @@ export class SoundSystem implements GameSystem {
   private combatants;
 
   constructor(world: GameWorld, config: { soundEngine?: SoundEngine; [key: string]: any }) {
+    super();
     this.world = world;
 
     if (config.soundEngine) {
@@ -38,17 +38,17 @@ export class SoundSystem implements GameSystem {
     this.wisps = world.with('wispTag', 'position');
     this.combatants = world.with('combat');
 
-    this.wireEvent(GameEvents.COMBAT_ATTACK_BURST, this.onAttackBurst);
-    this.wireEvent(GameEvents.PLACEMENT_COMPLETED, this.onPlacement);
-    this.wireEvent(GameEvents.ENTITY_SPAWNED, this.onEntitySpawned);
-    this.wireEvent(GameEvents.ENTITY_DIED, this.onEntityDied);
-    this.wireEvent(GameEvents.ENTITY_REACHED_GOAL, this.onEntityReachedGoal);
-    this.wireEvent(GameEvents.TENANT_ADDED_TO_LODGE, this.onTenantAdded);
-    this.wireEvent(GameEvents.WALL_ACTIVATED, this.onWallActivated);
-    this.wireEvent(GameEvents.WALL_DESTROYED, this.onWallDestroyed);
-    this.wireEvent(GameEvents.LEVEL_WON, this.onLevelWon);
-    this.wireEvent(GameEvents.LEVEL_LOST, this.onLevelLost);
-    this.wireEvent(GameEvents.GAME_STARTED, this.onGameStarted);
+    this.listen(GameEvents.COMBAT_ATTACK_BURST, this.onAttackBurst);
+    this.listen(GameEvents.PLACEMENT_COMPLETED, this.onPlacement);
+    this.listen(GameEvents.ENTITY_SPAWNED, this.onEntitySpawned);
+    this.listen(GameEvents.ENTITY_DIED, this.onEntityDied);
+    this.listen(GameEvents.ENTITY_REACHED_GOAL, this.onEntityReachedGoal);
+    this.listen(GameEvents.TENANT_ADDED_TO_LODGE, this.onTenantAdded);
+    this.listen(GameEvents.WALL_ACTIVATED, this.onWallActivated);
+    this.listen(GameEvents.WALL_DESTROYED, this.onWallDestroyed);
+    this.listen(GameEvents.LEVEL_WON, this.onLevelWon);
+    this.listen(GameEvents.LEVEL_LOST, this.onLevelLost);
+    this.listen(GameEvents.GAME_STARTED, this.onGameStarted);
 
     this.setupDebug();
   }
@@ -102,20 +102,8 @@ export class SoundSystem implements GameSystem {
     console.log('[Sound] Debug: sound.test() for list, sound.voices() for pool count');
   }
 
-  private wireEvent<K extends keyof GameEventPayloads>(
-    event: K,
-    handler: (data: GameEventPayloads[K]) => void
-  ): void {
-    const bound = handler.bind(this);
-    this.handlers.set(event, bound);
-    gameEvents.on(event, bound);
-  }
-
   destroy(): void {
-    for (const [event, handler] of this.handlers) {
-      gameEvents.off(event as any, handler);
-    }
-    this.handlers.clear();
+    super.destroy();
     this.engine.destroy();
   }
 

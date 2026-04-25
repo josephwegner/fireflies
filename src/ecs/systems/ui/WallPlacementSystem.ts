@@ -1,6 +1,6 @@
 import type { Query, With } from 'miniplex';
 import type { Entity, GameWorld } from '@/ecs/Entity';
-import type { GameSystem } from '@/ecs/GameSystem';
+import { GameSystemBase } from '@/ecs/GameSystem';
 import type { EnergyManager } from '@/ui/EnergyManager';
 import { GAME_CONFIG } from '@/config';
 import { gameEvents, GameEvents } from '@/events';
@@ -13,7 +13,7 @@ const SNAP_THRESHOLD = 30;
 const BLUEPRINT_COLOR = 0x88AACC;
 const NODE_RADIUS = 5;
 
-export class WallPlacementSystem implements GameSystem {
+export class WallPlacementSystem extends GameSystemBase {
   private scene: Phaser.Scene;
   private world: GameWorld;
   private energyManager: EnergyManager;
@@ -24,11 +24,11 @@ export class WallPlacementSystem implements GameSystem {
   private secondAnchor: { x: number; y: number } | null = null;
   private graphics: Phaser.GameObjects.Graphics;
 
-  private onPlacementStarted: (data: { itemType: string; cost: number }) => void;
   private onPointerDown: (pointer: Phaser.Input.Pointer) => void;
   private onEscKey: () => void;
 
   constructor(world: GameWorld, config: Record<string, any>) {
+    super();
     this.world = world;
     this.scene = config.scene;
     this.energyManager = config.energyManager;
@@ -37,15 +37,16 @@ export class WallPlacementSystem implements GameSystem {
     this.graphics = this.scene.add.graphics();
     this.graphics.setDepth(998);
 
-    this.onPlacementStarted = (data) => {
-      if (data.itemType === 'wall') this.startPlacement();
-    };
+    this.listen(GameEvents.PLACEMENT_STARTED, this.handlePlacementStarted);
+
     this.onPointerDown = (pointer) => this.handlePointerDown(pointer);
     this.onEscKey = () => this.cancel();
-
-    gameEvents.on(GameEvents.PLACEMENT_STARTED, this.onPlacementStarted);
     this.scene.input.on('pointerdown', this.onPointerDown);
     this.scene.input.keyboard!.on('keydown-ESC', this.onEscKey);
+  }
+
+  private handlePlacementStarted(data: { itemType: string; cost: number }): void {
+    if (data.itemType === 'wall') this.startPlacement();
   }
 
   private startPlacement(): void {
@@ -231,8 +232,8 @@ export class WallPlacementSystem implements GameSystem {
   }
 
   destroy(): void {
+    super.destroy();
     this.graphics.destroy();
-    gameEvents.off(GameEvents.PLACEMENT_STARTED, this.onPlacementStarted);
     this.scene.input.off('pointerdown', this.onPointerDown);
     this.scene.input.keyboard?.off('keydown-ESC', this.onEscKey);
   }

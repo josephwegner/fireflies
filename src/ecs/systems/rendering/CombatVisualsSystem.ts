@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 import type { Entity, GameWorld, AttackPattern } from '@/ecs/Entity';
-import type { GameSystem } from '@/ecs/GameSystem';
+import { GameSystemBase } from '@/ecs/GameSystem';
 import type { RenderingSystem } from './RenderingSystem';
 import { gameEvents, GameEvents } from '@/events';
 
@@ -14,36 +14,24 @@ interface ActiveVisual {
   originalTint?: number;
 }
 
-export class CombatVisualsSystem implements GameSystem {
+export class CombatVisualsSystem extends GameSystemBase {
   private scene: Phaser.Scene;
   private renderingSystem: RenderingSystem;
   private activeVisuals = new Map<Entity, ActiveVisual>();
 
-  private handleChargingBound: (data: any) => void;
-  private handleBurstBound: (data: any) => void;
-  private handleRecoveringBound: (data: any) => void;
-  private handleCleanupBound: (data: any) => void;
-
   constructor(_world: GameWorld, config: Record<string, any>) {
+    super();
     this.scene = config.scene;
     this.renderingSystem = config.renderingSystem;
 
-    this.handleChargingBound = this.handleCharging.bind(this);
-    this.handleBurstBound = this.handleBurst.bind(this);
-    this.handleRecoveringBound = this.handleRecovering.bind(this);
-    this.handleCleanupBound = this.handleCleanup.bind(this);
-
-    gameEvents.on(GameEvents.COMBAT_CHARGING, this.handleChargingBound);
-    gameEvents.on(GameEvents.COMBAT_ATTACK_BURST, this.handleBurstBound);
-    gameEvents.on(GameEvents.COMBAT_RECOVERING, this.handleRecoveringBound);
-    gameEvents.on(GameEvents.COMBAT_CLEANUP, this.handleCleanupBound);
+    this.listen(GameEvents.COMBAT_CHARGING, this.handleCharging);
+    this.listen(GameEvents.COMBAT_ATTACK_BURST, this.handleBurst);
+    this.listen(GameEvents.COMBAT_RECOVERING, this.handleRecovering);
+    this.listen(GameEvents.COMBAT_CLEANUP, this.handleCleanup);
   }
 
   destroy(): void {
-    gameEvents.off(GameEvents.COMBAT_CHARGING, this.handleChargingBound);
-    gameEvents.off(GameEvents.COMBAT_ATTACK_BURST, this.handleBurstBound);
-    gameEvents.off(GameEvents.COMBAT_RECOVERING, this.handleRecoveringBound);
-    gameEvents.off(GameEvents.COMBAT_CLEANUP, this.handleCleanupBound);
+    super.destroy();
 
     for (const [, visual] of this.activeVisuals) {
       this.destroyVisual(visual);

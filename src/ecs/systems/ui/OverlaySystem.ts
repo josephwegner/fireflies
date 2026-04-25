@@ -1,12 +1,12 @@
 import type { GameWorld } from '@/ecs/Entity';
-import type { GameSystem } from '@/ecs/GameSystem';
+import { GameSystemBase } from '@/ecs/GameSystem';
 import { gameEvents, GameEvents } from '@/events';
 import { GAME_CONFIG } from '@/config';
 import { LEVELS } from '@/levels/levelRegistry';
 
 type OverlayState = 'pregame' | 'victory' | 'defeat' | 'none';
 
-export class OverlaySystem implements GameSystem {
+export class OverlaySystem extends GameSystemBase {
   private scene: Phaser.Scene;
   private levelIndex: number;
   private onNextLevel: () => void;
@@ -22,28 +22,22 @@ export class OverlaySystem implements GameSystem {
   private subtitleText!: Phaser.GameObjects.Text;
   private actionButton!: Phaser.GameObjects.Text;
 
-  private handleLevelWonBound: (data: any) => void;
-  private handleLevelLostBound: (data: any) => void;
-
   constructor(_world: GameWorld, config: Record<string, any>) {
+    super();
     this.scene = config.scene;
     this.levelIndex = config.levelIndex;
     this.onNextLevel = config.onNextLevel;
     this.onRetry = config.onRetry;
 
-    this.handleLevelWonBound = this.handleLevelWon.bind(this);
-    this.handleLevelLostBound = this.handleLevelLost.bind(this);
-
-    gameEvents.on(GameEvents.LEVEL_WON, this.handleLevelWonBound);
-    gameEvents.on(GameEvents.LEVEL_LOST, this.handleLevelLostBound);
+    this.listen(GameEvents.LEVEL_WON, this.handleLevelWon);
+    this.listen(GameEvents.LEVEL_LOST, this.handleLevelLost);
 
     this.createStartButton();
     this.createOverlayElements();
   }
 
   destroy(): void {
-    gameEvents.off(GameEvents.LEVEL_WON, this.handleLevelWonBound);
-    gameEvents.off(GameEvents.LEVEL_LOST, this.handleLevelLostBound);
+    super.destroy();
     this.startButton.destroy();
     this.levelLabel.destroy();
     this.backdrop.destroy();
