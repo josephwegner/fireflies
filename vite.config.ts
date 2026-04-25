@@ -25,7 +25,7 @@ export default defineConfig(({ command }) => ({
   build: {
     outDir: 'dist',
     sourcemap: true,
-    chunkSizeWarningLimit: 1000, // Increase limit for Phaser
+    chunkSizeWarningLimit: 1500,
     rollupOptions: {
       input: command === 'serve'
         ? { main: path.resolve(__dirname, 'index.html'), soundboard: path.resolve(__dirname, 'soundboard.html') }
@@ -33,8 +33,7 @@ export default defineConfig(({ command }) => ({
       output: {
         manualChunks: {
           phaser: ['phaser'],
-          miniplex: ['miniplex'],
-          worker: ['./src/workers/pathfinding/worker.ts']
+          miniplex: ['miniplex']
         }
       }
     },
