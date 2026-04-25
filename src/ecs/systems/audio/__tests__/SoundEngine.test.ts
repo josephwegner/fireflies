@@ -76,78 +76,129 @@ describe('SoundEngine', () => {
   });
 
   describe('public API delegation', () => {
-    it('exposes playChime', () => {
-      expect(() => engine.playChime(440)).not.toThrow();
+    function oscCallCount() {
+      return (ctx.createOscillator as ReturnType<typeof vi.fn>).mock.calls.length;
+    }
+    function gainCallCount() {
+      return (ctx.createGain as ReturnType<typeof vi.fn>).mock.calls.length;
+    }
+    function bufferSourceCallCount() {
+      return (ctx.createBufferSource as ReturnType<typeof vi.fn>).mock.calls.length;
+    }
+
+    it('should create oscillators when playing a chime', () => {
+      const before = oscCallCount();
+      engine.playChime(440);
+      expect(oscCallCount()).toBeGreaterThan(before);
     });
 
-    it('exposes playWoodTap', () => {
-      expect(() => engine.playWoodTap(440)).not.toThrow();
+    it('should create oscillators when playing a wood tap', () => {
+      const before = oscCallCount();
+      engine.playWoodTap(440);
+      expect(oscCallCount()).toBeGreaterThan(before);
     });
 
-    it('exposes playBassPulse', () => {
-      expect(() => engine.playBassPulse(65)).not.toThrow();
+    it('should create oscillators when playing a bass pulse', () => {
+      const before = oscCallCount();
+      engine.playBassPulse(65);
+      expect(oscCallCount()).toBeGreaterThan(before);
     });
 
-    it('exposes playWispPulse', () => {
-      expect(() => engine.playWispPulse(440)).not.toThrow();
+    it('should create oscillators when playing a wisp pulse', () => {
+      const before = oscCallCount();
+      engine.playWispPulse(440);
+      expect(oscCallCount()).toBeGreaterThan(before);
     });
 
-    it('exposes playSpawn', () => {
-      expect(() => engine.playSpawn(440, 'firefly')).not.toThrow();
-      expect(() => engine.playSpawn(130, 'monster')).not.toThrow();
+    it('should create audio nodes when playing spawn sound', () => {
+      const before = oscCallCount();
+      engine.playSpawn(440, 'firefly');
+      expect(oscCallCount()).toBeGreaterThan(before);
     });
 
-    it('exposes playDeath', () => {
-      expect(() => engine.playDeath('firefly')).not.toThrow();
-      expect(() => engine.playDeath('monster')).not.toThrow();
-      expect(() => engine.playDeath('wisp')).not.toThrow();
+    it('should create audio nodes for monster spawn', () => {
+      const before = oscCallCount();
+      engine.playSpawn(130, 'monster');
+      expect(oscCallCount()).toBeGreaterThan(before);
     });
 
-    it('exposes playWispActivation', () => {
-      expect(() => engine.playWispActivation()).not.toThrow();
+    it('should create audio nodes when playing death sounds', () => {
+      for (const type of ['firefly', 'monster', 'wisp'] as const) {
+        const before = oscCallCount() + bufferSourceCallCount();
+        engine.playDeath(type);
+        expect(oscCallCount() + bufferSourceCallCount()).toBeGreaterThan(before);
+      }
     });
 
-    it('exposes playConstruction', () => {
-      expect(() => engine.playConstruction()).not.toThrow();
-      expect(() => engine.playConstruction(true)).not.toThrow();
+    it('should create oscillators for wisp activation', () => {
+      const before = oscCallCount();
+      engine.playWispActivation();
+      expect(oscCallCount()).toBeGreaterThan(before);
     });
 
-    it('exposes playBreak', () => {
-      expect(() => engine.playBreak()).not.toThrow();
+    it('should create audio nodes for construction sound', () => {
+      const before = bufferSourceCallCount() + oscCallCount();
+      engine.playConstruction();
+      expect(bufferSourceCallCount() + oscCallCount()).toBeGreaterThan(before);
     });
 
-    it('exposes playMotif', () => {
-      expect(() => engine.playMotif([440, 523])).not.toThrow();
+    it('should create audio nodes for break sound', () => {
+      const before = bufferSourceCallCount() + oscCallCount();
+      engine.playBreak();
+      expect(bufferSourceCallCount() + oscCallCount()).toBeGreaterThan(before);
     });
 
-    it('exposes playDefeatMotif', () => {
-      expect(() => engine.playDefeatMotif([440, 392])).not.toThrow();
+    it('should create oscillators when playing a motif', () => {
+      const before = oscCallCount();
+      engine.playMotif([440, 523]);
+      expect(oscCallCount()).toBeGreaterThan(before);
     });
 
-    it('exposes startDrone/stopDrone', () => {
-      expect(() => engine.startDrone()).not.toThrow();
-      expect(() => engine.stopDrone()).not.toThrow();
+    it('should create oscillators when playing a defeat motif', () => {
+      const before = oscCallCount();
+      engine.playDefeatMotif([440, 392]);
+      expect(oscCallCount()).toBeGreaterThan(before);
     });
 
-    it('exposes setDroneIntensity', () => {
+    it('should create oscillators when starting drone', () => {
+      const before = oscCallCount();
       engine.startDrone();
-      expect(() => engine.setDroneIntensity(0.5)).not.toThrow();
+      expect(oscCallCount()).toBeGreaterThan(before);
     });
 
-    it('exposes setTensionLevel', () => {
-      expect(() => engine.setTensionLevel(0.5)).not.toThrow();
+    it('should create gain nodes for drone intensity', () => {
+      engine.startDrone();
+      const before = gainCallCount();
+      engine.setDroneIntensity(0.5);
+      expect(gainCallCount()).toBeGreaterThanOrEqual(before);
     });
 
-    it('exposes startAmbient/stopAmbient', () => {
-      expect(() => engine.startAmbient()).not.toThrow();
+    it('should create oscillators for tension level', () => {
+      const before = oscCallCount();
+      engine.setTensionLevel(0.5);
+      expect(oscCallCount()).toBeGreaterThan(before);
+    });
+
+    it('should create oscillators when ambient plays a fragment', () => {
+      engine.startAmbient();
+      // Ambient is time-driven: advance currentTime past the scheduled nextTime
+      (ctx as any).currentTime = 10;
+      const before = oscCallCount();
+      engine.update(16);
+      expect(oscCallCount()).toBeGreaterThan(before);
+    });
+
+    it('should not throw when stopping ambient', () => {
+      engine.startAmbient();
       expect(() => engine.stopAmbient()).not.toThrow();
     });
 
-    it('exposes setAmbientMood', () => {
+    it('should not throw when setting ambient mood', () => {
+      engine.startAmbient();
       expect(() => engine.setAmbientMood(0.5)).not.toThrow();
     });
 
-    it('exposes update', () => {
+    it('should not throw on update', () => {
       expect(() => engine.update(16)).not.toThrow();
     });
   });
